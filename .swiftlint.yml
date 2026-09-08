@@ -1,0 +1,25 @@
+included:
+  - Package.swift
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+  - .git
+  - .agents
+  - dist
+
+disabled_rules:
+  - trailing_comma
+
+line_length:
+  warning: 120
+nesting:
+  type_level:
+    warning: 3
+  function_level:
+    warning: 3
+type_name:
+  max_length:
+    warning: 60
+    error: 100
