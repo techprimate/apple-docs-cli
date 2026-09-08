@@ -25,7 +25,7 @@ struct DocumentationBlockDTO: Decodable, Sendable {
 
 struct DocumentationReferenceDTO: Decodable, Sendable {
     let abstract: [DocumentationTextDTO]?
-    let title: String
+    let title: String?
 }
 
 struct DocumentationReferenceSectionDTO: Decodable, Sendable {

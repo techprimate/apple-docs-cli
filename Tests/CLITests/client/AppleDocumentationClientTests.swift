@@ -52,6 +52,36 @@ struct AppleDocumentationClientTests {
         #expect(document.page.abstract.first?.text == "A diagnostic report.")
     }
 
+    @Test("decodes a page with an untitled image reference")
+    func decodesUntitledImageReference() async throws {
+        // -- Arrange --
+        let expectedURL = try #require(
+            URL(string: "https://developer.apple.com/tutorials/data/documentation/swift/string.json")
+        )
+        let response = try #require(
+            HTTPURLResponse(
+                url: expectedURL,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )
+        )
+        let client = DefaultAppleDocumentationClient(
+            dependencies: TypePageTransport(
+                expectedURL: expectedURL,
+                response: response,
+                data: untitledImageReferencePageData
+            )
+        )
+
+        // -- Act --
+        let document = try await client.fetchType(named: "String", technology: "Swift")
+
+        // -- Assert --
+        #expect(document.page.metadata.title == "String")
+        #expect(document.page.references.keys.contains("Swift-PageImage-card.png"))
+    }
+
     @Test("reports unsuccessful documentation responses")
     func reportsHTTPError() async throws {
         let expectedURL = try #require(
@@ -81,6 +111,39 @@ struct AppleDocumentationClientTests {
         }
     }
 }
+
+private let untitledImageReferencePageData = Data(
+    """
+    {
+      "abstract": [{"text": "A Unicode string value.", "type": "text"}],
+      "metadata": {
+        "modules": [{"name": "Swift"}],
+        "platforms": [],
+        "roleHeading": "Structure",
+        "symbolKind": "struct",
+        "title": "String"
+      },
+      "primaryContentSections": [],
+      "references": {
+        "Swift-PageImage-card.png": {
+          "alt": "An orange Swift logo on a gradient background.",
+          "identifier": "Swift-PageImage-card.png",
+          "type": "image",
+          "variants": [
+            {
+              "traits": ["2x", "light"],
+              "url": "/images/com.apple.Swift/Swift-PageImage-card@2x.png"
+            },
+            {
+              "traits": ["2x", "dark"],
+              "url": "/images/com.apple.Swift/Swift-PageImage-card~dark@2x.png"
+            }
+          ]
+        }
+      }
+    }
+    """.utf8
+)
 
 private struct TypePageTransport: HTTPDataTransport {
     let expectedURL: URL

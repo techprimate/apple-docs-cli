@@ -195,6 +195,43 @@ struct TextTypeDocumentationRendererTests {
         #expect(output.contains("See Also: Performance diagnostics\n\n  MXCrashDiagnostic"))
     }
 
+    @Test("omits untitled references from documentation sections")
+    func omitsUntitledReferences() throws {
+        // -- Arrange --
+        let data = Data(
+            """
+            {
+              "abstract": [],
+              "metadata": {
+                "modules": [{"name": "Swift"}],
+                "platforms": [],
+                "roleHeading": "Structure",
+                "symbolKind": "struct",
+                "title": "String"
+              },
+              "primaryContentSections": [],
+              "references": {
+                "Swift-PageImage-card.png": {
+                  "identifier": "Swift-PageImage-card.png",
+                  "type": "image"
+                }
+              },
+              "topicSections": [{
+                "identifiers": ["Swift-PageImage-card.png"],
+                "title": "Resources"
+              }]
+            }
+            """.utf8
+        )
+        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+
+        // -- Act --
+        let output = TextTypeDocumentationRenderer().render(page)
+
+        // -- Assert --
+        #expect(output == "String\nStructure · Swift")
+    }
+
     @Test("renders the canonical documentation URL")
     func rendersCanonicalURL() throws {
         let data = Data(

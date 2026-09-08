@@ -72,11 +72,11 @@ struct TextTypeDocumentationRenderer: Sendable {
     ) {
         for referenceSection in referenceSections {
             let items = referenceSection.identifiers.compactMap { identifier -> String? in
-                guard let reference = references[identifier] else {
+                guard let reference = references[identifier], let title = reference.title else {
                     return nil
                 }
 
-                var item = "  \(reference.title)"
+                var item = "  \(title)"
                 let abstract = reference.abstract?.compactMap(\.text).joined() ?? ""
                 if includesAbstract && !abstract.isEmpty {
                     item += " — \(abstract)"
