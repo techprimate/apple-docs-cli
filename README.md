@@ -51,7 +51,7 @@ apple-docs agent skills get apple-docs
 
 ## Development
 
-Install SwiftLint and resolve SwiftPM dependencies:
+Install dprint, the pre-commit hooks, and SwiftLint, then resolve SwiftPM dependencies:
 
 ```bash
 make init
@@ -64,7 +64,7 @@ make test
 make analyze
 ```
 
-Format project-owned Swift files with `swift format`:
+Format Swift with `swift format` and JSON, YAML, Markdown, and TOML with dprint:
 
 ```bash
 make format

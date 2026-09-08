@@ -1,0 +1,48 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: format-swift
+        name: Format Swift
+        description: Format staged Swift files with swift-format
+        entry: swift
+        language: system
+        types: [swift]
+        args:
+          - format
+          - format
+          - --configuration
+          - .swift-format.json
+          - --in-place
+
+      - id: format-dprint
+        name: Format JSON, YAML, Markdown, and TOML
+        description: Format staged non-Swift files with dprint
+        entry: dprint
+        language: system
+        files: \.(json|md|toml|yaml|yml)$
+        args:
+          - fmt
+
+      - id: make-analyze
+        name: Static Analysis
+        description: Run SwiftLint and verify swift-format and dprint output
+        entry: make
+        language: system
+        args:
+          - analyze
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]

@@ -90,9 +90,9 @@ test:
 lint:
 	swiftlint lint --strict --config .swiftlint.yml
 
-## Check Swift formatting
+## Check project formatting
 #
-# Verifies project-owned Swift files without modifying them.
+# Verifies Swift, JSON, YAML, Markdown, and TOML files without modifying them.
 .PHONY: format-check
 format-check:
 	swift format lint \
@@ -101,16 +101,17 @@ format-check:
 		--parallel \
 		--strict \
 		Sources Tests Package.swift
+	dprint check
 
 ## Run all static quality checks
 #
-# Runs SwiftLint and verifies swift-format output.
+# Runs SwiftLint and verifies swift-format and dprint output.
 .PHONY: analyze
 analyze: lint format-check
 
-## Format Swift source files
+## Format project files
 #
-# Rewrites project-owned Swift files using .swift-format.json.
+# Rewrites Swift files with swift-format and supported config/docs with dprint.
 .PHONY: format
 format:
 	swift format format \
@@ -119,6 +120,7 @@ format:
 		--recursive \
 		--parallel \
 		Sources Tests Package.swift
+	dprint fmt
 
 # ============================================================================
 # MAINTENANCE
