@@ -7,7 +7,7 @@
 Pass the exact type and technology names:
 
 ```bash
-apple-docs type MXHangDiagnostic --technology MetricKit
+apple-docs types view MXHangDiagnostic --technology MetricKit
 ```
 
 The terminal output includes available information such as:
@@ -39,13 +39,13 @@ apple-docs technologies list --json
 Use `--json` to print Apple’s upstream DocC document unchanged:
 
 ```bash
-apple-docs type MXHangDiagnostic --technology MetricKit --json
+apple-docs types view MXHangDiagnostic --technology MetricKit --json
 ```
 
 For example, extract the documented title with `jq`:
 
 ```bash
-apple-docs type MXHangDiagnostic --technology MetricKit --json \
+apple-docs types view MXHangDiagnostic --technology MetricKit --json \
   | jq -r '.metadata.title'
 ```
 
@@ -93,7 +93,7 @@ make build
 During development, invoke the executable through SwiftPM:
 
 ```bash
-make run ARGS="type MXHangDiagnostic --technology MetricKit"
+make run ARGS="types view MXHangDiagnostic --technology MetricKit"
 ```
 
 Run `make help` to see all available development commands.

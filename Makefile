@@ -67,7 +67,7 @@ $(CLI_BINARY): $(SWIFT_SOURCES) $(PACKAGE_FILES) | $(DIST_DIR)
 ## Build and run the CLI
 #
 # Pass command arguments through ARGS, for example:
-#   make run ARGS="type MXHangDiagnostic --technology MetricKit"
+#   make run ARGS="types view MXHangDiagnostic --technology MetricKit"
 .PHONY: run
 run:
 	swift run $(CLI_NAME) $(ARGS)

@@ -3,10 +3,11 @@ import Testing
 
 @testable import CLI
 
-@Suite("Type command runner")
-struct TypeCommandRunnerTests {
+@Suite("Types view command runner")
+struct TypesViewCommandRunnerTests {
     @Test("fetches and renders the requested type")
     func fetchesAndRendersType() async throws {
+        // -- Arrange --
         let data = Data(
             """
             {
@@ -34,13 +35,15 @@ struct TypeCommandRunnerTests {
             expectedTitle: "MXHangDiagnostic",
             output: "rendered documentation"
         )
-        let runner = TypeCommandRunner(client: client, renderer: renderer)
+        let runner = TypesViewCommandRunner(client: client, renderer: renderer)
 
+        // -- Act --
         let output = try await runner.run(
             name: "MXHangDiagnostic",
             technology: "MetricKit"
         )
 
+        // -- Assert --
         #expect(output == "rendered documentation")
     }
 }

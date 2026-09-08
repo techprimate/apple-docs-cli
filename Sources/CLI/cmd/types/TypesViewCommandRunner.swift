@@ -1,4 +1,4 @@
-struct TypeCommandRunner: Sendable {
+struct TypesViewCommandRunner: Sendable {
     private let client: AppleDocumentationClient
     private let renderer: TypeDocumentationRenderer
 

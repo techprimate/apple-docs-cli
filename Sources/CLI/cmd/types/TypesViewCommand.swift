@@ -1,8 +1,8 @@
 import ArgumentParser
 
-struct TypeCommand: AsyncParsableCommand {
+struct TypesViewCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "type",
+        commandName: "view",
         abstract: "Show documentation for a type."
     )
 
@@ -16,7 +16,7 @@ struct TypeCommand: AsyncParsableCommand {
     var json = false
 
     mutating func run() async throws {
-        let output = try await TypeCommandRunner(
+        let output = try await TypesViewCommandRunner(
             client: Dependencies.documentationClient,
             renderer: Dependencies.documentationRenderer(json: json)
         ).run(name: name, technology: technology)

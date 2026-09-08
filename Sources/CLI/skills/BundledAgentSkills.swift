@@ -34,7 +34,7 @@ enum BundledAgentSkills {
         Pass the exact type and framework names. The command is stateless, so always include the technology.
 
         ```bash
-        apple-docs type MXHangDiagnostic --technology MetricKit
+        apple-docs types view MXHangDiagnostic --technology MetricKit
         ```
 
         The text output includes the type summary, declaration, availability, inheritance, conformances, documented
@@ -45,7 +45,7 @@ enum BundledAgentSkills {
         Use `--json` when structured data is needed or when the text renderer omits a field from Apple's response.
 
         ```bash
-        apple-docs type MXHangDiagnostic --technology MetricKit --json
+        apple-docs types view MXHangDiagnostic --technology MetricKit --json
         ```
 
         Treat the JSON as Apple's upstream DocC representation. Field availability can vary between documentation pages.
