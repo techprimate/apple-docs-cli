@@ -1,6 +1,6 @@
-# apple-docs
+# apple-docs-cli
 
-`apple-docs` is a stateless macOS CLI for retrieving Apple Developer documentation for known API types. It fetches Apple’s DocC JSON and renders a concise terminal view or returns the raw document for further processing.
+`apple-docs-cli` is a stateless macOS CLI for retrieving Apple Developer documentation for known API types. It fetches Apple’s DocC JSON and renders a concise terminal view or returns the raw document for further processing.
 
 ## Type documentation
 
