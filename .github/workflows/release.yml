@@ -161,7 +161,7 @@ jobs:
     name: Trigger Release Publisher
     needs: [prepare, release]
     # Dispatch the techprimate/publisher workflow that publishes this GitHub
-    # Release through packages.kula.app. Replaces the in-repo Homebrew tap
+    # Release through packages.techprimate.app. Replaces the in-repo Homebrew tap
     # automation. Skipped for PR and rolling development builds (no channel).
     if: needs.prepare.outputs.channel != '' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -171,8 +171,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.KULA_RELEASE_BOT_APP_ID }}
-          private-key: ${{ secrets.KULA_RELEASE_BOT_PRIVATE_KEY }}
+          client-id: ${{ vars.TECHPRIMATE_RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.TECHPRIMATE_RELEASE_BOT_PRIVATE_KEY }}
           repositories: publisher
           owner: techprimate
 
