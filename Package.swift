@@ -18,6 +18,7 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
         .testTarget(name: "CLITests", dependencies: ["CLI"]),
+        .testTarget(name: "CLIIntegrationTests"),
     ],
     swiftLanguageModes: [.v6]
 )
