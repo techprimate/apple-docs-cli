@@ -45,7 +45,7 @@ jobs:
       - name: Setup Swift
         uses: swift-actions/setup-swift@v3
         with:
-          swift-version: "6.3"
+          swift-version: "6.3.3"
 
       - name: Generate build metadata
         env:
