@@ -83,6 +83,13 @@ run:
 test:
 	swift test
 
+## Run live CLI integration tests
+#
+# Builds the release executable and runs network-dependent command tests against Apple documentation.
+.PHONY: test-integration
+test-integration: build
+	APPLE_DOCS_EXECUTABLE="$(CURDIR)/$(CLI_BINARY)" swift test --filter CLIIntegrationTests
+
 ## Run SwiftLint
 #
 # Checks project-owned Swift files using .swiftlint.yml. Warnings fail the target.
