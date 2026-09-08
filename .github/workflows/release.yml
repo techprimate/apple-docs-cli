@@ -24,7 +24,6 @@ jobs:
       is_prerelease: ${{ steps.metadata.outputs.is_prerelease }}
       release_name: ${{ steps.metadata.outputs.release_name }}
       tag_name: ${{ steps.metadata.outputs.tag_name }}
-      channel: ${{ steps.metadata.outputs.channel }}
       publish_tag: ${{ steps.metadata.outputs.publish_tag }}
     steps:
       - name: Extract version and metadata
@@ -40,15 +39,12 @@ jobs:
             IS_PRERELEASE="true"
             RELEASE_NAME="PR #${{ github.event.pull_request.number }} Test Build"
             TAG_NAME="pr-${{ github.event.pull_request.number }}"
-            # No publish channel - PRs never trigger the registry publisher.
-            CHANNEL=""
             PUBLISH_TAG=""
           elif echo "${{ github.ref }}" | grep -q "^refs/tags/v"; then
             VERSION=$(echo "${{ github.ref }}" | sed 's|refs/tags/v||')
             IS_PRERELEASE="false"
             RELEASE_NAME="v${VERSION}"
             TAG_NAME="v${VERSION}"
-            CHANNEL="stable"
             PUBLISH_TAG="v${VERSION}"
           else
             # Rolling development pre-release from the main branch.
@@ -61,8 +57,6 @@ jobs:
             IS_PRERELEASE="true"
             RELEASE_NAME="Latest Development Build"
             TAG_NAME="latest"
-            # Development builds remain GitHub-only.
-            CHANNEL=""
             PUBLISH_TAG=""
           fi
 
@@ -73,7 +67,6 @@ jobs:
             echo "is_prerelease=$IS_PRERELEASE"
             echo "release_name=$RELEASE_NAME"
             echo "tag_name=$TAG_NAME"
-            echo "channel=$CHANNEL"
             echo "publish_tag=$PUBLISH_TAG"
           } >> "$GITHUB_OUTPUT"
 
@@ -83,7 +76,6 @@ jobs:
           echo "Is Prerelease: $IS_PRERELEASE"
           echo "Release Name: $RELEASE_NAME"
           echo "Tag Name: $TAG_NAME"
-          echo "Channel: $CHANNEL"
           echo "Publish Tag: $PUBLISH_TAG"
 
   build-cli-binaries:
@@ -162,8 +154,8 @@ jobs:
     needs: [prepare, release]
     # Dispatch the techprimate/publisher workflow that publishes this GitHub
     # Release through packages.techprimate.app. Replaces the in-repo Homebrew tap
-    # automation. Skipped for PR and rolling development builds (no channel).
-    if: needs.prepare.outputs.channel != '' && github.event_name != 'pull_request'
+    # automation.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -184,8 +176,7 @@ jobs:
             --repo techprimate/publisher \
             --ref main \
             -f source_repo="${{ github.repository }}" \
-            -f tag="${{ needs.prepare.outputs.publish_tag }}" \
-            -f channel="${{ needs.prepare.outputs.channel }}"
+            -f tag="${{ needs.prepare.outputs.publish_tag }}"
 
   release-required-check:
     name: Release - Required Check
