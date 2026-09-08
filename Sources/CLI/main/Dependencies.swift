@@ -13,4 +13,12 @@ enum Dependencies {
             output: json ? .json : .text
         )
     }
+
+    static func technologyListRenderer(
+        json: Bool
+    ) -> DefaultTechnologyListRenderer {
+        DefaultTechnologyListRenderer(
+            output: json ? .json : .table
+        )
+    }
 }

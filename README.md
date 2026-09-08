@@ -20,6 +20,20 @@ The terminal output includes available information such as:
 
 Every invocation requires `--technology`. The CLI does not persist a selected framework or other session state.
 
+## Technologies
+
+List the technologies in Apple’s documentation catalog:
+
+```bash
+apple-docs technologies list
+```
+
+The default output is a two-column table containing each technology’s display name and full documentation identifier. Use `--json` to return the same sorted catalog as an array of `name` and `identifier` objects:
+
+```bash
+apple-docs technologies list --json
+```
+
 ## Raw DocC JSON
 
 Use `--json` to print Apple’s upstream DocC document unchanged:

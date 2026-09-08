@@ -11,6 +11,7 @@ struct CLI: AsyncParsableCommand {
         version: BuildMetadata.formatted,
         subcommands: [
             TypeCommand.self,
+            TechnologiesCommand.self,
             AgentCommand.self,
         ]
     )

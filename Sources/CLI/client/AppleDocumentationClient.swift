@@ -61,6 +61,25 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
         let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
         return TypeDocumentationDocument(data: data, page: page)
     }
+
+    func fetchTechnologies() async throws -> [Technology] {
+        let url = baseURL.appending(component: "documentation")
+            .appending(component: "technologies")
+            .appendingPathExtension("json")
+        let (data, response) = try await dependencies.data(from: url)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw Self.Error.invalidResponse
+        }
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw Self.Error.httpStatus(httpResponse.statusCode)
+        }
+
+        let page = try JSONDecoder().decode(TechnologyCatalogPageDTO.self, from: data)
+        return page.sections.flatMap(\.groups).flatMap(\.technologies).map {
+            Technology(name: $0.title, identifier: $0.destination.identifier)
+        }
+    }
 }
 
 #if DEBUG

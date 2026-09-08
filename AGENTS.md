@@ -27,6 +27,7 @@
 ## Workflow
 
 - For behavior changes and bug fixes, add a focused failing test before changing production code.
+- Structure tests with explicit `// -- Arrange --`, `// -- Act --`, and `// -- Assert --` sections.
 - Keep changes scoped and avoid unrelated refactoring.
 - Do not commit or push unless explicitly requested.
 
