@@ -8,6 +8,7 @@ struct CLI: AsyncParsableCommand {
         discussion: """
             Run 'apple-docs agent skills list' to see bundled Agent Skills with task-specific guidance.
             """,
+        version: BuildMetadata.formatted,
         subcommands: [
             TypeCommand.self,
             AgentCommand.self,

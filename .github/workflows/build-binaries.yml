@@ -1,0 +1,184 @@
+name: Build Binaries
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version string to embed"
+        required: true
+        type: string
+      commit_sha:
+        description: "Commit SHA to embed"
+        required: true
+        type: string
+      build_date:
+        description: "Build date to embed"
+        required: true
+        type: string
+    secrets:
+      DEVELOPER_ID_P12_BASE64:
+        description: "Base64-encoded Developer ID Application certificate (.p12), including chain"
+        required: false
+      DEVELOPER_ID_PASSWORD:
+        description: "Password for the Developer ID certificate"
+        required: false
+      APPLE_NOTARIZATION_APP_STORE_CONNECT_API_KEY_P8_BASE64:
+        description: "Base64-encoded App Store Connect API key (.p8 PEM file) used for notarization"
+        required: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: macos-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - platform: darwin-arm64
+            architecture: arm64
+          - platform: darwin-amd64
+            architecture: x86_64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v3
+        with:
+          swift-version: "6.3"
+
+      - name: Generate build metadata
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          BUILD_DATE: ${{ inputs.build_date }}
+        run: |
+          swift_string() {
+            printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+          }
+
+          VERSION=$(swift_string "$VERSION")
+          COMMIT_SHA=$(swift_string "$COMMIT_SHA")
+          BUILD_DATE=$(swift_string "$BUILD_DATE")
+
+          cat > Sources/CLI/main/BuildMetadata.swift <<EOF
+          enum BuildMetadata {
+              static let version = "$VERSION"
+              static let commit = "$COMMIT_SHA"
+              static let buildDate = "$BUILD_DATE"
+              static let environment = "production"
+
+              static let formatted =
+                  "\\(version) (commit: \\(commit), built: \\(buildDate), environment: \\(environment))"
+          }
+          EOF
+
+      - name: Build CLI
+        run: |
+          swift build -c release --arch "${{ matrix.architecture }}"
+          BIN_DIR=$(swift build -c release --arch "${{ matrix.architecture }}" --show-bin-path)
+          mkdir -p dist
+          cp "$BIN_DIR/apple-docs" "dist/apple-docs-${{ matrix.platform }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.platform }}
+          path: dist/apple-docs-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 1
+
+  sign-and-notarize-darwin:
+    name: Sign and Notarize macOS Binaries
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: kula/rcodesign:alpine
+    steps:
+      - name: Download macOS CLI artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          pattern: cli-darwin-*
+          merge-multiple: true
+
+      - name: Write signing material
+        env:
+          DEVELOPER_ID_P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+          DEVELOPER_ID_PASSWORD: ${{ secrets.DEVELOPER_ID_PASSWORD }}
+          API_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARIZATION_APP_STORE_CONNECT_API_KEY_P8_BASE64 }}
+          API_KEY_ID: ${{ vars.APPLE_NOTARIZATION_APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ vars.APPLE_NOTARIZATION_APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          set -eu
+          umask 077
+          printf '%s' "$DEVELOPER_ID_P12_BASE64" | base64 -d > cert.p12
+          printf '%s' "$DEVELOPER_ID_PASSWORD" > cert.pw
+          printf '%s' "$API_KEY_P8_BASE64" | base64 -d > api_key.p8
+          rcodesign encode-app-store-connect-api-key \
+            -o api_key.json \
+            "$API_ISSUER_ID" "$API_KEY_ID" api_key.p8
+          rm api_key.p8
+
+      - name: Sign and notarize CLI darwin-arm64
+        run: |
+          set -eu
+          cd dist
+
+          rcodesign sign \
+            --p12-file ../cert.p12 \
+            --p12-password-file ../cert.pw \
+            --code-signature-flags runtime \
+            apple-docs-darwin-arm64
+
+          rcodesign verify apple-docs-darwin-arm64
+
+          zip -q apple-docs-darwin-arm64.zip apple-docs-darwin-arm64
+          rcodesign notary-submit \
+            --api-key-file ../api_key.json \
+            --wait \
+            apple-docs-darwin-arm64.zip
+          rm apple-docs-darwin-arm64.zip
+
+      - name: Sign and notarize CLI darwin-amd64
+        run: |
+          set -eu
+          cd dist
+
+          rcodesign sign \
+            --p12-file ../cert.p12 \
+            --p12-password-file ../cert.pw \
+            --code-signature-flags runtime \
+            apple-docs-darwin-amd64
+
+          rcodesign verify apple-docs-darwin-amd64
+
+          zip -q apple-docs-darwin-amd64.zip apple-docs-darwin-amd64
+          rcodesign notary-submit \
+            --api-key-file ../api_key.json \
+            --wait \
+            apple-docs-darwin-amd64.zip
+          rm apple-docs-darwin-amd64.zip
+
+      - name: Upload signed CLI darwin-arm64
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-darwin-arm64
+          path: dist/apple-docs-darwin-arm64
+          retention-days: 1
+          overwrite: true
+
+      - name: Upload signed CLI darwin-amd64
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-darwin-amd64
+          path: dist/apple-docs-darwin-amd64
+          retention-days: 1
+          overwrite: true
+
+      - name: Cleanup signing material
+        if: always()
+        continue-on-error: true
+        run: rm -f cert.p12 cert.pw api_key.p8 api_key.json

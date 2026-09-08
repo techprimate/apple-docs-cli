@@ -12,4 +12,12 @@ struct CLITests {
             )
         )
     }
+
+    @Test("reports complete build metadata")
+    func includesBuildMetadataInVersion() {
+        #expect(
+            CLI.configuration.version
+                == "dev (commit: none, built: unknown, environment: development)"
+        )
+    }
 }

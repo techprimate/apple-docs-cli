@@ -92,7 +92,7 @@ lint:
 
 ## Check project formatting
 #
-# Verifies Swift, JSON, YAML, Markdown, and TOML files without modifying them.
+# Verifies Swift, JSON, YAML, Markdown, TOML, and GitHub Actions workflows without modifying them.
 .PHONY: format-check
 format-check:
 	swift format lint \
@@ -102,6 +102,7 @@ format-check:
 		--strict \
 		Sources Tests Package.swift
 	dprint check
+	actionlint
 
 ## Run all static quality checks
 #
