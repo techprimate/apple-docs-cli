@@ -53,7 +53,6 @@ struct TypesViewCommand: AsyncParsableCommand {
                 "CLI command started",
                 metadata: context.logMetadata
             )
-            recordPopularityMetrics()
         }
 
         let result = try await TypesViewCommandRunner(
@@ -61,6 +60,7 @@ struct TypesViewCommand: AsyncParsableCommand {
             renderer: Dependencies.documentationRenderer(json: json)
         ).run(name: name, technology: technology)
         if SentrySDK.isEnabled {
+            recordPopularityMetrics()
             SentrySDK.metrics.distribution(
                 key: "apple_docs.response.size",
                 value: Double(result.responseByteCount),
