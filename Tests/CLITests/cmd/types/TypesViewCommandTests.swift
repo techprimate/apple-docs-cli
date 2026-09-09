@@ -22,6 +22,25 @@ struct TypesViewCommandTests {
         #expect(listCommand.json)
     }
 
+    @Test("accepts the types search command with a query and required technology")
+    func parsesTypesSearch() throws {
+        // -- Arrange --
+        let arguments = [
+            "types", "search", "Button",
+            "--technology", "SwiftUI",
+            "--json",
+        ]
+
+        // -- Act --
+        let command = try CLI.parseAsRoot(arguments)
+
+        // -- Assert --
+        let searchCommand = try #require(command as? TypesSearchCommand)
+        #expect(searchCommand.query == "Button")
+        #expect(searchCommand.technology == "SwiftUI")
+        #expect(searchCommand.json)
+    }
+
     @Test("accepts a type name and required technology option")
     func parsesTypeNameAndTechnology() throws {
         // -- Arrange --

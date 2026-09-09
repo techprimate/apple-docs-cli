@@ -37,6 +37,15 @@ apple-docs types list --technology MetricKit --json
 
 Each result includes the symbol name, kind, command-ready DocC path, and canonical Apple Developer URL. Apple's root pages are curated, so large frameworks may link to collection pages instead of listing every API directly.
 
+Search a technology's root page and recursively linked collection groups by symbol name or path:
+
+```bash
+apple-docs types search Button --technology SwiftUI
+apple-docs types search Button --technology SwiftUI --json
+```
+
+Search deliberately does not crawl individual symbol pages, which keeps requests bounded. Collection pages can directly reference some nested members, so those may appear, but search is not an exhaustive nested-member index.
+
 ## Technologies
 
 List the technologies in Apple’s documentation catalog:

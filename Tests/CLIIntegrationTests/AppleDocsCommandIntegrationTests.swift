@@ -75,6 +75,32 @@ struct AppleDocsCommandIntegrationTests {
         )
     }
 
+    @Test("searches SwiftUI collection groups as JSON")
+    func searchesSwiftUITypes() throws {
+        // -- Arrange --
+        let arguments = [
+            "types", "search", "Button",
+            "--technology", "SwiftUI",
+            "--json",
+        ]
+
+        // -- Act --
+        let output = try runAppleDocs(arguments)
+        let types = try JSONDecoder().decode([ListedType].self, from: Data(output.utf8))
+
+        // -- Assert --
+        #expect(
+            types.contains(
+                ListedType(
+                    kind: "struct",
+                    name: "Button",
+                    path: "button",
+                    url: "https://developer.apple.com/documentation/swiftui/button"
+                )
+            )
+        )
+    }
+
     @Test("resolves a dotted nested type as JSON")
     func resolvesDottedNestedType() throws {
         // -- Arrange --

@@ -41,6 +41,18 @@ struct SentryCommandContext: Equatable, Sendable {
         )
     }
 
+    static func typesSearch(
+        technology: String,
+        json: Bool
+    ) -> SentryCommandContext {
+        SentryCommandContext(
+            command: "types.search",
+            outputJSON: json,
+            technology: technology,
+            typeName: nil
+        )
+    }
+
     static func typesView(
         name: String,
         technology: String,

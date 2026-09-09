@@ -56,6 +56,15 @@ enum BundledAgentSkills {
 
         Apple's root pages are curated and may link to collection pages instead of listing every API directly.
 
+        Search the root page and its recursively linked collection groups by symbol name or path:
+
+        ```bash
+        apple-docs types search Button --technology SwiftUI
+        ```
+
+        Search does not crawl individual symbol pages. Collection pages may directly expose some nested members, but
+        search is not an exhaustive nested-member index.
+
         ## Retrieve raw DocC JSON
 
         Use `--json` when structured data is needed or when the text renderer omits a field from Apple's response.
