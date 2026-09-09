@@ -2,8 +2,26 @@ import Testing
 
 @testable import CLI
 
-@Suite("Types view command parsing")
+@Suite("Types command parsing")
 struct TypesViewCommandTests {
+    @Test("accepts the types list command with a required technology")
+    func parsesTypesList() throws {
+        // -- Arrange --
+        let arguments = [
+            "types", "list",
+            "--technology", "MetricKit",
+            "--json",
+        ]
+
+        // -- Act --
+        let command = try CLI.parseAsRoot(arguments)
+
+        // -- Assert --
+        let listCommand = try #require(command as? TypesListCommand)
+        #expect(listCommand.technology == "MetricKit")
+        #expect(listCommand.json)
+    }
+
     @Test("accepts a type name and required technology option")
     func parsesTypeNameAndTechnology() throws {
         // -- Arrange --

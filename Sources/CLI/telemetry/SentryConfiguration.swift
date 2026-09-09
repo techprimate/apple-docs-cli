@@ -1,6 +1,10 @@
 import Foundation
 @preconcurrency import SentrySwift
 
+protocol ExpectedCommandError: Error {
+    var isExpected: Bool { get }
+}
+
 struct SentryConfiguration {
     private static let allowedBreadcrumbDataKeys: Set<String> = [
         "apple_docs.technology",
@@ -43,6 +47,7 @@ struct SentryConfiguration {
     private static let allowedMetricNames: Set<String> = [
         "apple_docs.response.size",
         "apple_docs.technology.catalog.count",
+        "apple_docs.type.catalog.count",
         "apple_docs.technology.requested",
         "apple_docs.type.requested",
     ]
@@ -52,6 +57,10 @@ struct SentryConfiguration {
 
     static func isEnabled(environment: [String: String]) -> Bool {
         environment["TELEMETRY_DISABLED"]?.caseInsensitiveCompare("true") != .orderedSame
+    }
+
+    static func isExpected(error: Swift.Error) -> Bool {
+        (error as? any ExpectedCommandError)?.isExpected == true
     }
 
     static func configure(_ options: Options) {

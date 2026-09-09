@@ -15,6 +15,7 @@ struct DocumentationVariantDTO: Decodable, Sendable {
 }
 
 struct DocumentationTextDTO: Decodable, Sendable {
+    let code: String?
     let identifier: String?
     let text: String?
 }
@@ -25,7 +26,20 @@ struct DocumentationBlockDTO: Decodable, Sendable {
 
 struct DocumentationReferenceDTO: Decodable, Sendable {
     let abstract: [DocumentationTextDTO]?
+    let fragments: [DocumentationFragmentDTO]?
+    let kind: String?
+    let role: String?
     let title: String?
+    let url: String?
+}
+
+struct DocumentationFragmentDTO: Decodable, Sendable {
+    let kind: String
+    let text: String
+}
+
+struct TechnologyDocumentationPageDTO: Decodable, Sendable {
+    let references: [String: DocumentationReferenceDTO]
 }
 
 struct DocumentationReferenceSectionDTO: Decodable, Sendable {

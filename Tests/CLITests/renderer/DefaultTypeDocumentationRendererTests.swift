@@ -24,7 +24,7 @@ struct DefaultTypeDocumentationRendererTests {
         let document = try makeDocument(rawJSON)
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
-        let output = renderer.render(document)
+        let output = try renderer.render(document)
 
         #expect(
             output == """
@@ -38,31 +38,20 @@ struct DefaultTypeDocumentationRendererTests {
 
     @Test("returns Apple's DocC JSON unchanged")
     func rendersRawJSON() throws {
-        let rawJSON = """
-            {
-              "abstract": [],
-              "metadata": {
-                "modules": [{"name": "MetricKit"}],
-                "platforms": [],
-                "roleHeading": "Class",
-                "symbolKind": "class",
-                "title": "MXHangDiagnostic"
-              },
-              "primaryContentSections": [],
-              "references": {}
-            }
-            """
+        // -- Arrange --
+        // This intentionally omits the fields required by the text renderer.
+        let rawJSON = "{\"newUpstreamShape\":true}"
         let document = try makeDocument(rawJSON)
         let renderer = DefaultTypeDocumentationRenderer(output: .json)
 
-        let output = renderer.render(document)
+        // -- Act --
+        let output = try renderer.render(document)
 
+        // -- Assert --
         #expect(output == rawJSON)
     }
 
     private func makeDocument(_ rawJSON: String) throws -> TypeDocumentationDocument {
-        let data = Data(rawJSON.utf8)
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
-        return TypeDocumentationDocument(data: data, page: page)
+        TypeDocumentationDocument(data: Data(rawJSON.utf8))
     }
 }

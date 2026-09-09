@@ -41,7 +41,8 @@ enum AppleDocs {
             }
         } catch {
             if telemetryEnabled, let span = SentrySDK.span {
-                let expected = error is ValidationError
+                // Lookup misses are actionable CLI outcomes, not application reliability failures.
+                let expected = error is ValidationError || SentryConfiguration.isExpected(error: error)
                 span.status = expected ? .invalidArgument : .internalError
                 if expected {
                     Self.logger.info("CLI command rejected")

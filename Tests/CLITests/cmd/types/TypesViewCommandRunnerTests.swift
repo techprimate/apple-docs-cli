@@ -24,15 +24,14 @@ struct TypesViewCommandRunnerTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
-        let document = TypeDocumentationDocument(data: data, page: page)
+        let document = TypeDocumentationDocument(data: data)
         let client = RequestedTypeClient(
             expectedName: "MXHangDiagnostic",
             expectedTechnology: "MetricKit",
             document: document
         )
         let renderer = RequestedTypeRenderer(
-            expectedTitle: "MXHangDiagnostic",
+            expectedData: data,
             output: "rendered documentation"
         )
         let runner = TypesViewCommandRunner(client: client, renderer: renderer)
@@ -63,11 +62,11 @@ private struct RequestedTypeClient: AppleDocumentationClient {
 }
 
 private struct RequestedTypeRenderer: TypeDocumentationRenderer {
-    let expectedTitle: String
+    let expectedData: Data
     let output: String
 
     func render(_ document: TypeDocumentationDocument) -> String {
-        guard document.page.metadata.title == expectedTitle else {
+        guard document.data == expectedData else {
             return "unexpected document"
         }
         return output

@@ -21,7 +21,7 @@ struct TypesViewCommandRunner: Sendable {
             technology: technology
         )
         return Result(
-            output: renderer.render(document),
+            output: try renderer.render(document),
             responseByteCount: document.data.count
         )
     }

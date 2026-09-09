@@ -1,6 +1,6 @@
 #if DEBUG
     protocol TypeDocumentationRenderer: Sendable {
-        func render(_ document: TypeDocumentationDocument) -> String
+        func render(_ document: TypeDocumentationDocument) throws -> String
     }
 
     extension DefaultTypeDocumentationRenderer: TypeDocumentationRenderer {}

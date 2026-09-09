@@ -1,3 +1,5 @@
+import Foundation
+
 struct DefaultTypeDocumentationRenderer: Sendable {
     enum Output: Sendable {
         case text
@@ -10,10 +12,11 @@ struct DefaultTypeDocumentationRenderer: Sendable {
         self.output = output
     }
 
-    func render(_ document: TypeDocumentationDocument) -> String {
+    func render(_ document: TypeDocumentationDocument) throws -> String {
         switch output {
         case .text:
-            return TextTypeDocumentationRenderer().render(document.page)
+            let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: document.data)
+            return TextTypeDocumentationRenderer().render(page)
         case .json:
             return RawJSONTypeDocumentationRenderer().render(document)
         }

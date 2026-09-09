@@ -53,6 +53,45 @@ struct AppleDocsCommandIntegrationTests {
         #expect(output.contains("Declaration\n\n    @frozen struct String"))
     }
 
+    @Test("lists MetricKit root types as JSON")
+    func listsMetricKitTypes() throws {
+        // -- Arrange --
+        let arguments = ["types", "list", "--technology", "MetricKit", "--json"]
+
+        // -- Act --
+        let output = try runAppleDocs(arguments)
+        let types = try JSONDecoder().decode([ListedType].self, from: Data(output.utf8))
+
+        // -- Assert --
+        #expect(
+            types.contains(
+                ListedType(
+                    kind: "class",
+                    name: "MetricManager",
+                    path: "metricmanager",
+                    url: "https://developer.apple.com/documentation/metrickit/metricmanager"
+                )
+            )
+        )
+    }
+
+    @Test("resolves a dotted nested type as JSON")
+    func resolvesDottedNestedType() throws {
+        // -- Arrange --
+        let arguments = [
+            "types", "view", "URLSession.AsyncBytes",
+            "--technology", "Foundation",
+            "--json",
+        ]
+
+        // -- Act --
+        let output = try runAppleDocs(arguments)
+        let document = try JSONDecoder().decode(TypeDocument.self, from: Data(output.utf8))
+
+        // -- Assert --
+        #expect(document.metadata.title == "URLSession.AsyncBytes")
+    }
+
     @Test("lists stable technologies as JSON")
     func listsStableTechnologies() throws {
         // -- Arrange --
@@ -94,6 +133,13 @@ private struct TypeDocument: Decodable {
     struct Module: Decodable {
         let name: String
     }
+}
+
+private struct ListedType: Decodable, Equatable {
+    let kind: String
+    let name: String
+    let path: String
+    let url: String
 }
 
 private struct Technology: Decodable, Equatable {

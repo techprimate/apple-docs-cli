@@ -19,6 +19,23 @@ The terminal output includes available information such as:
 - Canonical Apple Developer URL
 
 Every invocation requires `--technology`. The CLI does not persist a selected framework or other session state.
+Nested symbols accept either dotted Swift spelling or slash-separated DocC paths:
+
+```bash
+apple-docs types view URLSession.AsyncBytes --technology Foundation
+apple-docs types view URLSession/AsyncBytes --technology Foundation
+```
+
+## Type discovery
+
+List the API symbols referenced directly by a technology's root DocC page:
+
+```bash
+apple-docs types list --technology MetricKit
+apple-docs types list --technology MetricKit --json
+```
+
+Each result includes the symbol name, kind, command-ready DocC path, and canonical Apple Developer URL. Apple's root pages are curated, so large frameworks may link to collection pages instead of listing every API directly.
 
 ## Technologies
 

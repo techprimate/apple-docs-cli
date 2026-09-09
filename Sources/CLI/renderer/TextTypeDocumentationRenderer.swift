@@ -77,9 +77,15 @@ struct TextTypeDocumentationRenderer: Sendable {
                 }
 
                 var item = "  \(title)"
-                let abstract = reference.abstract?.compactMap(\.text).joined() ?? ""
+                let abstract =
+                    reference.abstract.map {
+                        inlineText($0, references: references)
+                    } ?? ""
                 if includesAbstract && !abstract.isEmpty {
                     item += " — \(abstract)"
+                }
+                if let url = reference.url {
+                    item += "\n    \(documentationURL(for: url))"
                 }
                 return item
             }
@@ -105,6 +111,13 @@ struct TextTypeDocumentationRenderer: Sendable {
         }
     }
 
+    private func documentationURL(for path: String) -> String {
+        if path.hasPrefix("http://") || path.hasPrefix("https://") {
+            return path
+        }
+        return "https://developer.apple.com\(path)"
+    }
+
     private func inlineText(
         _ content: [DocumentationTextDTO],
         references: [String: DocumentationReferenceDTO]
@@ -116,7 +129,8 @@ struct TextTypeDocumentationRenderer: Sendable {
             if let identifier = item.identifier {
                 return references[identifier]?.title ?? identifier
             }
-            return ""
+            // DocC encodes inline symbol spelling such as AppIntent as codeVoice, not text.
+            return item.code ?? ""
         }.joined()
     }
 }

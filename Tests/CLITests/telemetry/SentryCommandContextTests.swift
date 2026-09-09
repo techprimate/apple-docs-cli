@@ -31,6 +31,31 @@ struct SentryCommandContextTests {
         #expect(context.logMetadata.keys.sorted() == expectedKeys)
     }
 
+    @Test("opts technology and output mode into types list telemetry")
+    func includesTypesListContext() {
+        // -- Arrange --
+        let expectedKeys = [
+            "apple_docs.technology",
+            "cli.command",
+            "cli.output_json",
+        ]
+
+        // -- Act --
+        let context = SentryCommandContext.typesList(
+            technology: "SwiftData",
+            json: true
+        )
+
+        // -- Assert --
+        #expect(context.command == "types.list")
+        #expect(context.typeName == nil)
+        #expect(context.technology == "SwiftData")
+        #expect(context.outputJSON == true)
+        #expect(context.attributes.keys.sorted() == expectedKeys)
+        #expect(context.metricAttributes.keys.sorted() == expectedKeys.dropLast())
+        #expect(context.logMetadata.keys.sorted() == expectedKeys)
+    }
+
     @Test("excludes the skill name from agent command telemetry")
     func excludesAgentSkillName() {
         // -- Arrange --

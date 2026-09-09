@@ -4,7 +4,7 @@
 
 ## Principles
 
-Telemetry follows an explicit opt-in model:
+Telemetry follows an explicit allowlist model and is enabled by default. Set `TELEMETRY_DISABLED=true` to opt out:
 
 - Capture only fields that have been reviewed and approved.
 - Treat new commands, arguments, and metadata as private by default.
@@ -30,6 +30,7 @@ Each leaf command starts a `console.command` transaction and opts in to a fixed 
 | Command             | Captured fields                                                    |
 | ------------------- | ------------------------------------------------------------------ |
 | `types view`        | Command name, documentation type, technology, and JSON output mode |
+| `types list`        | Command name, technology, and JSON output mode                     |
 | `technologies list` | Command name and JSON output mode                                  |
 | `agent skills list` | Command name                                                       |
 | `agent skills get`  | Command name                                                       |
@@ -56,6 +57,7 @@ The CLI records:
 - `apple_docs.type.requested` to measure type popularity within a technology.
 - `apple_docs.response.size` to monitor Apple documentation response sizes.
 - `apple_docs.technology.catalog.count` to monitor the size of the technology catalog.
+- `apple_docs.type.catalog.count` to monitor direct type counts in technology root documents.
 
 Metric names and attributes are allowlisted. Type and technology are the only variable popularity dimensions.
 

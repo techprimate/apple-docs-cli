@@ -38,7 +38,23 @@ enum BundledAgentSkills {
         ```
 
         The text output includes the type summary, declaration, availability, inheritance, conformances, documented
-        members, related APIs, and canonical Apple Developer URL.
+        members, related APIs, and canonical Apple Developer URL. Use a returned slash-separated path, or a dotted
+        Swift type name, to retrieve nested documentation:
+
+        ```bash
+        apple-docs types view URLSession.AsyncBytes --technology Foundation
+        ```
+
+        ## Discover root types
+
+        List the symbols referenced directly by a technology's root DocC page:
+
+        ```bash
+        apple-docs types list --technology MetricKit
+        apple-docs types list --technology MetricKit --json
+        ```
+
+        Apple's root pages are curated and may link to collection pages instead of listing every API directly.
 
         ## Retrieve raw DocC JSON
 

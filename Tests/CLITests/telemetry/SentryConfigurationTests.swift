@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import CLI
@@ -29,6 +30,23 @@ struct SentryConfigurationTests {
 
         // -- Assert --
         #expect(!enabled)
+    }
+
+    @Test("treats documentation lookup failures as expected command errors")
+    func treatsLookupFailureAsExpected() {
+        // -- Arrange --
+        let error = DefaultAppleDocumentationClient<URLSession>.Error.typeNotFound(
+            name: "Model",
+            technology: "SwiftData",
+            suggestion: nil,
+            technologyURL: "https://developer.apple.com/documentation/swiftdata"
+        )
+
+        // -- Act --
+        let expected = SentryConfiguration.isExpected(error: error)
+
+        // -- Assert --
+        #expect(expected)
     }
 
     @Test("keeps telemetry enabled for other environmental flag values")

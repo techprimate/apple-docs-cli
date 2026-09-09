@@ -29,6 +29,18 @@ struct SentryCommandContext: Equatable, Sendable {
         )
     }
 
+    static func typesList(
+        technology: String,
+        json: Bool
+    ) -> SentryCommandContext {
+        SentryCommandContext(
+            command: "types.list",
+            outputJSON: json,
+            technology: technology,
+            typeName: nil
+        )
+    }
+
     static func typesView(
         name: String,
         technology: String,
