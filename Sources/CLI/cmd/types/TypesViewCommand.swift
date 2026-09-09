@@ -3,6 +3,10 @@ import Logging
 @preconcurrency import SentrySwift
 
 struct TypesViewCommand: AsyncParsableCommand {
+    private static let logger = Logger(
+        label: "com.techprimate.apple-docs.types-view"
+    )
+
     static let configuration = CommandConfiguration(
         commandName: "view",
         abstract: "Show documentation for a type."
@@ -45,8 +49,7 @@ struct TypesViewCommand: AsyncParsableCommand {
                 breadcrumb.setData(value: value, key: key)
             }
             SentrySDK.addBreadcrumb(breadcrumb)
-            let logger = Logger(label: "dev.techprimate.apple-docs")
-            logger.info(
+            Self.logger.info(
                 "CLI command started",
                 metadata: context.logMetadata
             )

@@ -3,6 +3,10 @@ import Logging
 @preconcurrency import SentrySwift
 
 struct AgentSkillsGetCommand: ParsableCommand {
+    private static let logger = Logger(
+        label: "com.techprimate.apple-docs.agent-skills-get"
+    )
+
     static let configuration = CommandConfiguration(
         commandName: "get",
         abstract: "Print a bundled Agent Skill."
@@ -35,8 +39,7 @@ struct AgentSkillsGetCommand: ParsableCommand {
                 breadcrumb.setData(value: value, key: key)
             }
             SentrySDK.addBreadcrumb(breadcrumb)
-            let logger = Logger(label: "dev.techprimate.apple-docs")
-            logger.info(
+            Self.logger.info(
                 "CLI command started",
                 metadata: context.logMetadata
             )
