@@ -25,6 +25,9 @@ on:
       APPLE_NOTARIZATION_APP_STORE_CONNECT_API_KEY_P8_BASE64:
         description: "Base64-encoded App Store Connect API key (.p8 PEM file) used for notarization"
         required: false
+      SENTRY_AUTH_TOKEN:
+        description: "Organization token used to upload Sentry debug symbols"
+        required: false
 
 jobs:
   build:
@@ -70,15 +73,51 @@ jobs:
 
               static let formatted =
                   "\\(version) (commit: \\(commit), built: \\(buildDate), environment: \\(environment))"
+              static let sentryRelease = "apple-docs@\\(version)+\\(commit)"
           }
           EOF
 
       - name: Build CLI
+        id: build
         run: |
           swift build -c release --arch "${{ matrix.architecture }}"
           BIN_DIR=$(swift build -c release --arch "${{ matrix.architecture }}" --show-bin-path)
+          test -d "$BIN_DIR/apple-docs.dSYM"
           mkdir -p dist
           cp "$BIN_DIR/apple-docs" "dist/apple-docs-${{ matrix.platform }}"
+          echo "bin_dir=$BIN_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Install sentry-cli
+        if: github.event_name != 'pull_request'
+        env:
+          SENTRY_CLI_VERSION: "3.7.0"
+          SENTRY_CLI_SHA256: "10ccaaa39e6eee2b52034546f5f617533fdc76c64aa75c3038887045da1a367d"
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://github.com/getsentry/sentry-cli/releases/download/${SENTRY_CLI_VERSION}/sentry-cli-Darwin-universal" \
+            --output "$RUNNER_TEMP/sentry-cli"
+          echo "$SENTRY_CLI_SHA256  $RUNNER_TEMP/sentry-cli" | shasum -a 256 --check
+          chmod +x "$RUNNER_TEMP/sentry-cli"
+
+      - name: Upload dSYM to Sentry
+        if: github.event_name != 'pull_request'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: techprimate
+          SENTRY_PROJECT: apple-docs-cli
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::error::SENTRY_AUTH_TOKEN is not configured."
+            exit 1
+          fi
+
+          DSYM_PATH="${{ steps.build.outputs.bin_dir }}/apple-docs.dSYM"
+          "$RUNNER_TEMP/sentry-cli" debug-files check \
+            "$DSYM_PATH/Contents/Resources/DWARF/apple-docs"
+          "$RUNNER_TEMP/sentry-cli" debug-files upload \
+            --include-sources \
+            --wait \
+            "$DSYM_PATH"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

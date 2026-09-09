@@ -21,11 +21,15 @@ struct TechnologiesListCommandRunnerTests {
         )
 
         // -- Act --
-        let output = try await runner.run()
+        let result = try await runner.run()
 
         // -- Assert --
-        let technologies = try JSONDecoder().decode([Technology].self, from: Data(output.utf8))
+        let technologies = try JSONDecoder().decode(
+            [Technology].self,
+            from: Data(result.output.utf8)
+        )
         #expect(technologies.map(\.name) == ["ARKit", "MetricKit", "swiftUI"])
+        #expect(result.technologyCount == 3)
     }
 }
 

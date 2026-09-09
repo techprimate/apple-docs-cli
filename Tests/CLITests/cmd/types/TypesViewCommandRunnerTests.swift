@@ -38,13 +38,14 @@ struct TypesViewCommandRunnerTests {
         let runner = TypesViewCommandRunner(client: client, renderer: renderer)
 
         // -- Act --
-        let output = try await runner.run(
+        let result = try await runner.run(
             name: "MXHangDiagnostic",
             technology: "MetricKit"
         )
 
         // -- Assert --
-        #expect(output == "rendered documentation")
+        #expect(result.output == "rendered documentation")
+        #expect(result.responseByteCount == data.count)
     }
 }
 
