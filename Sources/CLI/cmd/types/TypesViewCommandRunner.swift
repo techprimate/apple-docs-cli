@@ -1,9 +1,9 @@
-struct TypesViewCommandResult: Sendable {
-    let output: String
-    let responseByteCount: Int
-}
-
 struct TypesViewCommandRunner: Sendable {
+    struct Result: Sendable {
+        let output: String
+        let responseByteCount: Int
+    }
+
     private let client: AppleDocumentationClient
     private let renderer: TypeDocumentationRenderer
 
@@ -15,12 +15,12 @@ struct TypesViewCommandRunner: Sendable {
         self.renderer = renderer
     }
 
-    func run(name: String, technology: String) async throws -> TypesViewCommandResult {
+    func run(name: String, technology: String) async throws -> Result {
         let document = try await client.fetchType(
             named: name,
             technology: technology
         )
-        return TypesViewCommandResult(
+        return Result(
             output: renderer.render(document),
             responseByteCount: document.data.count
         )
