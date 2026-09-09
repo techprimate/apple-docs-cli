@@ -41,6 +41,26 @@ struct AppleDocumentationClientSearchTests {
         #expect(types.map(\.path) == ["button", "buttonstyle"])
     }
 
+    @Test("deduplicates root symbols with the same path")
+    func deduplicatesRootSymbols() async throws {
+        // -- Arrange --
+        let rootURL = try #require(
+            URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftui.json")
+        )
+        let client = DefaultAppleDocumentationClient(
+            dependencies: SearchTestTransport(
+                responses: [rootURL: duplicateRootSearchPage]
+            )
+        )
+
+        // -- Act --
+        let types = try await client.searchTypes(query: "button", technology: "SwiftUI")
+
+        // -- Assert --
+        #expect(types.map(\.name) == ["Button"])
+        #expect(types.map(\.path) == ["button"])
+    }
+
     @Test("continues searching when a collection group is unavailable")
     func skipsUnavailableCollectionGroup() async throws {
         // -- Arrange --
@@ -182,6 +202,29 @@ private let rootSearchPage = Data(
           "role": "collectionGroup",
           "title": "UIKit controls",
           "url": "/documentation/uikit/controls"
+        }
+      }
+    }
+    """.utf8
+)
+
+private let duplicateRootSearchPage = Data(
+    """
+    {
+      "references": {
+        "doc://button": {
+          "fragments": [{"kind": "keyword", "text": "struct"}],
+          "kind": "symbol",
+          "role": "symbol",
+          "title": "Button",
+          "url": "/documentation/swiftui/button"
+        },
+        "doc://button-duplicate": {
+          "fragments": [{"kind": "keyword", "text": "struct"}],
+          "kind": "symbol",
+          "role": "symbol",
+          "title": "Button",
+          "url": "/documentation/swiftui/button"
         }
       }
     }

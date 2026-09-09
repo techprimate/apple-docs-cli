@@ -39,11 +39,10 @@ extension DefaultAppleDocumentationClient {
         rootPage: TechnologyDocumentationPageDTO
     ) async throws -> [DocumentationType] {
         let rootPath = "/documentation/\(documentationSlug.lowercased())"
-        var typesByPath = Dictionary(
-            uniqueKeysWithValues: documentationTypes(in: rootPage, technology: documentationSlug).map {
-                ($0.path, $0)
-            }
-        )
+        var typesByPath: [String: DocumentationType] = [:]
+        for type in documentationTypes(in: rootPage, technology: documentationSlug) {
+            typesByPath[type.path] = type
+        }
         var visitedPaths = Set([rootPath])
         var pendingPaths = collectionGroupPaths(in: rootPage, technology: documentationSlug).filter {
             visitedPaths.insert($0).inserted
