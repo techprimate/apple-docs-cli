@@ -145,9 +145,14 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
                 throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
             }
             guard slug.caseInsensitiveCompare(technology) != .orderedSame else {
+                // Retrying the same case-insensitive path cannot produce a different result.
                 throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
             }
-            return try await fetchTypesDirect(technology: slug)
+            do {
+                return try await fetchTypesDirect(technology: slug)
+            } catch Error.httpStatus(404) {
+                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
+            }
         }
     }
 

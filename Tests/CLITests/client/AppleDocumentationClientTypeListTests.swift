@@ -33,6 +33,51 @@ struct AppleDocumentationClientTypeListTests {
         )
     }
 
+    @Test("maps a missing resolved root to unsupported technology guidance")
+    func mapsMissingResolvedRoot() async throws {
+        // -- Arrange --
+        let requestedRootURL = try #require(
+            URL(
+                string:
+                    "https://developer.apple.com/tutorials/data/documentation/apple%20cryptokit.json"
+            )
+        )
+        let technologiesURL = try #require(
+            URL(
+                string:
+                    "https://developer.apple.com/tutorials/data/documentation/technologies.json"
+            )
+        )
+        let resolvedRootURL = try #require(
+            URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
+        )
+        let client = DefaultAppleDocumentationClient(
+            dependencies: TypeCatalogTestTransport(
+                responses: [
+                    requestedRootURL: .init(statusCode: 404, data: Data()),
+                    technologiesURL: .init(statusCode: 200, data: cryptoKitCatalogData),
+                    resolvedRootURL: .init(statusCode: 404, data: Data()),
+                ]
+            )
+        )
+
+        // -- Act --
+        do {
+            _ = try await client.fetchTypes(technology: "Apple CryptoKit")
+            Issue.record("Expected the request to fail")
+        } catch {
+            // -- Assert --
+            #expect(
+                error.localizedDescription == """
+                    Type retrieval is unavailable for Apple CryptoKit.
+
+                    Continue in the technology documentation:
+                      https://developer.apple.com/documentation/cryptokit
+                    """
+            )
+        }
+    }
+
     @Test("links to unsupported external technology documentation")
     func linksUnsupportedTechnology() async throws {
         // -- Arrange --
@@ -101,6 +146,23 @@ private let swiftDataRootData = Data(
           "url": "/documentation/swiftdata/index(_:)-74ia2"
         }
       }
+    }
+    """.utf8
+)
+
+private let cryptoKitCatalogData = Data(
+    """
+    {
+      "sections": [{
+        "groups": [{
+          "technologies": [{
+            "destination": {
+              "identifier": "doc://com.apple.documentation/documentation/CryptoKit"
+            },
+            "title": "Apple CryptoKit"
+          }]
+        }]
+      }]
     }
     """.utf8
 )
