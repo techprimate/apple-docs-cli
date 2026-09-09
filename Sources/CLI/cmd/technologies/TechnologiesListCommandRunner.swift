@@ -1,6 +1,11 @@
 import Foundation
 
 struct TechnologiesListCommandRunner: Sendable {
+    struct Result: Sendable {
+        let output: String
+        let technologyCount: Int
+    }
+
     private let client: TechnologyCatalogClient
     private let renderer: TechnologyListRenderer
 
@@ -12,10 +17,13 @@ struct TechnologiesListCommandRunner: Sendable {
         self.renderer = renderer
     }
 
-    func run() async throws -> String {
+    func run() async throws -> Result {
         let technologies = try await client.fetchTechnologies().sorted {
             $0.name.compare($1.name, options: .caseInsensitive) == .orderedAscending
         }
-        return try renderer.render(technologies)
+        return Result(
+            output: try renderer.render(technologies),
+            technologyCount: technologies.count
+        )
     }
 }

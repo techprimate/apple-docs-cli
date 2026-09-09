@@ -6,4 +6,5 @@ enum BuildMetadata {
 
     static let formatted =
         "\(version) (commit: \(commit), built: \(buildDate), environment: \(environment))"
+    static let sentryRelease = "apple-docs@\(version)+\(commit)"
 }
