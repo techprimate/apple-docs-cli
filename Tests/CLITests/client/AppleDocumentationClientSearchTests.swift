@@ -41,6 +41,42 @@ struct AppleDocumentationClientSearchTests {
         #expect(types.map(\.path) == ["button", "buttonstyle"])
     }
 
+    @Test("continues searching when a collection group is unavailable")
+    func skipsUnavailableCollectionGroup() async throws {
+        // -- Arrange --
+        let rootURL = try #require(
+            URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftui.json")
+        )
+        let controlsURL = try #require(
+            URL(
+                string:
+                    "https://developer.apple.com/tutorials/data/documentation/swiftui/controls.json"
+            )
+        )
+        let stylesURL = try #require(
+            URL(
+                string:
+                    "https://developer.apple.com/tutorials/data/documentation/swiftui/styles.json"
+            )
+        )
+        let client = DefaultAppleDocumentationClient(
+            dependencies: SearchFallbackTransport(
+                responses: [
+                    rootURL: .init(statusCode: 200, data: partialFailureRootSearchPage),
+                    controlsURL: .init(statusCode: 404, data: Data()),
+                    stylesURL: .init(statusCode: 200, data: stylesSearchPage),
+                ]
+            )
+        )
+
+        // -- Act --
+        let types = try await client.searchTypes(query: "buttonstyle", technology: "SwiftUI")
+
+        // -- Assert --
+        #expect(types.map(\.name) == ["ButtonStyle"])
+        #expect(types.map(\.path) == ["buttonstyle"])
+    }
+
     @Test("maps technology display names to DocC slugs")
     func mapsTechnologyDisplayName() async throws {
         // -- Arrange --
@@ -146,6 +182,27 @@ private let rootSearchPage = Data(
           "role": "collectionGroup",
           "title": "UIKit controls",
           "url": "/documentation/uikit/controls"
+        }
+      }
+    }
+    """.utf8
+)
+
+private let partialFailureRootSearchPage = Data(
+    """
+    {
+      "references": {
+        "doc://controls": {
+          "kind": "article",
+          "role": "collectionGroup",
+          "title": "Controls",
+          "url": "/documentation/swiftui/controls"
+        },
+        "doc://styles": {
+          "kind": "article",
+          "role": "collectionGroup",
+          "title": "Styles",
+          "url": "/documentation/swiftui/styles"
         }
       }
     }

@@ -54,7 +54,7 @@ extension DefaultAppleDocumentationClient {
         while !pendingPaths.isEmpty {
             let batch = Array(pendingPaths.prefix(6))
             pendingPaths.removeFirst(batch.count)
-            let pages = try await fetchDocumentationPages(paths: batch)
+            let pages = await fetchDocumentationPages(paths: batch)
 
             for page in pages {
                 for type in documentationTypes(in: page, technology: documentationSlug) {
@@ -86,20 +86,26 @@ extension DefaultAppleDocumentationClient {
 
     private func fetchDocumentationPages(
         paths: [String]
-    ) async throws -> [TechnologyDocumentationPageDTO] {
-        try await withThrowingTaskGroup(
-            of: TechnologyDocumentationPageDTO.self,
+    ) async -> [TechnologyDocumentationPageDTO] {
+        await withTaskGroup(
+            of: TechnologyDocumentationPageDTO?.self,
             returning: [TechnologyDocumentationPageDTO].self
         ) { group in
             for path in paths {
                 group.addTask {
-                    try await fetchDocumentationPage(path: path)
+                    do {
+                        return try await fetchDocumentationPage(path: path)
+                    } catch {
+                        return nil
+                    }
                 }
             }
 
             var pages: [TechnologyDocumentationPageDTO] = []
-            for try await page in group {
-                pages.append(page)
+            for await page in group {
+                if let page {
+                    pages.append(page)
+                }
             }
             return pages
         }
