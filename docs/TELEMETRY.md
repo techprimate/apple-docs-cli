@@ -31,6 +31,7 @@ Each leaf command starts a `console.command` transaction and opts in to a fixed 
 | ------------------- | ------------------------------------------------------------------ |
 | `types view`        | Command name, documentation type, technology, and JSON output mode |
 | `types list`        | Command name, technology, and JSON output mode                     |
+| `types search`      | Command name, technology, and JSON output mode                     |
 | `technologies list` | Command name and JSON output mode                                  |
 | `agent skills list` | Command name                                                       |
 | `agent skills get`  | Command name                                                       |
@@ -58,6 +59,7 @@ The CLI records:
 - `apple_docs.response.size` to monitor Apple documentation response sizes.
 - `apple_docs.technology.catalog.count` to monitor the size of the technology catalog.
 - `apple_docs.type.catalog.count` to monitor direct type counts in technology root documents.
+- `apple_docs.type.search.result.count` to monitor the number of search matches.
 
 Metric names and attributes are allowlisted. Type and technology are the only variable popularity dimensions.
 
@@ -65,7 +67,7 @@ Metric names and attributes are allowlisted. Type and technology are the only va
 
 The CLI does not intentionally send:
 
-- Raw process arguments.
+- Raw process arguments or type search queries.
 - Environment variables.
 - User identity or account information.
 - IP addresses or geographic location.

@@ -4,6 +4,31 @@ import Testing
 
 @Suite("Sentry command context")
 struct SentryCommandContextTests {
+    @Test("excludes the query from types search telemetry")
+    func excludesTypesSearchQuery() {
+        // -- Arrange --
+        let expectedKeys = [
+            "apple_docs.technology",
+            "cli.command",
+            "cli.output_json",
+        ]
+
+        // -- Act --
+        let context = SentryCommandContext.typesSearch(
+            technology: "SwiftUI",
+            json: true
+        )
+
+        // -- Assert --
+        #expect(context.command == "types.search")
+        #expect(context.typeName == nil)
+        #expect(context.technology == "SwiftUI")
+        #expect(context.outputJSON == true)
+        #expect(context.attributes.keys.sorted() == expectedKeys)
+        #expect(context.metricAttributes.keys.sorted() == expectedKeys.dropLast())
+        #expect(context.logMetadata.keys.sorted() == expectedKeys)
+    }
+
     @Test("opts documentation identifiers into types view telemetry")
     func includesTypesViewIdentifiers() {
         // -- Arrange --

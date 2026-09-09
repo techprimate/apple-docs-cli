@@ -9,76 +9,6 @@ import Foundation
 #endif
 
 struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationClientDependencies>: Sendable {
-    enum Error: Swift.Error, Equatable, LocalizedError, ExpectedCommandError {
-        case httpStatus(Int)
-        case invalidResponse
-        case technologyNotFound(String)
-        case typeNotFound(
-            name: String,
-            technology: String,
-            suggestion: DocumentationType?,
-            technologyURL: String
-        )
-        case unsupportedTechnology(name: String, url: String)
-
-        var isExpected: Bool {
-            switch self {
-            case .technologyNotFound, .typeNotFound, .unsupportedTechnology:
-                return true
-            case .httpStatus, .invalidResponse:
-                return false
-            }
-        }
-
-        var errorDescription: String? {
-            switch self {
-            case .httpStatus(let statusCode):
-                return "Apple documentation returned HTTP status \(statusCode)."
-            case .invalidResponse:
-                return "Apple documentation returned an invalid response."
-            case .technologyNotFound(let technology):
-                return """
-                    Apple documentation technology '\(technology)' was not found.
-
-                    Browse available technologies:
-                      apple-docs technologies list
-                    """
-            case .typeNotFound(let name, let technology, let suggestion, let technologyURL):
-                var sections = ["No Apple documentation found for '\(name)' in \(technology)."]
-                if let suggestion {
-                    sections.append(
-                        """
-                        Did you mean:
-                          \(suggestion.name)
-                          \(suggestion.url)
-                        """
-                    )
-                }
-                sections.append(
-                    """
-                    Browse available types:
-                      apple-docs types list --technology "\(technology)"
-                      \(technologyURL)
-                    """
-                )
-                return sections.joined(separator: "\n\n")
-            case .unsupportedTechnology(let name, let url):
-                return """
-                    Type retrieval is unavailable for \(name).
-
-                    Continue in the technology documentation:
-                      \(url)
-                    """
-            }
-        }
-    }
-
-    private struct ResolvedTechnology {
-        let name: String
-        let documentationSlug: String?
-        let url: String
-    }
-
     private static var defaultBaseURL: URL {
         guard let url = URL(string: "https://developer.apple.com/tutorials/data/") else {
             preconditionFailure("Invalid base URL for documentation client")
@@ -168,15 +98,29 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
     }
 
     private func fetchTypesDirect(technology: String) async throws -> [DocumentationType] {
-        let url = baseURL.appending(component: "documentation")
-            .appending(component: technology.lowercased())
-            .appendingPathExtension("json")
+        let path = "/documentation/\(technology.lowercased())"
+        let page = try await fetchDocumentationPage(path: path)
+        return sortTypes(documentationTypes(in: page, technology: technology))
+    }
+
+    func fetchDocumentationPage(path: String) async throws -> TechnologyDocumentationPageDTO {
+        var url = baseURL
+        for component in path.split(separator: "/") {
+            url.append(component: component)
+        }
+        url.appendPathExtension("json")
         let data = try await fetchData(from: url)
-        let page = try JSONDecoder().decode(TechnologyDocumentationPageDTO.self, from: data)
+        return try JSONDecoder().decode(TechnologyDocumentationPageDTO.self, from: data)
+    }
+
+    func documentationTypes(
+        in page: TechnologyDocumentationPageDTO,
+        technology: String
+    ) -> [DocumentationType] {
         let pathPrefix = "/documentation/\(technology.lowercased())/"
 
-        // Root pages also reference articles and neighboring frameworks. The symbol role and path
-        // prefix keep this command faithful to Apple's direct API listing for the requested technology.
+        // Pages may reference articles and neighboring frameworks. Role and path filtering keeps
+        // search results scoped to APIs in the requested technology.
         return page.references.values.compactMap { reference in
             guard
                 reference.kind == "symbol",
@@ -196,7 +140,12 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
                 path: path,
                 url: "https://developer.apple.com\(referencePath)"
             )
-        }.sorted {
+        }
+    }
+
+    func sortTypes<S: Sequence>(_ types: S) -> [DocumentationType]
+    where S.Element == DocumentationType {
+        types.sorted {
             let comparison = $0.name.compare($1.name, options: .caseInsensitive)
             return comparison == .orderedSame ? $0.path < $1.path : comparison == .orderedAscending
         }
@@ -224,7 +173,7 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
         return url
     }
 
-    private func resolveTechnology(named requestedName: String) async throws -> ResolvedTechnology {
+    func resolveTechnology(named requestedName: String) async throws -> ResolvedTechnology {
         let technologies = try await fetchTechnologies()
         guard
             let technology = technologies.first(where: {

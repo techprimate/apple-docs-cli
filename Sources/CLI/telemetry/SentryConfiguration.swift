@@ -48,6 +48,7 @@ struct SentryConfiguration {
         "apple_docs.response.size",
         "apple_docs.technology.catalog.count",
         "apple_docs.type.catalog.count",
+        "apple_docs.type.search.result.count",
         "apple_docs.technology.requested",
         "apple_docs.type.requested",
     ]
