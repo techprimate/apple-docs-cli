@@ -100,6 +100,24 @@ import Testing
             #expect(context.logMetadata.keys.sorted() == expectedKeys)
         }
 
+        @Test("uses only the command name for cache clean telemetry")
+        func includesCacheCleanCommand() {
+            // -- Arrange --
+            let expectedKeys = ["cli.command"]
+
+            // -- Act --
+            let context = SentryCommandContext.cacheClean
+
+            // -- Assert --
+            #expect(context.command == "cache.clean")
+            #expect(context.typeName == nil)
+            #expect(context.technology == nil)
+            #expect(context.outputJSON == nil)
+            #expect(context.attributes.keys.sorted() == expectedKeys)
+            #expect(context.metricAttributes.keys.sorted() == expectedKeys)
+            #expect(context.logMetadata.keys.sorted() == expectedKeys)
+        }
+
         @Test("opts only output mode into technologies list telemetry")
         func includesTechnologiesListOutputMode() {
             // -- Arrange --

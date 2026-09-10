@@ -82,6 +82,7 @@ protocol ExpectedCommandError: Error {
 
         private static func configureErrorMonitoring(_ options: Options) {
             options.sendDefaultPii = false
+            options.add(inAppInclude: "apple-docs")
             options.attachStacktrace = true
             options.enableCrashHandler = true
             options.enableAppHangTracking = false

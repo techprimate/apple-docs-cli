@@ -1,0 +1,45 @@
+name: Generate build metadata
+description: Generate the Swift source containing release build metadata.
+
+inputs:
+  version:
+    description: Version string to embed
+    required: true
+  commit-sha:
+    description: Commit SHA to embed
+    required: true
+  build-date:
+    description: Build date to embed
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Generate build metadata
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        VERSION: ${{ inputs.version }}
+        COMMIT_SHA: ${{ inputs.commit-sha }}
+        BUILD_DATE: ${{ inputs.build-date }}
+      run: |
+        swift_string() {
+          printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+        }
+
+        VERSION=$(swift_string "$VERSION")
+        COMMIT_SHA=$(swift_string "$COMMIT_SHA")
+        BUILD_DATE=$(swift_string "$BUILD_DATE")
+
+        cat > Sources/CLI/main/BuildMetadata.swift <<EOF
+        enum BuildMetadata {
+            static let version = "$VERSION"
+            static let commit = "$COMMIT_SHA"
+            static let buildDate = "$BUILD_DATE"
+            static let environment = "production"
+
+            static let formatted =
+                "\\(version) (commit: \\(commit), built: \\(buildDate), environment: \\(environment))"
+            static let sentryRelease = "apple-docs@\\(version)+\\(commit)"
+        }
+        EOF

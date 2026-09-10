@@ -51,31 +51,11 @@ jobs:
           swift-version: "6.3.3"
 
       - name: Generate build metadata
-        env:
-          VERSION: ${{ inputs.version }}
-          COMMIT_SHA: ${{ inputs.commit_sha }}
-          BUILD_DATE: ${{ inputs.build_date }}
-        run: |
-          swift_string() {
-            printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
-          }
-
-          VERSION=$(swift_string "$VERSION")
-          COMMIT_SHA=$(swift_string "$COMMIT_SHA")
-          BUILD_DATE=$(swift_string "$BUILD_DATE")
-
-          cat > Sources/CLI/main/BuildMetadata.swift <<EOF
-          enum BuildMetadata {
-              static let version = "$VERSION"
-              static let commit = "$COMMIT_SHA"
-              static let buildDate = "$BUILD_DATE"
-              static let environment = "production"
-
-              static let formatted =
-                  "\\(version) (commit: \\(commit), built: \\(buildDate), environment: \\(environment))"
-              static let sentryRelease = "apple-docs@\\(version)+\\(commit)"
-          }
-          EOF
+        uses: ./.github/actions/generate-build-metadata
+        with:
+          version: ${{ inputs.version }}
+          commit-sha: ${{ inputs.commit_sha }}
+          build-date: ${{ inputs.build_date }}
 
       - name: Build CLI
         id: build
@@ -154,31 +134,11 @@ jobs:
             --checksum "87c3eaf908e67c0e13a84367119e12273cec1d2cd3d81f7d74bb36722d6b607b"
 
       - name: Generate build metadata
-        env:
-          VERSION: ${{ inputs.version }}
-          COMMIT_SHA: ${{ inputs.commit_sha }}
-          BUILD_DATE: ${{ inputs.build_date }}
-        run: |
-          swift_string() {
-            printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
-          }
-
-          VERSION=$(swift_string "$VERSION")
-          COMMIT_SHA=$(swift_string "$COMMIT_SHA")
-          BUILD_DATE=$(swift_string "$BUILD_DATE")
-
-          cat > Sources/CLI/main/BuildMetadata.swift <<EOF
-          enum BuildMetadata {
-              static let version = "$VERSION"
-              static let commit = "$COMMIT_SHA"
-              static let buildDate = "$BUILD_DATE"
-              static let environment = "production"
-
-              static let formatted =
-                  "\\(version) (commit: \\(commit), built: \\(buildDate), environment: \\(environment))"
-              static let sentryRelease = "apple-docs@\\(version)+\\(commit)"
-          }
-          EOF
+        uses: ./.github/actions/generate-build-metadata
+        with:
+          version: ${{ inputs.version }}
+          commit-sha: ${{ inputs.commit_sha }}
+          build-date: ${{ inputs.build_date }}
 
       - name: Build CLI
         run: |
