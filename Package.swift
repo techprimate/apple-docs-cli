@@ -18,7 +18,7 @@ let package = Package(
         ),
         .package(
             url: "https://github.com/getsentry/sentry-cocoa.git",
-            exact: "9.27.0",
+            exact: "9.28.0",
             traits: ["NoUIFramework"]
         ),
     ],
