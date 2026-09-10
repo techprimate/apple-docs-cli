@@ -7,6 +7,12 @@ struct SentryCommandContext: Equatable, Sendable {
     let technology: String?
     let typeName: String?
 
+    static let cacheClean = SentryCommandContext(
+        command: "cache.clean",
+        outputJSON: nil,
+        technology: nil,
+        typeName: nil
+    )
     static let agentSkillsGet = SentryCommandContext(
         command: "agent.skills.get",
         outputJSON: nil,

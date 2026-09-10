@@ -11,6 +11,7 @@ struct CLI: AsyncParsableCommand {
         subcommands: [
             TypesCommand.self,
             TechnologiesCommand.self,
+            CacheCommand.self,
             AgentCommand.self,
         ]
     )
