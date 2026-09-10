@@ -67,6 +67,23 @@ struct DocumentationMetadataDTO: Decodable, Sendable {
     let roleHeading: String
     let symbolKind: String
     let title: String
+
+    private enum CodingKeys: CodingKey {
+        case modules
+        case platforms
+        case roleHeading
+        case symbolKind
+        case title
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        modules = try container.decode([DocumentationModule].self, forKey: .modules)
+        platforms = try container.decodeIfPresent([DocumentationPlatform].self, forKey: .platforms) ?? []
+        roleHeading = try container.decode(String.self, forKey: .roleHeading)
+        symbolKind = try container.decode(String.self, forKey: .symbolKind)
+        title = try container.decode(String.self, forKey: .title)
+    }
 }
 
 struct DocumentationModule: Decodable, Sendable {

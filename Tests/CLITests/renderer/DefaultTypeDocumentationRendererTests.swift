@@ -36,6 +36,39 @@ struct DefaultTypeDocumentationRendererTests {
         )
     }
 
+    @Test("renders text when platform metadata is omitted")
+    func rendersTextWithoutPlatforms() throws {
+        // -- Arrange --
+        let rawJSON = """
+            {
+              "abstract": [{"text": "The Swift package manifest representation.", "type": "text"}],
+              "metadata": {
+                "modules": [{"name": "PackageDescription"}],
+                "roleHeading": "Structure",
+                "symbolKind": "struct",
+                "title": "Package"
+              },
+              "primaryContentSections": [],
+              "references": {}
+            }
+            """
+        let document = try makeDocument(rawJSON)
+        let renderer = DefaultTypeDocumentationRenderer(output: .text)
+
+        // -- Act --
+        let output = try renderer.render(document)
+
+        // -- Assert --
+        #expect(
+            output == """
+                Package
+                Structure · PackageDescription
+
+                The Swift package manifest representation.
+                """
+        )
+    }
+
     @Test("returns Apple's DocC JSON unchanged")
     func rendersRawJSON() throws {
         // -- Arrange --
