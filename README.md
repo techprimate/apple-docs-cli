@@ -1,6 +1,6 @@
 # apple-docs-cli
 
-`apple-docs-cli` is a stateless macOS CLI for retrieving Apple Developer documentation for known API types. It fetches Apple’s DocC JSON and renders a concise terminal view or returns the raw document for further processing.
+`apple-docs-cli` is a stateless macOS and Linux CLI for retrieving Apple Developer documentation for known API types. It fetches Apple’s DocC JSON and renders a concise terminal view or returns the raw document for further processing.
 
 ## Type documentation
 
@@ -102,6 +102,12 @@ Run tests and quality checks:
 ```bash
 make test
 make analyze
+```
+
+Run the test suite in a pinned Linux Swift container:
+
+```bash
+make test-linux
 ```
 
 Format Swift with `swift format` and JSON, YAML, Markdown, and TOML with dprint:

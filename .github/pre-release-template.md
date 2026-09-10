@@ -26,10 +26,24 @@ chmod +x apple-docs
 sudo mv apple-docs /usr/local/bin/
 ```
 
+#### Linux
+
+```bash
+# AMD64
+curl -L -o apple-docs https://github.com/{{REPOSITORY}}/releases/download/latest/apple-docs-linux-amd64
+chmod +x apple-docs
+sudo mv apple-docs /usr/local/bin/
+
+# ARM64
+curl -L -o apple-docs https://github.com/{{REPOSITORY}}/releases/download/latest/apple-docs-linux-arm64
+chmod +x apple-docs
+sudo mv apple-docs /usr/local/bin/
+```
+
 ### What's New?
 
 See the [commit history](https://github.com/{{REPOSITORY}}/commits/main) for recent changes.
 
 ### Checksums
 
-See `checksums.txt` for SHA256 checksums of both binaries.
+See `checksums.txt` for SHA256 checksums of all binaries.

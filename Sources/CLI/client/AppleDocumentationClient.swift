@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 #if DEBUG
     protocol AppleDocumentationClient: Sendable {
         func fetchType(named name: String, technology: String) async throws -> TypeDocumentationDocument

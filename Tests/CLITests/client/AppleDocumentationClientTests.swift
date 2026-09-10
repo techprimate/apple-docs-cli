@@ -3,6 +3,10 @@ import Testing
 
 @testable import CLI
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 @Suite("Apple documentation client")
 struct AppleDocumentationClientTests {
     @Test("requests and decodes a type documentation page")

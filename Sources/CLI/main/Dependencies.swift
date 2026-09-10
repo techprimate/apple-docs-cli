@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 enum Dependencies {
     static let httpCache: URLCache? = {
         guard
@@ -14,11 +18,19 @@ enum Dependencies {
             "com.techprimate.apple-docs",
             isDirectory: true
         )
-        return URLCache(
-            memoryCapacity: 16_000_000,
-            diskCapacity: 1_000_000_000,
-            directory: cacheDirectory
-        )
+        #if canImport(FoundationNetworking)
+            return URLCache(
+                memoryCapacity: 16_000_000,
+                diskCapacity: 1_000_000_000,
+                diskPath: cacheDirectory.path
+            )
+        #else
+            return URLCache(
+                memoryCapacity: 16_000_000,
+                diskCapacity: 1_000_000_000,
+                directory: cacheDirectory
+            )
+        #endif
     }()
 
     static let httpDataTransport: URLSession = {

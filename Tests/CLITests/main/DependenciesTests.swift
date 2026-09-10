@@ -3,6 +3,10 @@ import Testing
 
 @testable import CLI
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 @Suite("Dependencies")
 struct DependenciesTests {
     @Test("uses a dedicated large documentation cache")

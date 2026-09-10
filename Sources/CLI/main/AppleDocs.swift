@@ -1,8 +1,11 @@
 import ArgumentParser
 import Foundation
 import Logging
-@preconcurrency import SentrySwift
-import SentrySwiftLog
+
+#if canImport(SentrySwift)
+    @preconcurrency import SentrySwift
+    import SentrySwiftLog
+#endif
 
 @main
 enum AppleDocs {
@@ -10,21 +13,7 @@ enum AppleDocs {
 
     @MainActor
     static func main() async {
-        let telemetryEnabled = SentryConfiguration.isEnabled(
-            environment: ProcessInfo.processInfo.environment
-        )
-        if telemetryEnabled {
-            SentrySDK.start { options in
-                SentryConfiguration.configure(options)
-            }
-            LoggingSystem.bootstrap { _ in
-                SentryLogHandler(logLevel: .info)
-            }
-        } else {
-            LoggingSystem.bootstrap { _ in
-                SwiftLogNoOpLogHandler()
-            }
-        }
+        let telemetryEnabled = configureTelemetry()
 
         do {
             var command = try await CLI.asyncParseAsRoot()
@@ -33,14 +22,57 @@ enum AppleDocs {
             } else {
                 try command.run()
             }
-            if telemetryEnabled {
-                SentrySDK.span?.status = .ok
-                Self.logger.info("CLI command completed")
-                SentrySDK.span?.finish()
-                SentrySDK.flush(timeout: 2)
-            }
+            finishTelemetry(enabled: telemetryEnabled)
         } catch {
-            if telemetryEnabled, let span = SentrySDK.span {
+            captureTelemetry(error, enabled: telemetryEnabled)
+            CLI.exit(withError: error)
+        }
+    }
+
+    private static func configureTelemetry() -> Bool {
+        #if canImport(SentrySwift)
+            let enabled = SentryConfiguration.isEnabled(
+                environment: ProcessInfo.processInfo.environment
+            )
+            if enabled {
+                SentrySDK.start { options in
+                    SentryConfiguration.configure(options)
+                }
+                LoggingSystem.bootstrap { _ in
+                    SentryLogHandler(logLevel: .info)
+                }
+            } else {
+                LoggingSystem.bootstrap { _ in
+                    SwiftLogNoOpLogHandler()
+                }
+            }
+            return enabled
+        #else
+            LoggingSystem.bootstrap { _ in
+                SwiftLogNoOpLogHandler()
+            }
+            return false
+        #endif
+    }
+
+    private static func finishTelemetry(enabled: Bool) {
+        #if canImport(SentrySwift)
+            guard enabled else {
+                return
+            }
+            SentrySDK.span?.status = .ok
+            Self.logger.info("CLI command completed")
+            SentrySDK.span?.finish()
+            SentrySDK.flush(timeout: 2)
+        #endif
+    }
+
+    private static func captureTelemetry(_ error: Error, enabled: Bool) {
+        #if canImport(SentrySwift)
+            guard enabled else {
+                return
+            }
+            if let span = SentrySDK.span {
                 // Lookup misses are actionable CLI outcomes, not application reliability failures.
                 let expected = error is ValidationError || SentryConfiguration.isExpected(error: error)
                 span.status = expected ? .invalidArgument : .internalError
@@ -52,10 +84,7 @@ enum AppleDocs {
                 }
                 span.finish()
             }
-            if telemetryEnabled {
-                SentrySDK.flush(timeout: 2)
-            }
-            CLI.exit(withError: error)
-        }
+            SentrySDK.flush(timeout: 2)
+        #endif
     }
 }

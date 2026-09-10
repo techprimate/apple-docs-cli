@@ -3,6 +3,10 @@ import Testing
 
 @testable import CLI
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 @Suite("Apple documentation type search client")
 struct AppleDocumentationClientSearchTests {
     @Test("searches symbols across nested collection groups")

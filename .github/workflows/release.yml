@@ -145,6 +145,8 @@ jobs:
           files: |
             dist/apple-docs-darwin-amd64
             dist/apple-docs-darwin-arm64
+            dist/apple-docs-linux-amd64
+            dist/apple-docs-linux-arm64
             dist/checksums.txt
           draft: false
           prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}
@@ -153,7 +155,7 @@ jobs:
     name: Trigger Release Publisher
     needs: [prepare, release]
     # Dispatch the techprimate/publisher workflow that publishes this GitHub
-    # Release through packages.techprimate.app. Replaces the in-repo Homebrew tap
+    # Release through packages.techprimate.com. Replaces the in-repo Homebrew tap
     # automation.
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
