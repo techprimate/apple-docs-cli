@@ -24,7 +24,25 @@ chmod +x apple-docs
 sudo mv apple-docs /usr/local/bin/
 ```
 
-#### Linux
+#### Linux (DNF/YUM)
+
+```bash
+sudo dnf config-manager --add-repo https://packages.techprimate.app/techprimate.repo
+sudo dnf install apple-docs
+```
+
+#### Linux (APT)
+
+```bash
+sudo curl -fsSL https://packages.techprimate.app/RPM-GPG-KEY-techprimate \
+  | sudo gpg --dearmor -o /usr/share/keyrings/techprimate-archive-keyring.gpg
+sudo curl -fsSL https://packages.techprimate.app/techprimate.sources \
+  -o /etc/apt/sources.list.d/techprimate.sources
+sudo apt update
+sudo apt install apple-docs
+```
+
+#### Linux (Manual)
 
 ```bash
 # AMD64
