@@ -1,13 +1,13 @@
 {
-  "originHash" : "e5a2e07cfe718bc696966f4be58c7ba17881a105799cad205462689ec29829a8",
+  "originHash" : "2436dbcfb55663689cf7fa91d089b6b0f056cdf5152666df83264d9d8816fd0a",
   "pins" : [
     {
       "identity" : "sentry-apple-swift-log",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/getsentry/sentry-apple-swift-log.git",
       "state" : {
-        "revision" : "9b33c1c8d988c7b9a00e4c63cc247d3d234c180a",
-        "version" : "9.27.0"
+        "revision" : "141de90fd4dc632ba9d6a2dec84caeb9d17285ff",
+        "version" : "9.28.0"
       }
     },
     {

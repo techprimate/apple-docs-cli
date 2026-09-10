@@ -2,5 +2,17 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "Keep Sentry packages on the same version",
+      "groupName": "Sentry packages",
+      "matchManagers": ["swift"],
+      "matchPackageNames": [
+        "getsentry/sentry-apple-*",
+        "getsentry/sentry-cocoa"
+      ],
+      "minimumGroupSize": 2
+    }
   ]
 }
