@@ -1,4 +1,5 @@
 import Foundation
+@preconcurrency import SentrySwift
 import Testing
 
 @testable import CLI
@@ -30,6 +31,18 @@ struct SentryConfigurationTests {
 
         // -- Assert --
         #expect(!enabled)
+    }
+
+    @Test("marks CLI executable frames as in-app")
+    func marksCLIExecutableFramesAsInApp() {
+        // -- Arrange --
+        let options = Options()
+
+        // -- Act --
+        SentryConfiguration.configure(options)
+
+        // -- Assert --
+        #expect(options.inAppIncludes.contains("apple-docs"))
     }
 
     @Test("treats documentation lookup failures as expected command errors")
