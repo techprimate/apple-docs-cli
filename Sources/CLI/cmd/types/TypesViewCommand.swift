@@ -1,6 +1,9 @@
 import ArgumentParser
 import Logging
-@preconcurrency import SentrySwift
+
+#if canImport(SentrySwift)
+    @preconcurrency import SentrySwift
+#endif
 
 struct TypesViewCommand: AsyncParsableCommand {
     private static let logger = Logger(
@@ -27,61 +30,67 @@ struct TypesViewCommand: AsyncParsableCommand {
             technology: technology,
             json: json
         )
-        if SentrySDK.isEnabled {
-            let transaction = SentrySDK.startTransaction(
-                name: context.transactionName,
-                operation: "console.command",
-                bindToScope: true
-            )
-            for (key, value) in context.attributes {
-                transaction.setData(value: value, key: key)
+        #if canImport(SentrySwift)
+            if SentrySDK.isEnabled {
+                let transaction = SentrySDK.startTransaction(
+                    name: context.transactionName,
+                    operation: "console.command",
+                    bindToScope: true
+                )
+                for (key, value) in context.attributes {
+                    transaction.setData(value: value, key: key)
+                }
+                SentrySDK.configureScope { scope in
+                    scope.setContext(value: context.attributes, key: "cli")
+                }
+                let breadcrumb = Breadcrumb(
+                    level: .info,
+                    category: SentryConfiguration.breadcrumbCategory
+                )
+                breadcrumb.type = "user"
+                breadcrumb.message = "CLI command invoked"
+                for (key, value) in context.attributes {
+                    breadcrumb.setData(value: value, key: key)
+                }
+                SentrySDK.addBreadcrumb(breadcrumb)
+                Self.logger.info(
+                    "CLI command started",
+                    metadata: context.logMetadata
+                )
             }
-            SentrySDK.configureScope { scope in
-                scope.setContext(value: context.attributes, key: "cli")
-            }
-            let breadcrumb = Breadcrumb(
-                level: .info,
-                category: SentryConfiguration.breadcrumbCategory
-            )
-            breadcrumb.type = "user"
-            breadcrumb.message = "CLI command invoked"
-            for (key, value) in context.attributes {
-                breadcrumb.setData(value: value, key: key)
-            }
-            SentrySDK.addBreadcrumb(breadcrumb)
-            Self.logger.info(
-                "CLI command started",
-                metadata: context.logMetadata
-            )
-        }
+        #endif
 
         let result = try await TypesViewCommandRunner(
             client: Dependencies.documentationClient,
             renderer: Dependencies.documentationRenderer(json: json)
         ).run(name: name, technology: technology)
-        if SentrySDK.isEnabled {
-            recordPopularityMetrics()
-            SentrySDK.metrics.distribution(
-                key: "apple_docs.response.size",
-                value: Double(result.responseByteCount),
-                unit: .byte,
-                attributes: context.metricAttributes
-            )
-        }
+        #if canImport(SentrySwift)
+            if SentrySDK.isEnabled {
+                recordPopularityMetrics()
+                SentrySDK.metrics.distribution(
+                    key: "apple_docs.response.size",
+                    value: Double(result.responseByteCount),
+                    unit: .byte,
+                    attributes: context.metricAttributes
+                )
+            }
+        #endif
         print(result.output)
     }
 
-    private func recordPopularityMetrics() {
-        SentrySDK.metrics.count(
-            key: "apple_docs.technology.requested",
-            attributes: ["apple_docs.technology": technology]
-        )
-        SentrySDK.metrics.count(
-            key: "apple_docs.type.requested",
-            attributes: [
-                "apple_docs.technology": technology,
-                "apple_docs.type": name,
-            ]
-        )
-    }
+    #if canImport(SentrySwift)
+        private func recordPopularityMetrics() {
+            SentrySDK.metrics.count(
+                key: "apple_docs.technology.requested",
+                attributes: ["apple_docs.technology": technology]
+            )
+            SentrySDK.metrics.count(
+                key: "apple_docs.type.requested",
+                attributes: [
+                    "apple_docs.technology": technology,
+                    "apple_docs.type": name,
+                ]
+            )
+        }
+    #endif
 }

@@ -145,6 +145,8 @@ jobs:
           files: |
             dist/apple-docs-darwin-amd64
             dist/apple-docs-darwin-arm64
+            dist/apple-docs-linux-amd64
+            dist/apple-docs-linux-arm64
             dist/checksums.txt
           draft: false
           prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}

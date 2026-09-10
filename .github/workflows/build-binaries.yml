@@ -127,6 +127,82 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  build-linux:
+    name: Build ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - platform: linux-amd64
+            swift_sdk: x86_64-swift-linux-musl
+          - platform: linux-arm64
+            swift_sdk: aarch64-swift-linux-musl
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v3
+        with:
+          swift-version: "6.3.3"
+
+      - name: Install Static Linux SDK
+        run: |
+          swift sdk install \
+            "https://download.swift.org/swift-6.3.3-release/static-sdk/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz" \
+            --checksum "87c3eaf908e67c0e13a84367119e12273cec1d2cd3d81f7d74bb36722d6b607b"
+
+      - name: Generate build metadata
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          BUILD_DATE: ${{ inputs.build_date }}
+        run: |
+          swift_string() {
+            printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+          }
+
+          VERSION=$(swift_string "$VERSION")
+          COMMIT_SHA=$(swift_string "$COMMIT_SHA")
+          BUILD_DATE=$(swift_string "$BUILD_DATE")
+
+          cat > Sources/CLI/main/BuildMetadata.swift <<EOF
+          enum BuildMetadata {
+              static let version = "$VERSION"
+              static let commit = "$COMMIT_SHA"
+              static let buildDate = "$BUILD_DATE"
+              static let environment = "production"
+
+              static let formatted =
+                  "\\(version) (commit: \\(commit), built: \\(buildDate), environment: \\(environment))"
+              static let sentryRelease = "apple-docs@\\(version)+\\(commit)"
+          }
+          EOF
+
+      - name: Build CLI
+        run: |
+          swift build -c release --swift-sdk "${{ matrix.swift_sdk }}"
+          BIN_DIR=$(swift build -c release --swift-sdk "${{ matrix.swift_sdk }}" --show-bin-path)
+          mkdir -p dist
+          cp "$BIN_DIR/apple-docs" "dist/apple-docs-${{ matrix.platform }}"
+
+      - name: Exercise Linux CLI
+        if: matrix.platform == 'linux-amd64'
+        run: |
+          "dist/apple-docs-${{ matrix.platform }}" \
+            types view String --technology Swift --json \
+            > "$RUNNER_TEMP/string.json"
+          jq -e '.metadata.title == "String"' "$RUNNER_TEMP/string.json"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.platform }}
+          path: dist/apple-docs-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 1
+
   sign-and-notarize-darwin:
     name: Sign and Notarize macOS Binaries
     if: github.event_name != 'pull_request'

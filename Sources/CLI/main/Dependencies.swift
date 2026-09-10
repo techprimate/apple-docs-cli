@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 enum Dependencies {
     static let httpDataTransport = URLSession.shared
     static let documentationClient = DefaultAppleDocumentationClient(

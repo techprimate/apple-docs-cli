@@ -1,5 +1,8 @@
 import Logging
-@preconcurrency import SentrySwift
+
+#if canImport(SentrySwift)
+    @preconcurrency import SentrySwift
+#endif
 
 struct SentryCommandContext: Equatable, Sendable {
     let command: String
@@ -98,16 +101,18 @@ struct SentryCommandContext: Equatable, Sendable {
         return metadata
     }
 
-    var metricAttributes: [String: any SentryAttributeValue] {
-        var attributes: [String: any SentryAttributeValue] = [
-            "cli.command": command
-        ]
-        if let technology {
-            attributes["apple_docs.technology"] = technology
+    #if canImport(SentrySwift)
+        var metricAttributes: [String: any SentryAttributeValue] {
+            var attributes: [String: any SentryAttributeValue] = [
+                "cli.command": command
+            ]
+            if let technology {
+                attributes["apple_docs.technology"] = technology
+            }
+            if let typeName {
+                attributes["apple_docs.type"] = typeName
+            }
+            return attributes
         }
-        if let typeName {
-            attributes["apple_docs.type"] = typeName
-        }
-        return attributes
-    }
+    #endif
 }

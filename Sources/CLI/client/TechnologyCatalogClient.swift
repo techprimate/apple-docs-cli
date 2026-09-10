@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 #if DEBUG
     protocol TechnologyCatalogClient: Sendable {
         func fetchTechnologies() async throws -> [Technology]

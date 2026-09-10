@@ -3,6 +3,10 @@ import Testing
 
 @testable import CLI
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 @Suite("Apple documentation type catalog client")
 struct AppleDocumentationClientTypeListTests {
     @Test("lists direct symbols from a technology root document")

@@ -3,6 +3,10 @@ import Testing
 
 @testable import CLI
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 @Suite("Apple documentation client errors")
 struct AppleDocumentationClientErrorTests {
     @Test("maps a missing type to discovery guidance")

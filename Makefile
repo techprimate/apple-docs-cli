@@ -83,6 +83,19 @@ run:
 test:
 	swift test
 
+## Run all tests in a Linux container
+#
+# Uses a Docker volume for SwiftPM build output so Linux artifacts do not conflict
+# with the host build directory.
+.PHONY: test-linux
+test-linux:
+	docker run --rm \
+		--mount "type=bind,source=$(CURDIR),target=/workspace,readonly" \
+		--volume "apple-docs-cli-linux-build:/workspace/.build" \
+		--workdir /workspace \
+		swift:6.3.3 \
+		swift test --disable-automatic-resolution
+
 ## Run live CLI integration tests
 #
 # Builds the release executable and runs network-dependent command tests against Apple documentation.

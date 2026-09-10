@@ -3,61 +3,67 @@ import Testing
 
 @testable import CLI
 
-@Suite("Sentry configuration")
-struct SentryConfigurationTests {
-    @Test("enables telemetry by default")
-    func enablesTelemetryByDefault() {
-        // -- Arrange --
-        let environment: [String: String] = [:]
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
 
-        // -- Act --
-        let enabled = SentryConfiguration.isEnabled(environment: environment)
+#if canImport(SentrySwift)
+    @Suite("Sentry configuration")
+    struct SentryConfigurationTests {
+        @Test("enables telemetry by default")
+        func enablesTelemetryByDefault() {
+            // -- Arrange --
+            let environment: [String: String] = [:]
 
-        // -- Assert --
-        #expect(enabled)
-    }
+            // -- Act --
+            let enabled = SentryConfiguration.isEnabled(environment: environment)
 
-    @Test(
-        "disables telemetry for a true environmental flag",
-        arguments: ["true", "TRUE", "True"]
-    )
-    func disablesTelemetry(value: String) {
-        // -- Arrange --
-        let environment = ["TELEMETRY_DISABLED": value]
+            // -- Assert --
+            #expect(enabled)
+        }
 
-        // -- Act --
-        let enabled = SentryConfiguration.isEnabled(environment: environment)
-
-        // -- Assert --
-        #expect(!enabled)
-    }
-
-    @Test("treats documentation lookup failures as expected command errors")
-    func treatsLookupFailureAsExpected() {
-        // -- Arrange --
-        let error = DefaultAppleDocumentationClient<URLSession>.Error.typeNotFound(
-            name: "Model",
-            technology: "SwiftData",
-            suggestion: nil,
-            technologyURL: "https://developer.apple.com/documentation/swiftdata"
+        @Test(
+            "disables telemetry for a true environmental flag",
+            arguments: ["true", "TRUE", "True"]
         )
+        func disablesTelemetry(value: String) {
+            // -- Arrange --
+            let environment = ["TELEMETRY_DISABLED": value]
 
-        // -- Act --
-        let expected = SentryConfiguration.isExpected(error: error)
+            // -- Act --
+            let enabled = SentryConfiguration.isEnabled(environment: environment)
 
-        // -- Assert --
-        #expect(expected)
+            // -- Assert --
+            #expect(!enabled)
+        }
+
+        @Test("treats documentation lookup failures as expected command errors")
+        func treatsLookupFailureAsExpected() {
+            // -- Arrange --
+            let error = DefaultAppleDocumentationClient<URLSession>.Error.typeNotFound(
+                name: "Model",
+                technology: "SwiftData",
+                suggestion: nil,
+                technologyURL: "https://developer.apple.com/documentation/swiftdata"
+            )
+
+            // -- Act --
+            let expected = SentryConfiguration.isExpected(error: error)
+
+            // -- Assert --
+            #expect(expected)
+        }
+
+        @Test("keeps telemetry enabled for other environmental flag values")
+        func ignoresOtherFlagValues() {
+            // -- Arrange --
+            let environment = ["TELEMETRY_DISABLED": "false"]
+
+            // -- Act --
+            let enabled = SentryConfiguration.isEnabled(environment: environment)
+
+            // -- Assert --
+            #expect(enabled)
+        }
     }
-
-    @Test("keeps telemetry enabled for other environmental flag values")
-    func ignoresOtherFlagValues() {
-        // -- Arrange --
-        let environment = ["TELEMETRY_DISABLED": "false"]
-
-        // -- Act --
-        let enabled = SentryConfiguration.isEnabled(environment: environment)
-
-        // -- Assert --
-        #expect(enabled)
-    }
-}
+#endif
