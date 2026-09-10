@@ -13,7 +13,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log.git", exact: "1.15.1"),
         .package(
             url: "https://github.com/getsentry/sentry-apple-swift-log.git",
-            exact: "9.27.0",
+            exact: "9.28.0",
             traits: ["SentryFromSource"]
         ),
         .package(
