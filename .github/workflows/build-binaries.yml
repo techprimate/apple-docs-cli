@@ -143,6 +143,7 @@ jobs:
       - name: Build CLI with debug information
         id: build-linux
         run: |
+          set -x
           swift build -c release --swift-sdk "${{ matrix.swift_sdk }}"
           BIN_DIR=$(swift build -c release --swift-sdk "${{ matrix.swift_sdk }}" --show-bin-path)
           BUILD_ID=$(readelf --notes "$BIN_DIR/apple-docs" | awk '/Build ID/ { print $3 }')
@@ -183,6 +184,7 @@ jobs:
 
       - name: Build stripped CLI
         run: |
+          set -x
           swift build -c release \
             --swift-sdk "${{ matrix.swift_sdk }}" \
             -Xlinker --strip-all
@@ -195,6 +197,7 @@ jobs:
 
       - name: Verify Linux artifact size
         run: |
+          set -x
           BINARY_PATH="dist/apple-docs-${{ matrix.platform }}"
           BINARY_SIZE=$(stat --format=%s "$BINARY_PATH")
           BUILD_ID=$(readelf --notes "$BINARY_PATH" | awk '/Build ID/ { print $3 }')
