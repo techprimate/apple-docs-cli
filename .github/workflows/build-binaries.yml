@@ -192,7 +192,7 @@ jobs:
           set -x
           mkdir -p dist
           llvm-strip --strip-all \
-            --output "dist/apple-docs-${{ matrix.platform }}" \
+            -o "dist/apple-docs-${{ matrix.platform }}" \
             "${{ steps.build-linux.outputs.bin_dir }}/apple-docs"
 
       - name: Verify Linux artifact size
