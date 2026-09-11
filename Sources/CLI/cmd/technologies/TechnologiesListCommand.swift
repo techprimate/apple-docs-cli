@@ -15,7 +15,10 @@ struct TechnologiesListCommand: AsyncParsableCommand {
         abstract: "List Apple documentation technologies."
     )
 
-    @Flag(help: "Output a JSON array of technologies.")
+    @Flag(
+        name: [.long, .customLong("agent")],
+        help: "Output a JSON array of technologies. --agent currently aliases --json."
+    )
     var json = false
 
     mutating func run() async throws {

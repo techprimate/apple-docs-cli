@@ -25,10 +25,14 @@ struct CLITests {
         #expect(command is TechnologiesListCommand)
     }
 
-    @Test("accepts JSON output for the technologies list")
-    func acceptsTechnologiesListJSONOutput() throws {
+    @Test(
+        "accepts JSON and agent output for technologies list",
+        arguments: [
+            ["--json"], ["--agent"], ["--json", "--agent"], ["--agent", "--json"],
+        ])
+    func acceptsTechnologiesListJSONOutput(flags: [String]) throws {
         // -- Arrange --
-        let arguments = ["technologies", "list", "--json"]
+        let arguments = ["technologies", "list"] + flags
 
         // -- Act --
         let command = try CLI.parseAsRoot(arguments)

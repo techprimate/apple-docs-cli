@@ -21,7 +21,10 @@ struct TypesSearchCommand: AsyncParsableCommand {
     @Option(help: "The framework or technology whose types to search.")
     var technology: String
 
-    @Flag(help: "Output a JSON array of matching types.")
+    @Flag(
+        name: [.long, .customLong("agent")],
+        help: "Output a JSON array of matching types. --agent currently aliases --json."
+    )
     var json = false
 
     mutating func run() async throws {
