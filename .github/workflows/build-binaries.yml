@@ -182,18 +182,18 @@ jobs:
             --wait \
             "$BINARY_PATH"
 
-      - name: Build stripped CLI
+      - name: Install LLVM tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends llvm
+
+      - name: Strip CLI
         run: |
           set -x
-          swift build -c release \
-            --swift-sdk "${{ matrix.swift_sdk }}" \
-            -Xlinker --strip-all
-          BIN_DIR=$(swift build \
-            -c release \
-            --swift-sdk "${{ matrix.swift_sdk }}" \
-            --show-bin-path)
           mkdir -p dist
-          cp "$BIN_DIR/apple-docs" "dist/apple-docs-${{ matrix.platform }}"
+          llvm-strip --strip-all \
+            --output "dist/apple-docs-${{ matrix.platform }}" \
+            "${{ steps.build-linux.outputs.bin_dir }}/apple-docs"
 
       - name: Verify Linux artifact size
         run: |
