@@ -7,6 +7,8 @@ struct AgentSkillsCommand: ParsableCommand {
         subcommands: [
             AgentSkillsListCommand.self,
             AgentSkillsGetCommand.self,
+            AgentSkillsInstallCommand.self,
+            AgentSkillsUninstallCommand.self,
         ]
     )
 }

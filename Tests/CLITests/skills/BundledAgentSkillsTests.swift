@@ -4,21 +4,40 @@ import Testing
 
 @Suite("Bundled agent skills")
 struct BundledAgentSkillsTests {
-    @Test("lists the bundled Apple documentation skill")
-    func listsBundledSkill() {
-        #expect(BundledAgentSkills.all.map(\.name) == ["apple-docs"])
+    @Test("makes the research workflows discoverable by name")
+    func listsBundledSkills() {
+        // -- Arrange --
+        let names = ["apple-docs", "apple-docs-discover-api", "apple-docs-check-availability"]
+
+        // -- Act --
+        let skills = names.compactMap { BundledAgentSkills.skill(named: $0) }
+
+        // -- Assert --
+        #expect(skills.map(\.name) == names)
+        #expect(Set(BundledAgentSkills.all.map(\.name)).count == BundledAgentSkills.all.count)
     }
 
     @Test("loads a bundled skill by name")
     func loadsBundledSkill() throws {
+        // -- Arrange --
         let skill = try #require(BundledAgentSkills.skill(named: "apple-docs"))
+
+        // -- Act --
         let content = skill.content
 
+        // -- Assert --
         #expect(content.hasPrefix("---\nname: apple-docs\n"))
     }
 
     @Test("returns no skill for an unknown name")
     func rejectsUnknownSkill() {
-        #expect(BundledAgentSkills.skill(named: "unknown") == nil)
+        // -- Arrange --
+        let name = "unknown"
+
+        // -- Act --
+        let skill = BundledAgentSkills.skill(named: name)
+
+        // -- Assert --
+        #expect(skill == nil)
     }
 }
