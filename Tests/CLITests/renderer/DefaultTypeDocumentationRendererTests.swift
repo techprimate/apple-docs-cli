@@ -7,6 +7,7 @@ import Testing
 struct DefaultTypeDocumentationRendererTests {
     @Test("renders text output")
     func rendersText() throws {
+        // -- Arrange --
         let rawJSON = """
             {
               "abstract": [{"text": "A diagnostic report.", "type": "text"}],
@@ -24,14 +25,17 @@ struct DefaultTypeDocumentationRendererTests {
         let document = try makeDocument(rawJSON)
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
+        // -- Act --
         let output = try renderer.render(document)
 
+        // -- Assert --
         #expect(
             output == """
                 MXHangDiagnostic
+                ━━━━━━━━━━━━━━━━
                 Class · MetricKit
 
-                A diagnostic report.
+                  A diagnostic report.
                 """
         )
     }
@@ -62,9 +66,10 @@ struct DefaultTypeDocumentationRendererTests {
         #expect(
             output == """
                 Package
+                ━━━━━━━
                 Structure · PackageDescription
 
-                The Swift package manifest representation.
+                  The Swift package manifest representation.
                 """
         )
     }

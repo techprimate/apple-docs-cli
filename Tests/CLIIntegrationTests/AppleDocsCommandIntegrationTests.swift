@@ -49,8 +49,10 @@ struct AppleDocsCommandIntegrationTests {
         let output = try runAppleDocs(arguments)
 
         // -- Assert --
-        #expect(output.hasPrefix("String\nStructure · Swift\n"))
-        #expect(output.contains("Declaration\n\n    @frozen struct String"))
+        #expect(output.hasPrefix("String\n━━━━━━\nStructure · Swift\n"))
+        #expect(output.contains("Declaration\n───────────"))
+        #expect(output.contains("│ @frozen struct String"))
+        #expect(output.contains("Overview\n────────"))
     }
 
     @Test("lists MetricKit root types as JSON")

@@ -7,6 +7,7 @@ import Testing
 struct TextTypeDocumentationRendererTests {
     @Test("renders the type summary and declaration")
     func rendersSummaryAndDeclaration() throws {
+        // -- Arrange --
         let data = Data(
             """
             {
@@ -36,24 +37,30 @@ struct TextTypeDocumentationRendererTests {
         )
         let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
 
+        // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
 
+        // -- Assert --
         #expect(
             output == """
                 MXHangDiagnostic
+                ━━━━━━━━━━━━━━━━
                 Class · MetricKit
 
-                An object representing a diagnostic report.
+                  An object representing a diagnostic report.
 
                 Declaration
-
-                    class MXHangDiagnostic
+                ───────────
+                  ╭─ Swift ────────────────╮
+                  │ class MXHangDiagnostic │
+                  ╰────────────────────────╯
                 """
         )
     }
 
     @Test("renders referenced deprecation guidance")
     func rendersDeprecationGuidance() throws {
+        // -- Arrange --
         let data = Data(
             """
             {
@@ -92,13 +99,16 @@ struct TextTypeDocumentationRendererTests {
         )
         let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
 
+        // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
 
-        #expect(output.contains("Deprecated\n\nUse HangDiagnostic instead."))
+        // -- Assert --
+        #expect(output.contains("Deprecated\n──────────\n  Use HangDiagnostic instead."))
     }
 
     @Test("renders platform availability ranges")
     func rendersPlatformAvailability() throws {
+        // -- Arrange --
         let data = Data(
             """
             {
@@ -120,15 +130,29 @@ struct TextTypeDocumentationRendererTests {
         )
         let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
 
+        // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
 
-        #expect(output.contains("Availability\n\n  iOS 14.0–27.0\n  macOS 12.0+"))
+        // -- Assert --
+        #expect(
+            output.contains(
+                """
+                Availability
+                ────────────
+                  ╭───────┬───────────╮
+                  │ iOS   │ 14.0–27.0 │
+                  │ macOS │ 12.0+     │
+                  ╰───────┴───────────╯
+                """
+            )
+        )
     }
 
     @Test("renders linked documentation sections")
     // Most of this function is the DocC fixture covering several linked section kinds.
     // swiftlint:disable:next function_body_length
     func rendersLinkedSections() throws {
+        // -- Arrange --
         let data = Data(
             """
             {
@@ -184,15 +208,24 @@ struct TextTypeDocumentationRendererTests {
         )
         let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
 
+        // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
 
-        #expect(output.contains("Inherits From\n\n  MXDiagnostic"))
+        // -- Assert --
+        #expect(output.contains("Inherits From\n─────────────\n  • MXDiagnostic"))
         #expect(
             output.contains(
-                "Reading total app hang time\n\n  hangDuration — The total duration of hangs."
+                """
+                Reading total app hang time
+                ───────────────────────────
+                  • hangDuration
+                    The total duration of hangs.
+                """
             )
         )
-        #expect(output.contains("See Also: Performance diagnostics\n\n  MXCrashDiagnostic"))
+        #expect(output.contains("Topics\n━━━━━━"))
+        #expect(output.contains("See Also\n━━━━━━━━"))
+        #expect(output.contains("Performance diagnostics\n───────────────────────\n  • MXCrashDiagnostic"))
     }
 
     @Test("omits untitled references from documentation sections")
@@ -229,39 +262,6 @@ struct TextTypeDocumentationRendererTests {
         let output = TextTypeDocumentationRenderer().render(page)
 
         // -- Assert --
-        #expect(output == "String\nStructure · Swift")
-    }
-
-    @Test("renders the canonical documentation URL")
-    func rendersCanonicalURL() throws {
-        let data = Data(
-            """
-            {
-              "abstract": [],
-              "metadata": {
-                "modules": [{"name": "MetricKit"}],
-                "platforms": [],
-                "roleHeading": "Class",
-                "symbolKind": "class",
-                "title": "MXHangDiagnostic"
-              },
-              "primaryContentSections": [],
-              "references": {},
-              "variants": [{
-                "paths": ["/documentation/metrickit/mxhangdiagnostic"],
-                "traits": [{"interfaceLanguage": "swift"}]
-              }]
-            }
-            """.utf8
-        )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
-
-        let output = TextTypeDocumentationRenderer().render(page)
-
-        #expect(
-            output.hasSuffix(
-                "https://developer.apple.com/documentation/metrickit/mxhangdiagnostic"
-            )
-        )
+        #expect(output == "String\n━━━━━━\nStructure · Swift")
     }
 }

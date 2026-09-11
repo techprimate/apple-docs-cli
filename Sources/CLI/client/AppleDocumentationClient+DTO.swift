@@ -17,11 +17,56 @@ struct DocumentationVariantDTO: Decodable, Sendable {
 struct DocumentationTextDTO: Decodable, Sendable {
     let code: String?
     let identifier: String?
+    let inlineContent: [DocumentationTextDTO]?
     let text: String?
 }
 
-struct DocumentationBlockDTO: Decodable, Sendable {
-    let inlineContent: [DocumentationTextDTO]?
+enum DocumentationBlockDTO: Decodable, Sendable {
+    case paragraph([DocumentationTextDTO])
+    case heading(String)
+    case codeListing(code: [String], syntax: String?)
+    case orderedList(items: [DocumentationListItemDTO], startIndex: Int)
+    case unorderedList([DocumentationListItemDTO])
+    case aside(content: [DocumentationBlockDTO], style: String, name: String?)
+    case unsupported
+
+    private enum CodingKeys: CodingKey {
+        case code, content, inlineContent, items, name, startIndex, style, syntax, text, type
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(String.self, forKey: .type) {
+        case "paragraph":
+            self = .paragraph(try container.decode([DocumentationTextDTO].self, forKey: .inlineContent))
+        case "heading":
+            self = .heading(try container.decode(String.self, forKey: .text))
+        case "codeListing":
+            self = .codeListing(
+                code: try container.decode([String].self, forKey: .code),
+                syntax: try container.decodeIfPresent(String.self, forKey: .syntax)
+            )
+        case "orderedList":
+            self = .orderedList(
+                items: try container.decode([DocumentationListItemDTO].self, forKey: .items),
+                startIndex: try container.decodeIfPresent(Int.self, forKey: .startIndex) ?? 1
+            )
+        case "unorderedList":
+            self = .unorderedList(try container.decode([DocumentationListItemDTO].self, forKey: .items))
+        case "aside":
+            self = .aside(
+                content: try container.decode([DocumentationBlockDTO].self, forKey: .content),
+                style: try container.decode(String.self, forKey: .style),
+                name: try container.decodeIfPresent(String.self, forKey: .name)
+            )
+        default:
+            self = .unsupported
+        }
+    }
+}
+
+struct DocumentationListItemDTO: Decodable, Sendable {
+    let content: [DocumentationBlockDTO]
 }
 
 struct DocumentationReferenceDTO: Decodable, Sendable {
@@ -48,6 +93,7 @@ struct DocumentationReferenceSectionDTO: Decodable, Sendable {
 }
 
 struct DocumentationContentSectionDTO: Decodable, Sendable {
+    let content: [DocumentationBlockDTO]?
     let declarations: [DocumentationDeclarationDTO]?
     let kind: String
 }
