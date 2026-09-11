@@ -1,55 +1,47 @@
 struct TextTypeDocumentationRenderer: Sendable {
+    private let layout = DocumentationTextLayout()
+
     func render(_ page: TypeDocumentationPageDTO) -> String {
-        let modules = page.metadata.modules.map(\.name).joined(separator: ", ")
-        var sections = ["\(page.metadata.title)\n\(page.metadata.roleHeading) · \(modules)"]
+        let content = DocumentationContentRenderer(references: page.references)
+        let metadata = ([page.metadata.roleHeading] + page.metadata.modules.map(\.name))
+            .filter { !$0.isEmpty }.joined(separator: " · ")
+        var sections = [layout.heading(page.metadata.title, prominent: true) + "\n" + metadata]
 
-        let abstract = page.abstract.compactMap(\.text).joined()
+        let abstract = content.inlineText(page.abstract)
         if !abstract.isEmpty {
-            sections.append(abstract)
+            sections.append(layout.paragraph(abstract))
         }
 
-        let deprecation =
-            page.deprecationSummary?
-            .compactMap(\.inlineContent)
-            .map { inlineText($0, references: page.references) }
-            .joined(separator: "\n") ?? ""
+        let deprecation = content.render(page.deprecationSummary ?? [])
         if !deprecation.isEmpty {
-            sections.append("Deprecated\n\n" + deprecation)
-        }
-
-        let declarations = swiftDeclarations(in: page)
-
-        if !declarations.isEmpty {
-            sections.append("Declaration\n\n" + declarations.joined(separator: "\n"))
+            sections.append(layout.heading("Deprecated") + "\n" + deprecation)
         }
 
         let availability = page.metadata.platforms.map { platform in
-            "  \(platform.name) \(availabilityRange(for: platform))"
+            (platform.name, availabilityRange(for: platform))
         }
         if !availability.isEmpty {
-            sections.append("Availability\n\n" + availability.joined(separator: "\n"))
+            sections.append(layout.heading("Availability") + "\n" + layout.table(availability))
         }
 
-        appendReferenceSections(
-            page.relationshipsSections ?? [],
-            references: page.references,
-            to: &sections
+        let declarations = swiftDeclarations(in: page)
+        if !declarations.isEmpty {
+            sections.append(layout.heading("Declaration") + "\n" + declarations.joined(separator: "\n\n"))
+        }
+
+        let overview = content.render(
+            page.primaryContentSections.filter { $0.kind == "content" }.flatMap { $0.content ?? [] }
         )
-        appendReferenceSections(
-            page.topicSections ?? [],
-            references: page.references,
-            includesAbstract: true,
-            to: &sections
-        )
-        appendReferenceSections(
-            page.seeAlsoSections ?? [],
-            references: page.references,
-            titlePrefix: "See Also: ",
-            to: &sections
-        )
+        if !overview.isEmpty {
+            sections.append(overview)
+        }
+
+        sections += referenceSections(page.relationshipsSections ?? [], content: content)
+        appendGroup("Topics", page.topicSections ?? [], content: content, includesAbstract: true, to: &sections)
+        appendGroup("See Also", page.seeAlsoSections ?? [], content: content, to: &sections)
 
         if let path = page.variants?.lazy.flatMap(\.paths).first {
-            sections.append("https://developer.apple.com\(path)")
+            sections.append(layout.heading("Documentation") + "\n  " + documentationURL(for: path))
         }
 
         return sections.joined(separator: "\n\n")
@@ -60,41 +52,49 @@ struct TextTypeDocumentationRenderer: Sendable {
             .filter { $0.kind == "declarations" }
             .flatMap { $0.declarations ?? [] }
             .filter { $0.languages.contains("swift") }
-            .map { "    " + $0.tokens.map(\.text).joined() }
+            .map {
+                let lines = $0.tokens.map(\.text).joined().split(separator: "\n", omittingEmptySubsequences: false)
+                return layout.codeBlock(lines.map(String.init), language: "swift")
+            }
     }
 
-    private func appendReferenceSections(
-        _ referenceSections: [DocumentationReferenceSectionDTO],
-        references: [String: DocumentationReferenceDTO],
-        titlePrefix: String = "",
+    private func appendGroup(
+        _ title: String,
+        _ groups: [DocumentationReferenceSectionDTO],
+        content: DocumentationContentRenderer,
         includesAbstract: Bool = false,
         to sections: inout [String]
     ) {
-        for referenceSection in referenceSections {
-            let items = referenceSection.identifiers.compactMap { identifier -> String? in
-                guard let reference = references[identifier], let title = reference.title else {
+        let rendered = referenceSections(groups, content: content, includesAbstract: includesAbstract)
+        if !rendered.isEmpty {
+            sections.append(layout.heading(title, prominent: true))
+            sections += rendered
+        }
+    }
+
+    private func referenceSections(
+        _ groups: [DocumentationReferenceSectionDTO],
+        content: DocumentationContentRenderer,
+        includesAbstract: Bool = false
+    ) -> [String] {
+        groups.compactMap { group in
+            let items = group.identifiers.compactMap { identifier -> String? in
+                guard let reference = content.references[identifier], let title = reference.title else {
                     return nil
                 }
-
-                var item = "  \(title)"
-                let abstract =
-                    reference.abstract.map {
-                        inlineText($0, references: references)
-                    } ?? ""
+                var item = layout.paragraph(title, indent: "    ", firstPrefix: "  • ")
+                let abstract = content.inlineText(reference.abstract ?? [])
                 if includesAbstract && !abstract.isEmpty {
-                    item += " — \(abstract)"
+                    item += "\n" + layout.paragraph(abstract, indent: "    ")
                 }
                 if let url = reference.url {
-                    item += "\n    \(documentationURL(for: url))"
+                    // Keep URLs intact so terminal link detection and copy/paste still work.
+                    item += "\n    " + documentationURL(for: url)
                 }
                 return item
             }
-
-            if !items.isEmpty {
-                sections.append(
-                    titlePrefix + referenceSection.title + "\n\n" + items.joined(separator: "\n")
-                )
-            }
+            guard !items.isEmpty else { return nil }
+            return layout.heading(group.title) + "\n" + items.joined(separator: "\n\n")
         }
     }
 
@@ -116,21 +116,5 @@ struct TextTypeDocumentationRenderer: Sendable {
             return path
         }
         return "https://developer.apple.com\(path)"
-    }
-
-    private func inlineText(
-        _ content: [DocumentationTextDTO],
-        references: [String: DocumentationReferenceDTO]
-    ) -> String {
-        content.map { item in
-            if let text = item.text {
-                return text
-            }
-            if let identifier = item.identifier {
-                return references[identifier]?.title ?? identifier
-            }
-            // DocC encodes inline symbol spelling such as AppIntent as codeVoice, not text.
-            return item.code ?? ""
-        }.joined()
     }
 }
