@@ -140,12 +140,74 @@ jobs:
           commit-sha: ${{ inputs.commit_sha }}
           build-date: ${{ inputs.build_date }}
 
-      - name: Build CLI
+      - name: Build CLI with debug information
+        id: build-linux
         run: |
+          set -x
           swift build -c release --swift-sdk "${{ matrix.swift_sdk }}"
           BIN_DIR=$(swift build -c release --swift-sdk "${{ matrix.swift_sdk }}" --show-bin-path)
+          BUILD_ID=$(readelf --notes "$BIN_DIR/apple-docs" | awk '/Build ID/ { print $3 }')
+          test -n "$BUILD_ID"
+          echo "bin_dir=$BIN_DIR" >> "$GITHUB_OUTPUT"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Install sentry-cli
+        if: github.event_name != 'pull_request'
+        env:
+          SENTRY_CLI_VERSION: "3.7.0"
+          SENTRY_CLI_SHA256: "cec71d46a7cc394c94b6e75f1601985c710d457376c546ef3975567b3671563b"
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://github.com/getsentry/sentry-cli/releases/download/${SENTRY_CLI_VERSION}/sentry-cli-Linux-x86_64" \
+            --output "$RUNNER_TEMP/sentry-cli"
+          echo "$SENTRY_CLI_SHA256  $RUNNER_TEMP/sentry-cli" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/sentry-cli"
+
+      - name: Upload Linux debug information to Sentry
+        if: github.event_name != 'pull_request'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: techprimate
+          SENTRY_PROJECT: apple-docs-cli
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::error::SENTRY_AUTH_TOKEN is not configured."
+            exit 1
+          fi
+
+          BINARY_PATH="${{ steps.build-linux.outputs.bin_dir }}/apple-docs"
+          "$RUNNER_TEMP/sentry-cli" debug-files check "$BINARY_PATH"
+          "$RUNNER_TEMP/sentry-cli" debug-files upload \
+            --include-sources \
+            --wait \
+            "$BINARY_PATH"
+
+      - name: Install LLVM tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends llvm
+
+      - name: Strip CLI
+        run: |
+          set -x
           mkdir -p dist
-          cp "$BIN_DIR/apple-docs" "dist/apple-docs-${{ matrix.platform }}"
+          llvm-strip --strip-all \
+            -o "dist/apple-docs-${{ matrix.platform }}" \
+            "${{ steps.build-linux.outputs.bin_dir }}/apple-docs"
+
+      - name: Verify Linux artifact size
+        run: |
+          set -x
+          BINARY_PATH="dist/apple-docs-${{ matrix.platform }}"
+          BINARY_SIZE=$(stat --format=%s "$BINARY_PATH")
+          BUILD_ID=$(readelf --notes "$BINARY_PATH" | awk '/Build ID/ { print $3 }')
+          echo "Linux artifact size: $BINARY_SIZE bytes"
+          test "$BINARY_SIZE" -lt 80000000
+          test "$BUILD_ID" = "${{ steps.build-linux.outputs.build_id }}"
+          if readelf --sections "$BINARY_PATH" | grep --quiet '\.debug_'; then
+            echo "::error::Linux artifact contains debug sections."
+            exit 1
+          fi
 
       - name: Exercise Linux CLI
         if: matrix.platform == 'linux-amd64'
