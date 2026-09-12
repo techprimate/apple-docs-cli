@@ -81,8 +81,11 @@ enum BundledAgentSkills {
 
         ## Structured evidence
 
+        On JSON-capable commands, `--agent` currently aliases `--json`. It is not a global flag or auto-detected.
+        Agent output may evolve. Keep `types view --json` for raw upstream bytes.
+
         ```bash
-        apple-docs technologies list --json
+        apple-docs technologies list --agent
         apple-docs types search URLSession --technology Foundation --json
         apple-docs types view URLSession --technology Foundation --json
         ```

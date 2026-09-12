@@ -4,14 +4,18 @@ import Testing
 
 @Suite("Types command parsing")
 struct TypesViewCommandTests {
-    @Test("accepts the types list command with a required technology")
-    func parsesTypesList() throws {
+    @Test(
+        "accepts JSON and agent output for types list",
+        arguments: [
+            ["--json"], ["--agent"], ["--json", "--agent"], ["--agent", "--json"],
+        ])
+    func parsesTypesList(flags: [String]) throws {
         // -- Arrange --
-        let arguments = [
-            "types", "list",
-            "--technology", "MetricKit",
-            "--json",
-        ]
+        let arguments =
+            [
+                "types", "list",
+                "--technology", "MetricKit",
+            ] + flags
 
         // -- Act --
         let command = try CLI.parseAsRoot(arguments)
@@ -22,14 +26,18 @@ struct TypesViewCommandTests {
         #expect(listCommand.json)
     }
 
-    @Test("accepts the types search command with a query and required technology")
-    func parsesTypesSearch() throws {
+    @Test(
+        "accepts JSON and agent output for types search",
+        arguments: [
+            ["--json"], ["--agent"], ["--json", "--agent"], ["--agent", "--json"],
+        ])
+    func parsesTypesSearch(flags: [String]) throws {
         // -- Arrange --
-        let arguments = [
-            "types", "search", "Button",
-            "--technology", "SwiftUI",
-            "--json",
-        ]
+        let arguments =
+            [
+                "types", "search", "Button",
+                "--technology", "SwiftUI",
+            ] + flags
 
         // -- Act --
         let command = try CLI.parseAsRoot(arguments)
@@ -59,14 +67,18 @@ struct TypesViewCommandTests {
         #expect(viewCommand.json == false)
     }
 
-    @Test("accepts raw JSON output")
-    func parsesJSONFlag() throws {
+    @Test(
+        "accepts JSON and agent output for types view",
+        arguments: [
+            ["--json"], ["--agent"], ["--json", "--agent"], ["--agent", "--json"],
+        ])
+    func parsesJSONFlag(flags: [String]) throws {
         // -- Arrange --
-        let arguments = [
-            "types", "view", "MXHangDiagnostic",
-            "--technology", "MetricKit",
-            "--json",
-        ]
+        let arguments =
+            [
+                "types", "view", "MXHangDiagnostic",
+                "--technology", "MetricKit",
+            ] + flags
 
         // -- Act --
         let command = try CLI.parseAsRoot(arguments)

@@ -10,10 +10,10 @@ private let integrationTestsEnabled =
     .serialized
 )
 struct AppleDocsCommandIntegrationTests {
-    @Test("returns Swift String documentation as JSON")
-    func returnsSwiftStringJSON() throws {
+    @Test("returns Swift String documentation as JSON", arguments: ["--json", "--agent"])
+    func returnsSwiftStringJSON(flag: String) throws {
         // -- Arrange --
-        let arguments = ["types", "view", "String", "--technology", "Swift", "--json"]
+        let arguments = ["types", "view", "String", "--technology", "Swift", flag]
 
         // -- Act --
         let output = try runAppleDocs(arguments)
@@ -55,10 +55,10 @@ struct AppleDocsCommandIntegrationTests {
         #expect(output.contains("Overview\n────────"))
     }
 
-    @Test("lists MetricKit root types as JSON")
-    func listsMetricKitTypes() throws {
+    @Test("lists MetricKit root types as JSON", arguments: ["--json", "--agent"])
+    func listsMetricKitTypes(flag: String) throws {
         // -- Arrange --
-        let arguments = ["types", "list", "--technology", "MetricKit", "--json"]
+        let arguments = ["types", "list", "--technology", "MetricKit", flag]
 
         // -- Act --
         let output = try runAppleDocs(arguments)
@@ -77,13 +77,13 @@ struct AppleDocsCommandIntegrationTests {
         )
     }
 
-    @Test("searches SwiftUI collection groups as JSON")
-    func searchesSwiftUITypes() throws {
+    @Test("searches SwiftUI collection groups as JSON", arguments: ["--json", "--agent"])
+    func searchesSwiftUITypes(flag: String) throws {
         // -- Arrange --
         let arguments = [
             "types", "search", "Button",
             "--technology", "SwiftUI",
-            "--json",
+            flag,
         ]
 
         // -- Act --
@@ -120,10 +120,10 @@ struct AppleDocsCommandIntegrationTests {
         #expect(document.metadata.title == "URLSession.AsyncBytes")
     }
 
-    @Test("lists stable technologies as JSON")
-    func listsStableTechnologies() throws {
+    @Test("lists stable technologies as JSON", arguments: ["--json", "--agent"])
+    func listsStableTechnologies(flag: String) throws {
         // -- Arrange --
-        let arguments = ["technologies", "list", "--json"]
+        let arguments = ["technologies", "list", flag]
 
         // -- Act --
         let output = try runAppleDocs(arguments)

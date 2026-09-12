@@ -18,7 +18,10 @@ struct TypesListCommand: AsyncParsableCommand {
     @Option(help: "The framework or technology whose types to list.")
     var technology: String
 
-    @Flag(help: "Output a JSON array of types.")
+    @Flag(
+        name: [.long, .customLong("agent")],
+        help: "Output a JSON array of types. --agent currently aliases --json."
+    )
     var json = false
 
     mutating func run() async throws {

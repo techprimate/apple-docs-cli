@@ -21,7 +21,10 @@ struct TypesViewCommand: AsyncParsableCommand {
     @Option(help: "The framework or technology containing the type.")
     var technology: String
 
-    @Flag(help: "Output the raw Apple DocC JSON document.")
+    @Flag(
+        name: [.long, .customLong("agent")],
+        help: "Output the raw Apple DocC JSON document. --agent currently aliases --json."
+    )
     var json = false
 
     mutating func run() async throws {
