@@ -1,4 +1,5 @@
 brew "actionlint"
 brew "dprint"
+brew "git-cliff"
 brew "pre-commit"
 brew "swiftlint"
