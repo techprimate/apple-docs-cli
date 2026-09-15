@@ -1,6 +1,8 @@
 import ArgumentParser
 
-struct AgentSkillsUninstallCommand: ParsableCommand {
+struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
+    @OptionGroup var global: GlobalOptions
+
     static let configuration = CommandConfiguration(
         commandName: "uninstall",
         abstract: "Remove skills managed by apple-docs from a .agents directory.",
