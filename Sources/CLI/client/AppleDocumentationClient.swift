@@ -90,28 +90,15 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
 
     func fetchTypes(technology: String) async throws -> [DocumentationType] {
         logger.debug("Fetching documentation types", metadata: ["apple_docs.technology": .string(technology)])
-        do {
-            return try await fetchTypesDirect(technology: technology)
-        } catch Error.httpStatus(404) {
-            logger.debug("Type catalog not found, resolving technology")
-            let resolved = try await resolveTechnology(named: technology)
-            guard let slug = resolved.documentationSlug else {
-                logger.notice("Technology has no documentation root")
-                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
-            }
-            guard slug.caseInsensitiveCompare(technology) != .orderedSame else {
-                // Retrying the same case-insensitive path cannot produce a different result.
-                logger.notice("Documentation root unavailable, skipping identical retry")
-                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
-            }
-            logger.debug("Retrying type catalog with canonical technology", metadata: ["slug": .string(slug)])
-            do {
-                return try await fetchTypesDirect(technology: slug)
-            } catch Error.httpStatus(404) {
-                logger.notice("Canonical documentation root unavailable", metadata: ["slug": .string(slug)])
-                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
-            }
-        }
+        let root = try await fetchDocumentationRoot(technology: technology)
+        let types = sortTypes(documentationTypes(in: root.page, technology: root.slug))
+        logger.info(
+            "Fetched documentation types",
+            metadata: [
+                "path": .string("/documentation/\(root.slug.lowercased())"),
+                "count": .stringConvertible(types.count),
+            ])
+        return types
     }
 
     func fetchTechnologies() async throws -> [Technology] {
@@ -210,6 +197,48 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
 }
 
 extension DefaultAppleDocumentationClient {
+    struct DocumentationRoot: Sendable {
+        let page: TechnologyDocumentationPageDTO
+        let slug: String
+        let name: String
+        let url: String
+    }
+
+    func fetchDocumentationRoot(technology: String) async throws -> DocumentationRoot {
+        do {
+            return DocumentationRoot(
+                page: try await fetchDocumentationPage(path: "/documentation/\(technology.lowercased())"),
+                slug: technology,
+                name: technology,
+                url: "https://developer.apple.com/documentation/\(technology.lowercased())"
+            )
+        } catch Error.httpStatus(404) {
+            logger.debug("Documentation root not found, resolving technology")
+            let resolved = try await resolveTechnology(named: technology)
+            guard let slug = resolved.documentationSlug else {
+                logger.notice("Technology has no documentation root")
+                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
+            }
+            guard slug.caseInsensitiveCompare(technology) != .orderedSame else {
+                // Retrying the same case-insensitive path cannot produce a different result.
+                logger.notice("Documentation root unavailable, skipping identical retry")
+                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
+            }
+            logger.debug("Retrying documentation root with canonical technology", metadata: ["slug": .string(slug)])
+            do {
+                return DocumentationRoot(
+                    page: try await fetchDocumentationPage(path: "/documentation/\(slug.lowercased())"),
+                    slug: slug,
+                    name: resolved.name,
+                    url: resolved.url
+                )
+            } catch Error.httpStatus(404) {
+                logger.notice("Canonical documentation root unavailable", metadata: ["slug": .string(slug)])
+                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
+            }
+        }
+    }
+
     private func fetchData(from url: URL) async throws -> Data {
         let started = ContinuousClock.now
         logger.debug("Requesting documentation data", metadata: ["path": .string(url.path)])
