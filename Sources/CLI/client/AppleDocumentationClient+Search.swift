@@ -7,61 +7,25 @@ extension DefaultAppleDocumentationClient {
             metadata: [
                 "query": .string(query), "apple_docs.technology": .string(technology),
             ])
-        var slug = technology
-        var displayName = technology
-        var technologyURL = "https://developer.apple.com/documentation/\(technology.lowercased())"
-        let rootPage: TechnologyDocumentationPageDTO
-
-        do {
-            rootPage = try await fetchDocumentationPage(
-                path: "/documentation/\(technology.lowercased())"
-            )
-        } catch Error.httpStatus(404) {
-            logger.debug("Search root not found, resolving technology")
-            let resolved = try await resolveTechnology(named: technology)
-            guard let resolvedSlug = resolved.documentationSlug else {
-                logger.notice("Technology has no searchable documentation root")
-                throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
-            }
-            slug = resolvedSlug
-            displayName = resolved.name
-            technologyURL = resolved.url
-            logger.debug("Retrying search with canonical technology", metadata: ["slug": .string(resolvedSlug)])
-            rootPage = try await fetchDocumentationPage(
-                path: "/documentation/\(resolvedSlug.lowercased())"
-            )
-        }
-
-        let matches = try await searchTypes(
-            query: query,
-            documentationSlug: slug,
-            displayName: displayName,
-            technologyURL: technologyURL,
-            rootPage: rootPage
-        )
+        let root = try await fetchDocumentationRoot(technology: technology)
+        let matches = try await searchTypes(query: query, root: root)
         logger.info(
             "Documentation search completed",
             metadata: [
-                "apple_docs.technology": .string(displayName), "matches": .stringConvertible(matches.count),
+                "apple_docs.technology": .string(root.name), "matches": .stringConvertible(matches.count),
             ])
         return matches
     }
 
-    private func searchTypes(
-        query: String,
-        documentationSlug: String,
-        displayName: String,
-        technologyURL: String,
-        rootPage: TechnologyDocumentationPageDTO
-    ) async throws -> [DocumentationType] {
-        let rootPath = "/documentation/\(documentationSlug.lowercased())"
+    private func searchTypes(query: String, root: DocumentationRoot) async throws -> [DocumentationType] {
+        let rootPath = "/documentation/\(root.slug.lowercased())"
         logger.debug("Traversing documentation collection groups", metadata: ["path": .string(rootPath)])
         var typesByPath: [String: DocumentationType] = [:]
-        for type in documentationTypes(in: rootPage, technology: documentationSlug) {
+        for type in documentationTypes(in: root.page, technology: root.slug) {
             typesByPath[type.path] = type
         }
         var visitedPaths = Set([rootPath])
-        var pendingPaths = collectionGroupPaths(in: rootPage, technology: documentationSlug).filter {
+        var pendingPaths = collectionGroupPaths(in: root.page, technology: root.slug).filter {
             visitedPaths.insert($0).inserted
         }
 
@@ -78,10 +42,10 @@ extension DefaultAppleDocumentationClient {
             let pages = await fetchDocumentationPages(paths: batch)
 
             for page in pages {
-                for type in documentationTypes(in: page, technology: documentationSlug) {
+                for type in documentationTypes(in: page, technology: root.slug) {
                     typesByPath[type.path] = type
                 }
-                for path in collectionGroupPaths(in: page, technology: documentationSlug)
+                for path in collectionGroupPaths(in: page, technology: root.slug)
                 where visitedPaths.insert(path).inserted {
                     pendingPaths.append(path)
                 }
@@ -99,13 +63,13 @@ extension DefaultAppleDocumentationClient {
             logger.notice(
                 "No matching documentation types",
                 metadata: [
-                    "query": .string(query), "apple_docs.technology": .string(displayName),
+                    "query": .string(query), "apple_docs.technology": .string(root.name),
                     "candidates": .stringConvertible(typesByPath.count),
                 ])
             throw Error.typeSearchNoResults(
                 query: query,
-                technology: displayName,
-                technologyURL: technologyURL
+                technology: root.name,
+                technologyURL: root.url
             )
         }
         return matches
