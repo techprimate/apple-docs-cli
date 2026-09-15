@@ -6,6 +6,12 @@ import Logging
 #endif
 
 enum Dependencies {
+    static let telemetry = DefaultTelemetry(
+        // Telemetry starts before SwiftLog is bootstrapped. Resolve its logger only when logging an event.
+        logger: { Logger(label: "com.techprimate.apple-docs.telemetry") },
+        environment: ProcessInfo.processInfo.environment
+    )
+
     static let httpCache: URLCache? = {
         guard
             let cachesDirectory = FileManager.default.urls(

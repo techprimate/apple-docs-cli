@@ -1,16 +1,7 @@
 import ArgumentParser
-import Logging
-
-#if canImport(SentrySwift)
-    @preconcurrency import SentrySwift
-#endif
 
 struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
     @OptionGroup var global: GlobalOptions
-
-    private static let logger = Logger(
-        label: "com.techprimate.apple-docs.types-search"
-    )
 
     static let configuration = CommandConfiguration(
         commandName: "search",
@@ -30,54 +21,18 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
     var json = false
 
     mutating func run() async throws {
-        // Search text can be user-authored, so it is deliberately excluded from telemetry context.
-        let context = SentryCommandContext.typesSearch(
-            technology: technology,
-            json: json
-        )
-        #if canImport(SentrySwift)
-            if SentrySDK.isEnabled {
-                let transaction = SentrySDK.startTransaction(
-                    name: context.transactionName,
-                    operation: "console.command",
-                    bindToScope: true
-                )
-                for (key, value) in context.attributes {
-                    transaction.setData(value: value, key: key)
-                }
-                SentrySDK.configureScope { scope in
-                    scope.setContext(value: context.attributes, key: "cli")
-                }
-                let breadcrumb = Breadcrumb(
-                    level: .info,
-                    category: SentryConfiguration.breadcrumbCategory
-                )
-                breadcrumb.type = "user"
-                breadcrumb.message = "CLI command invoked"
-                for (key, value) in context.attributes {
-                    breadcrumb.setData(value: value, key: key)
-                }
-                SentrySDK.addBreadcrumb(breadcrumb)
-                Self.logger.info(
-                    "CLI command started",
-                    metadata: context.logMetadata
-                )
-            }
-        #endif
+        try await run(telemetry: Dependencies.telemetry)
+    }
 
+    func run(telemetry: Telemetry) async throws {
+        // Search text can be user-authored, so it is deliberately excluded from telemetry context.
+        let context = TelemetryCommandContext.typesSearch(technology: technology, json: json)
+        telemetry.startCommand(context)
         let result = try await TypesSearchCommandRunner(
             client: Dependencies.documentationClient,
             renderer: Dependencies.documentationTypeListRenderer(json: json)
         ).run(query: query, technology: technology)
-        #if canImport(SentrySwift)
-            if SentrySDK.isEnabled {
-                SentrySDK.metrics.distribution(
-                    key: "apple_docs.type.search.result.count",
-                    value: Double(result.matchCount),
-                    attributes: context.metricAttributes
-                )
-            }
-        #endif
+        telemetry.record(.typeSearch(matches: result.matchCount), context: context)
         print(result.output)
     }
 }
