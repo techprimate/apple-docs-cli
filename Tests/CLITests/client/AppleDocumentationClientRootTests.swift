@@ -4,10 +4,6 @@ import Testing
 
 @testable import CLI
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 @Suite("Apple documentation root lookup")
 struct AppleDocumentationClientRootTests {
     @Test("maps a missing canonical root to unsupported technology guidance", arguments: [false, true])
@@ -22,10 +18,10 @@ struct AppleDocumentationClientRootTests {
         let canonicalURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
         )
-        let transport = RootTestTransport(responses: [
-            requestedURL: .init(statusCode: 404, data: Data()),
-            catalogURL: .init(statusCode: 200, data: cryptoKitCatalogData),
-            canonicalURL: .init(statusCode: 404, data: Data()),
+        let transport = HTTPTestTransport(responses: [
+            requestedURL: .http(statusCode: 404, data: Data()),
+            catalogURL: .http(statusCode: 200, data: cryptoKitCatalogData),
+            canonicalURL: .http(statusCode: 404, data: Data()),
         ])
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
@@ -33,7 +29,7 @@ struct AppleDocumentationClientRootTests {
 
         // -- Act --
         await #expect(
-            throws: DefaultAppleDocumentationClient<RootTestTransport>.Error.unsupportedTechnology(
+            throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.unsupportedTechnology(
                 name: "Apple CryptoKit", url: "https://developer.apple.com/documentation/cryptokit"
             )
         ) {
@@ -57,9 +53,9 @@ struct AppleDocumentationClientRootTests {
         let catalogURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/technologies.json")
         )
-        let transport = RootTestTransport(responses: [
-            rootURL: .init(statusCode: 404, data: Data()),
-            catalogURL: .init(statusCode: 200, data: cryptoKitCatalogData),
+        let transport = HTTPTestTransport(responses: [
+            rootURL: .http(statusCode: 404, data: Data()),
+            catalogURL: .http(statusCode: 200, data: cryptoKitCatalogData),
         ])
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
@@ -67,7 +63,7 @@ struct AppleDocumentationClientRootTests {
 
         // -- Act --
         await #expect(
-            throws: DefaultAppleDocumentationClient<RootTestTransport>.Error.unsupportedTechnology(
+            throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.unsupportedTechnology(
                 name: "Apple CryptoKit", url: "https://developer.apple.com/documentation/cryptokit"
             )
         ) {
@@ -101,10 +97,10 @@ struct AppleDocumentationClientRootTests {
             }}}
             """.utf8
         )
-        let transport = RootTestTransport(responses: [
-            requestedURL: .init(statusCode: 404, data: Data()),
-            catalogURL: .init(statusCode: 200, data: cryptoKitCatalogData),
-            canonicalURL: .init(statusCode: 200, data: rootData),
+        let transport = HTTPTestTransport(responses: [
+            requestedURL: .http(statusCode: 404, data: Data()),
+            catalogURL: .http(statusCode: 200, data: cryptoKitCatalogData),
+            canonicalURL: .http(statusCode: 200, data: rootData),
         ])
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
@@ -128,13 +124,13 @@ struct AppleDocumentationClientRootTests {
         let rootURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
         )
-        let transport = RootTestTransport(responses: [rootURL: .init(statusCode: status, data: Data())])
+        let transport = HTTPTestTransport(responses: [rootURL: .http(statusCode: status, data: Data())])
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
         )
 
         // -- Act --
-        await #expect(throws: DefaultAppleDocumentationClient<RootTestTransport>.Error.httpStatus(status)) {
+        await #expect(throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.httpStatus(status)) {
             if search {
                 _ = try await client.searchTypes(query: "AES", technology: "CryptoKit")
             } else {
@@ -155,29 +151,3 @@ private let cryptoKitCatalogData = Data(
     }]}]}]}
     """.utf8
 )
-
-private actor RootTestTransport: HTTPDataTransport {
-    struct Response: Sendable {
-        let statusCode: Int
-        let data: Data
-    }
-
-    let responses: [URL: Response]
-    private(set) var requestedURLs: [URL] = []
-
-    init(responses: [URL: Response]) {
-        self.responses = responses
-    }
-
-    func data(from url: URL) async throws -> (Data, URLResponse) {
-        requestedURLs.append(url)
-        let result = try #require(responses[url], "Unexpected request: \(url)")
-        let response = try #require(
-            HTTPURLResponse(
-                url: url, statusCode: result.statusCode, httpVersion: nil,
-                headerFields: ["Content-Type": "application/json"]
-            )
-        )
-        return (result.data, response)
-    }
-}
