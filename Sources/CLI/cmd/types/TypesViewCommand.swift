@@ -1,16 +1,7 @@
 import ArgumentParser
-import Logging
-
-#if canImport(SentrySwift)
-    @preconcurrency import SentrySwift
-#endif
 
 struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
     @OptionGroup var global: GlobalOptions
-
-    private static let logger = Logger(
-        label: "com.techprimate.apple-docs.types-view"
-    )
 
     static let configuration = CommandConfiguration(
         commandName: "view",
@@ -30,72 +21,17 @@ struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
     var json = false
 
     mutating func run() async throws {
-        let context = SentryCommandContext.typesView(
-            name: name,
-            technology: technology,
-            json: json
-        )
-        #if canImport(SentrySwift)
-            if SentrySDK.isEnabled {
-                let transaction = SentrySDK.startTransaction(
-                    name: context.transactionName,
-                    operation: "console.command",
-                    bindToScope: true
-                )
-                for (key, value) in context.attributes {
-                    transaction.setData(value: value, key: key)
-                }
-                SentrySDK.configureScope { scope in
-                    scope.setContext(value: context.attributes, key: "cli")
-                }
-                let breadcrumb = Breadcrumb(
-                    level: .info,
-                    category: SentryConfiguration.breadcrumbCategory
-                )
-                breadcrumb.type = "user"
-                breadcrumb.message = "CLI command invoked"
-                for (key, value) in context.attributes {
-                    breadcrumb.setData(value: value, key: key)
-                }
-                SentrySDK.addBreadcrumb(breadcrumb)
-                Self.logger.info(
-                    "CLI command started",
-                    metadata: context.logMetadata
-                )
-            }
-        #endif
+        try await run(telemetry: Dependencies.telemetry)
+    }
 
+    func run(telemetry: Telemetry) async throws {
+        let context = TelemetryCommandContext.typesView(name: name, technology: technology, json: json)
+        telemetry.startCommand(context)
         let result = try await TypesViewCommandRunner(
             client: Dependencies.documentationClient,
             renderer: Dependencies.documentationRenderer(json: json)
         ).run(name: name, technology: technology)
-        #if canImport(SentrySwift)
-            if SentrySDK.isEnabled {
-                recordPopularityMetrics()
-                SentrySDK.metrics.distribution(
-                    key: "apple_docs.response.size",
-                    value: Double(result.responseByteCount),
-                    unit: .byte,
-                    attributes: context.metricAttributes
-                )
-            }
-        #endif
+        telemetry.record(.typeView(responseBytes: result.responseByteCount), context: context)
         print(result.output)
     }
-
-    #if canImport(SentrySwift)
-        private func recordPopularityMetrics() {
-            SentrySDK.metrics.count(
-                key: "apple_docs.technology.requested",
-                attributes: ["apple_docs.technology": technology]
-            )
-            SentrySDK.metrics.count(
-                key: "apple_docs.type.requested",
-                attributes: [
-                    "apple_docs.technology": technology,
-                    "apple_docs.type": name,
-                ]
-            )
-        }
-    #endif
 }

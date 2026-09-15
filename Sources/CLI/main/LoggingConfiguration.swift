@@ -1,21 +1,11 @@
 import Logging
 
-#if canImport(SentrySwift)
-    import SentrySwiftLog
-#endif
-
 enum LoggingConfiguration {
-    static func bootstrap(verbose: Bool, telemetryEnabled: Bool) {
+    static func bootstrap(verbose: Bool, telemetry: Telemetry) {
         LoggingSystem.bootstrap { label in
-            var telemetry: (any LogHandler)?
-            #if canImport(SentrySwift)
-                if telemetryEnabled {
-                    telemetry = SentryLogHandler(logLevel: .info)
-                }
-            #endif
-            return handler(
+            handler(
                 console: StreamLogHandler.standardError(label: label),
-                telemetry: telemetry,
+                telemetry: telemetry.makeLogHandler(),
                 verbose: verbose
             )
         }

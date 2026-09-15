@@ -1,36 +1,32 @@
 import Logging
 
-#if canImport(SentrySwift)
-    @preconcurrency import SentrySwift
-#endif
-
-struct SentryCommandContext: Equatable, Sendable {
+struct TelemetryCommandContext: Equatable, Sendable {
     let command: String
     let outputJSON: Bool?
     let technology: String?
     let typeName: String?
 
-    static let cacheClean = SentryCommandContext(
+    static let cacheClean = TelemetryCommandContext(
         command: "cache.clean",
         outputJSON: nil,
         technology: nil,
         typeName: nil
     )
-    static let agentSkillsGet = SentryCommandContext(
+    static let agentSkillsGet = TelemetryCommandContext(
         command: "agent.skills.get",
         outputJSON: nil,
         technology: nil,
         typeName: nil
     )
-    static let agentSkillsList = SentryCommandContext(
+    static let agentSkillsList = TelemetryCommandContext(
         command: "agent.skills.list",
         outputJSON: nil,
         technology: nil,
         typeName: nil
     )
 
-    static func technologiesList(json: Bool) -> SentryCommandContext {
-        SentryCommandContext(
+    static func technologiesList(json: Bool) -> TelemetryCommandContext {
+        TelemetryCommandContext(
             command: "technologies.list",
             outputJSON: json,
             technology: nil,
@@ -41,8 +37,8 @@ struct SentryCommandContext: Equatable, Sendable {
     static func typesList(
         technology: String,
         json: Bool
-    ) -> SentryCommandContext {
-        SentryCommandContext(
+    ) -> TelemetryCommandContext {
+        TelemetryCommandContext(
             command: "types.list",
             outputJSON: json,
             technology: technology,
@@ -53,8 +49,8 @@ struct SentryCommandContext: Equatable, Sendable {
     static func typesSearch(
         technology: String,
         json: Bool
-    ) -> SentryCommandContext {
-        SentryCommandContext(
+    ) -> TelemetryCommandContext {
+        TelemetryCommandContext(
             command: "types.search",
             outputJSON: json,
             technology: technology,
@@ -66,8 +62,8 @@ struct SentryCommandContext: Equatable, Sendable {
         name: String,
         technology: String,
         json: Bool
-    ) -> SentryCommandContext {
-        SentryCommandContext(
+    ) -> TelemetryCommandContext {
+        TelemetryCommandContext(
             command: "types.view",
             outputJSON: json,
             technology: technology,
@@ -107,18 +103,14 @@ struct SentryCommandContext: Equatable, Sendable {
         return metadata
     }
 
-    #if canImport(SentrySwift)
-        var metricAttributes: [String: any SentryAttributeValue] {
-            var attributes: [String: any SentryAttributeValue] = [
-                "cli.command": command
-            ]
-            if let technology {
-                attributes["apple_docs.technology"] = technology
-            }
-            if let typeName {
-                attributes["apple_docs.type"] = typeName
-            }
-            return attributes
+    var metricAttributes: [String: String] {
+        var attributes = ["cli.command": command]
+        if let technology {
+            attributes["apple_docs.technology"] = technology
         }
-    #endif
+        if let typeName {
+            attributes["apple_docs.type"] = typeName
+        }
+        return attributes
+    }
 }
