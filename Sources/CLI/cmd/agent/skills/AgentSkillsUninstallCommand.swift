@@ -29,7 +29,7 @@ struct AgentSkillsUninstallCommand: ParsableCommand {
     }
 
     mutating func run() throws {
-        let output = try AgentSkillInstaller().uninstall(
+        let output = try Dependencies.agentSkillInstaller().uninstall(
             selection.selectedSkills(), root: selection.dir, dryRun: selection.dryRun
         )
         print(output)
