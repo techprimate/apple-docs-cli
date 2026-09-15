@@ -19,7 +19,9 @@ struct AppleDocumentationClientLoggingTests {
         let data = Data("private response body".utf8)
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingTestTransport(result: .success((data, try response(status: 200)))),
+            dependencies: HTTPTestTransport(responses: [
+                url.appending(path: "documentation/swift/string.json"): .http(data: data)
+            ]),
             baseURL: url
         )
 
@@ -53,12 +55,14 @@ struct AppleDocumentationClientLoggingTests {
         let recorder = ClientLogRecorder()
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingTestTransport(result: .success((Data(), try response(status: status))))
+            dependencies: HTTPTestTransport(responses: [
+                try documentationURL("swift"): .http(statusCode: status, data: Data())
+            ])
         )
         let expectedLevel: Logger.Level = status == 404 ? .debug : (status >= 500 ? .error : .warning)
 
         // -- Act --
-        await #expect(throws: DefaultAppleDocumentationClient<LoggingTestTransport>.Error.httpStatus(status)) {
+        await #expect(throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.httpStatus(status)) {
             try await client.fetchDocumentationPage(path: "/documentation/swift")
         }
 
@@ -78,7 +82,9 @@ struct AppleDocumentationClientLoggingTests {
         let recorder = ClientLogRecorder()
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingTestTransport(result: .failure(URLError(code)))
+            dependencies: HTTPTestTransport(responses: [
+                try documentationURL("swift/string"): .failure(URLError(code))
+            ])
         )
 
         // -- Act --
@@ -101,11 +107,13 @@ struct AppleDocumentationClientLoggingTests {
         let response = URLResponse(url: url, mimeType: nil, expectedContentLength: 0, textEncodingName: nil)
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingTestTransport(result: .success((Data(), response)))
+            dependencies: HTTPTestTransport(responses: [
+                try documentationURL("swift/string"): .response(data: Data(), response: response)
+            ])
         )
 
         // -- Act --
-        await #expect(throws: DefaultAppleDocumentationClient<LoggingTestTransport>.Error.invalidResponse) {
+        await #expect(throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.invalidResponse) {
             try await client.fetchType(named: "String", technology: "Swift")
         }
 
@@ -123,9 +131,10 @@ struct AppleDocumentationClientLoggingTests {
         let recorder = ClientLogRecorder()
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingTestTransport(
-                result: .success((Data("sensitive malformed body".utf8), try response(status: 200)))
-            )
+            dependencies: HTTPTestTransport(responses: [
+                try documentationURL(catalog ? "technologies" : "swift"):
+                    .http(data: Data("sensitive malformed body".utf8))
+            ])
         )
 
         // -- Act --
@@ -151,14 +160,14 @@ struct AppleDocumentationClientLoggingTests {
         let recorder = ClientLogRecorder()
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingTestTransport(
-                result: .success((Data("{\"references\":{}}".utf8), try response(status: 200)))
-            )
+            dependencies: HTTPTestTransport(responses: [
+                try documentationURL("swift"): .http(data: Data("{\"references\":{}}".utf8))
+            ])
         )
 
         // -- Act --
         await #expect(
-            throws: DefaultAppleDocumentationClient<LoggingTestTransport>.Error.typeSearchNoResults(
+            throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.typeSearchNoResults(
                 query: "Missing", technology: "Swift", technologyURL: "https://developer.apple.com/documentation/swift"
             )
         ) {
@@ -186,9 +195,9 @@ struct AppleDocumentationClientLoggingTests {
             """
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingSearchTransport(responses: [
-                "/tutorials/data/documentation/swiftui.json": (200, root),
-                "/tutorials/data/documentation/swiftui/controls.json": (404, ""),
+            dependencies: HTTPTestTransport(responses: [
+                try documentationURL("swiftui"): .http(data: Data(root.utf8)),
+                try documentationURL("swiftui/controls"): .http(statusCode: 404, data: Data()),
             ])
         )
 
@@ -221,10 +230,10 @@ struct AppleDocumentationClientLoggingTests {
             """
         let client = DefaultAppleDocumentationClient(
             logger: recorder.logger(),
-            dependencies: LoggingSearchTransport(responses: [
-                "/tutorials/data/documentation/apple cryptokit/aes.json": (404, ""),
-                "/tutorials/data/documentation/technologies.json": (200, catalog),
-                "/tutorials/data/documentation/cryptokit/aes.json": (200, "raw document"),
+            dependencies: HTTPTestTransport(responses: [
+                try documentationURL("apple%20cryptokit/aes"): .http(statusCode: 404, data: Data()),
+                try documentationURL("technologies"): .http(data: Data(catalog.utf8)),
+                try documentationURL("cryptokit/aes"): .http(data: Data("raw document".utf8)),
             ])
         )
 
@@ -242,26 +251,7 @@ struct AppleDocumentationClientLoggingTests {
         #expect(!recorder.events.contains { $0.level >= .warning })
     }
 
-    private func response(status: Int) throws -> HTTPURLResponse {
-        let url = try #require(URL(string: "https://example.com"))
-        return try #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil))
-    }
-}
-
-private struct LoggingSearchTransport: HTTPDataTransport {
-    let responses: [String: (Int, String)]
-
-    func data(from url: URL) async throws -> (Data, URLResponse) {
-        let (status, body) = try #require(responses[url.path])
-        let response = try #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil))
-        return (Data(body.utf8), response)
-    }
-}
-
-private struct LoggingTestTransport: HTTPDataTransport {
-    let result: Result<(Data, URLResponse), Swift.Error>
-
-    func data(from _: URL) async throws -> (Data, URLResponse) {
-        try result.get()
+    private func documentationURL(_ path: String) throws -> URL {
+        try #require(URL(string: "https://developer.apple.com/tutorials/data/documentation/\(path).json"))
     }
 }

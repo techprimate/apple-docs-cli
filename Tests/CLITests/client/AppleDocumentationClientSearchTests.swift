@@ -4,10 +4,6 @@ import Testing
 
 @testable import CLI
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 @Suite("Apple documentation type search client")
 struct AppleDocumentationClientSearchTests {
     @Test("searches symbols across nested collection groups")
@@ -30,13 +26,10 @@ struct AppleDocumentationClientSearchTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: SearchTestTransport(
-                responses: [
-                    rootURL: rootSearchPage,
-                    controlsURL: controlsSearchPage,
-                    stylesURL: stylesSearchPage,
-                ]
-            )
+            dependencies: HTTPTestTransport(responses: [
+                rootURL: .http(data: rootSearchPage), controlsURL: .http(data: controlsSearchPage),
+                stylesURL: .http(data: stylesSearchPage),
+            ])
         )
 
         // -- Act --
@@ -55,8 +48,8 @@ struct AppleDocumentationClientSearchTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: SearchTestTransport(
-                responses: [rootURL: duplicateRootSearchPage]
+            dependencies: HTTPTestTransport(
+                responses: [rootURL: .http(data: duplicateRootSearchPage)]
             )
         )
 
@@ -88,11 +81,11 @@ struct AppleDocumentationClientSearchTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: SearchFallbackTransport(
+            dependencies: HTTPTestTransport(
                 responses: [
-                    rootURL: .init(statusCode: 200, data: partialFailureRootSearchPage),
-                    controlsURL: .init(statusCode: 404, data: Data()),
-                    stylesURL: .init(statusCode: 200, data: stylesSearchPage),
+                    rootURL: .http(statusCode: 200, data: partialFailureRootSearchPage),
+                    controlsURL: .http(statusCode: 404, data: Data()),
+                    stylesURL: .http(statusCode: 200, data: stylesSearchPage),
                 ]
             )
         )
@@ -125,11 +118,11 @@ struct AppleDocumentationClientSearchTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: SearchFallbackTransport(
+            dependencies: HTTPTestTransport(
                 responses: [
-                    requestedRootURL: .init(statusCode: 404, data: Data()),
-                    technologiesURL: .init(statusCode: 200, data: cryptoKitCatalogData),
-                    resolvedRootURL: .init(statusCode: 200, data: cryptoKitRootData),
+                    requestedRootURL: .http(statusCode: 404, data: Data()),
+                    technologiesURL: .http(statusCode: 200, data: cryptoKitCatalogData),
+                    resolvedRootURL: .http(statusCode: 200, data: cryptoKitRootData),
                 ]
             )
         )
@@ -162,13 +155,10 @@ struct AppleDocumentationClientSearchTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: SearchTestTransport(
-                responses: [
-                    rootURL: rootSearchPage,
-                    controlsURL: controlsSearchPage,
-                    stylesURL: stylesSearchPage,
-                ]
-            )
+            dependencies: HTTPTestTransport(responses: [
+                rootURL: .http(data: rootSearchPage), controlsURL: .http(data: controlsSearchPage),
+                stylesURL: .http(data: stylesSearchPage),
+            ])
         )
 
         // -- Act --
@@ -314,23 +304,6 @@ private let stylesSearchPage = Data(
     """.utf8
 )
 
-private struct SearchTestTransport: HTTPDataTransport {
-    let responses: [URL: Data]
-
-    func data(from url: URL) async throws -> (Data, URLResponse) {
-        guard let data = responses[url] else {
-            throw SearchTestError.unexpectedURL(url)
-        }
-        let response = HTTPURLResponse(
-            url: url,
-            statusCode: 200,
-            httpVersion: nil,
-            headerFields: ["Content-Type": "application/json"]
-        )!
-        return (data, response)
-    }
-}
-
 private let cryptoKitCatalogData = Data(
     """
     {
@@ -363,29 +336,3 @@ private let cryptoKitRootData = Data(
     }
     """.utf8
 )
-
-private struct SearchFallbackTransport: HTTPDataTransport {
-    struct Response: Sendable {
-        let statusCode: Int
-        let data: Data
-    }
-
-    let responses: [URL: Response]
-
-    func data(from url: URL) async throws -> (Data, URLResponse) {
-        guard let result = responses[url] else {
-            throw SearchTestError.unexpectedURL(url)
-        }
-        let response = HTTPURLResponse(
-            url: url,
-            statusCode: result.statusCode,
-            httpVersion: nil,
-            headerFields: ["Content-Type": "application/json"]
-        )!
-        return (result.data, response)
-    }
-}
-
-private enum SearchTestError: Error {
-    case unexpectedURL(URL)
-}

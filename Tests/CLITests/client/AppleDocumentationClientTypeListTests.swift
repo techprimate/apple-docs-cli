@@ -4,10 +4,6 @@ import Testing
 
 @testable import CLI
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 @Suite("Apple documentation type catalog client")
 struct AppleDocumentationClientTypeListTests {
     @Test("lists direct symbols from a technology root document")
@@ -18,8 +14,8 @@ struct AppleDocumentationClientTypeListTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: TypeCatalogTestTransport(
-                responses: [rootURL: .init(statusCode: 200, data: swiftDataRootData)]
+            dependencies: HTTPTestTransport(
+                responses: [rootURL: .http(statusCode: 200, data: swiftDataRootData)]
             )
         )
 
@@ -59,11 +55,11 @@ struct AppleDocumentationClientTypeListTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: TypeCatalogTestTransport(
+            dependencies: HTTPTestTransport(
                 responses: [
-                    requestedRootURL: .init(statusCode: 404, data: Data()),
-                    technologiesURL: .init(statusCode: 200, data: cryptoKitCatalogData),
-                    resolvedRootURL: .init(statusCode: 404, data: Data()),
+                    requestedRootURL: .http(statusCode: 404, data: Data()),
+                    technologiesURL: .http(statusCode: 200, data: cryptoKitCatalogData),
+                    resolvedRootURL: .http(statusCode: 404, data: Data()),
                 ]
             )
         )
@@ -96,10 +92,10 @@ struct AppleDocumentationClientTypeListTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: TypeCatalogTestTransport(
+            dependencies: HTTPTestTransport(
                 responses: [
-                    rootURL: .init(statusCode: 404, data: Data()),
-                    technologiesURL: .init(statusCode: 200, data: externalTechnologyCatalogData),
+                    rootURL: .http(statusCode: 404, data: Data()),
+                    technologiesURL: .http(statusCode: 200, data: externalTechnologyCatalogData),
                 ]
             )
         )
@@ -191,29 +187,3 @@ private let externalTechnologyCatalogData = Data(
     }
     """.utf8
 )
-
-private struct TypeCatalogTestTransport: HTTPDataTransport {
-    struct Response: Sendable {
-        let statusCode: Int
-        let data: Data
-    }
-
-    let responses: [URL: Response]
-
-    func data(from url: URL) async throws -> (Data, URLResponse) {
-        guard let result = responses[url] else {
-            throw TypeCatalogTestError.unexpectedURL(url)
-        }
-        let response = HTTPURLResponse(
-            url: url,
-            statusCode: result.statusCode,
-            httpVersion: nil,
-            headerFields: ["Content-Type": "application/json"]
-        )!
-        return (result.data, response)
-    }
-}
-
-private enum TypeCatalogTestError: Error {
-    case unexpectedURL(URL)
-}

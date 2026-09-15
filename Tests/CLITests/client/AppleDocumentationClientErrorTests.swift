@@ -4,10 +4,6 @@ import Testing
 
 @testable import CLI
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 @Suite("Apple documentation client errors")
 struct AppleDocumentationClientErrorTests {
     @Test("maps a missing type to discovery guidance")
@@ -24,11 +20,11 @@ struct AppleDocumentationClientErrorTests {
         )
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: LookupTestTransport(
+            dependencies: HTTPTestTransport(
                 responses: [
-                    typeURL: .init(statusCode: 404, data: Data()),
-                    technologiesURL: .init(statusCode: 200, data: swiftDataCatalogData),
-                    rootURL: .init(statusCode: 200, data: modelRootData),
+                    typeURL: .http(statusCode: 404, data: Data()),
+                    technologiesURL: .http(statusCode: 200, data: swiftDataCatalogData),
+                    rootURL: .http(statusCode: 200, data: modelRootData),
                 ]
             )
         )
@@ -88,29 +84,3 @@ private let modelRootData = Data(
     }
     """.utf8
 )
-
-private struct LookupTestTransport: HTTPDataTransport {
-    struct Response: Sendable {
-        let statusCode: Int
-        let data: Data
-    }
-
-    let responses: [URL: Response]
-
-    func data(from url: URL) async throws -> (Data, URLResponse) {
-        guard let result = responses[url] else {
-            throw LookupTestError.unexpectedURL(url)
-        }
-        let response = HTTPURLResponse(
-            url: url,
-            statusCode: result.statusCode,
-            httpVersion: nil,
-            headerFields: ["Content-Type": "application/json"]
-        )!
-        return (result.data, response)
-    }
-}
-
-private enum LookupTestError: Error {
-    case unexpectedURL(URL)
-}

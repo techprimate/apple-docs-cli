@@ -4,10 +4,6 @@ import Testing
 
 @testable import CLI
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 @Suite("Apple documentation technology client")
 struct AppleDocumentationClientTechnologyTests {
     @Test("fetches technologies from every catalog group")
@@ -16,20 +12,7 @@ struct AppleDocumentationClientTechnologyTests {
         let expectedURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/technologies.json")
         )
-        let response = try #require(
-            HTTPURLResponse(
-                url: expectedURL,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: ["Content-Type": "application/json"]
-            )
-        )
-        let data = technologyCatalogData
-        let transport = TechnologyCatalogTransport(
-            expectedURL: expectedURL,
-            response: response,
-            data: data
-        )
+        let transport = HTTPTestTransport(responses: [expectedURL: .http(data: technologyCatalogData)])
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: transport
@@ -107,20 +90,3 @@ private let technologyCatalogData = Data(
     }
     """.utf8
 )
-
-private struct TechnologyCatalogTransport: HTTPDataTransport {
-    let expectedURL: URL
-    let response: URLResponse
-    let data: Data
-
-    func data(from url: URL) async throws -> (Data, URLResponse) {
-        guard url == expectedURL else {
-            throw TechnologyCatalogTransportError.unexpectedURL(url)
-        }
-        return (data, response)
-    }
-}
-
-private enum TechnologyCatalogTransportError: Error {
-    case unexpectedURL(URL)
-}
