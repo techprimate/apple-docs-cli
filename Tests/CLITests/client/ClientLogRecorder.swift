@@ -11,8 +11,12 @@ final class ClientLogRecorder: Sendable {
 
     func logger() -> Logger {
         Logger(label: "test.client") { _ in
-            RecordingHandler(recorder: self)
+            self.handler()
         }
+    }
+
+    func handler() -> any LogHandler {
+        RecordingHandler(recorder: self)
     }
 
     private func append(_ event: LogEvent) {

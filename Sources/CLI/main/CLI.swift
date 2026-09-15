@@ -1,6 +1,8 @@
 import ArgumentParser
 
-struct CLI: AsyncParsableCommand {
+struct CLI: AsyncParsableCommand, GlobalOptionsProviding {
+    @OptionGroup var global: GlobalOptions
+
     static let configuration = CommandConfiguration(
         commandName: "apple-docs",
         abstract: "Access Apple developer documentation from the command line.",

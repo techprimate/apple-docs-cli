@@ -5,7 +5,9 @@ import Logging
     @preconcurrency import SentrySwift
 #endif
 
-struct TypesSearchCommand: AsyncParsableCommand {
+struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
+    @OptionGroup var global: GlobalOptions
+
     private static let logger = Logger(
         label: "com.techprimate.apple-docs.types-search"
     )

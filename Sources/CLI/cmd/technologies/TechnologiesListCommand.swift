@@ -5,7 +5,9 @@ import Logging
     @preconcurrency import SentrySwift
 #endif
 
-struct TechnologiesListCommand: AsyncParsableCommand {
+struct TechnologiesListCommand: AsyncParsableCommand, GlobalOptionsProviding {
+    @OptionGroup var global: GlobalOptions
+
     private static let logger = Logger(
         label: "com.techprimate.apple-docs.technologies-list"
     )

@@ -1,6 +1,8 @@
 import ArgumentParser
 
-struct AgentSkillsCommand: ParsableCommand {
+struct AgentSkillsCommand: ParsableCommand, GlobalOptionsProviding {
+    @OptionGroup var global: GlobalOptions
+
     static let configuration = CommandConfiguration(
         commandName: "skills",
         abstract: "Access portable Agent Skills bundled with apple-docs.",

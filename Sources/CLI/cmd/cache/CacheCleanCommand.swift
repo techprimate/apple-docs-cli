@@ -5,7 +5,9 @@ import Logging
     @preconcurrency import SentrySwift
 #endif
 
-struct CacheCleanCommand: ParsableCommand {
+struct CacheCleanCommand: ParsableCommand, GlobalOptionsProviding {
+    @OptionGroup var global: GlobalOptions
+
     private static let logger = Logger(
         label: "com.techprimate.apple-docs.cache-clean"
     )

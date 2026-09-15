@@ -5,7 +5,9 @@ import Logging
     @preconcurrency import SentrySwift
 #endif
 
-struct AgentSkillsGetCommand: ParsableCommand {
+struct AgentSkillsGetCommand: ParsableCommand, GlobalOptionsProviding {
+    @OptionGroup var global: GlobalOptions
+
     private static let logger = Logger(
         label: "com.techprimate.apple-docs.agent-skills-get"
     )

@@ -4,7 +4,6 @@ import Logging
 
 #if canImport(SentrySwift)
     @preconcurrency import SentrySwift
-    import SentrySwiftLog
 #endif
 
 @main
@@ -14,19 +13,34 @@ enum AppleDocs {
     @MainActor
     static func main() async {
         let telemetryEnabled = configureTelemetry()
+        var loggingConfigured = false
 
         do {
             var command = try await CLI.asyncParseAsRoot()
+            LoggingConfiguration.bootstrap(
+                verbose: verboseLoggingEnabled(for: command),
+                telemetryEnabled: telemetryEnabled
+            )
+            loggingConfigured = true
+            Self.logger.debug("CLI command parsed")
             if var asyncCommand = command as? any AsyncParsableCommand {
                 try await asyncCommand.run()
             } else {
                 try command.run()
             }
+            Self.logger.debug("CLI command finished")
             finishTelemetry(enabled: telemetryEnabled)
         } catch {
+            if !loggingConfigured {
+                LoggingConfiguration.bootstrap(verbose: false, telemetryEnabled: telemetryEnabled)
+            }
             captureTelemetry(error, enabled: telemetryEnabled)
             CLI.exit(withError: error)
         }
+    }
+
+    private static func verboseLoggingEnabled(for command: any ParsableCommand) -> Bool {
+        (command as? any GlobalOptionsProviding)?.global.verbose ?? false
     }
 
     private static func configureTelemetry() -> Bool {
@@ -38,19 +52,9 @@ enum AppleDocs {
                 SentrySDK.start { options in
                     SentryConfiguration.configure(options)
                 }
-                LoggingSystem.bootstrap { _ in
-                    SentryLogHandler(logLevel: .info)
-                }
-            } else {
-                LoggingSystem.bootstrap { _ in
-                    SwiftLogNoOpLogHandler()
-                }
             }
             return enabled
         #else
-            LoggingSystem.bootstrap { _ in
-                SwiftLogNoOpLogHandler()
-            }
             return false
         #endif
     }
