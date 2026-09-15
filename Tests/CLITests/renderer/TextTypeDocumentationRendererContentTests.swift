@@ -129,7 +129,7 @@ struct TextTypeDocumentationRendererContentTests {
         let output = TextTypeDocumentationRenderer().render(page)
 
         // -- Assert --
-        #expect(output == "View\n━━━━\nProtocol · SwiftUI")
+        #expect(output == "View\n━━━━\nProtocol · SwiftUI\nSymbol kind: protocol")
     }
 
     @Test(
