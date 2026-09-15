@@ -117,7 +117,8 @@ jobs:
         with:
           version: v2.14.1
           config: .github/cliff.toml
-          args: --use-branch-tags ${{ needs.prepare.outputs.is_prerelease == 'true' && '--unreleased' || '--current' }}
+          # --current can resolve to the excluded rolling tag when it shares HEAD with a version tag.
+          args: --use-branch-tags ${{ needs.prepare.outputs.is_prerelease == 'true' && '--unreleased' || '--latest' }}
         env:
           OUTPUT: dist/changelog.md
 
