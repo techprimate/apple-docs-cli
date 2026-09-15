@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -43,7 +44,10 @@ struct AppleDocumentationClientTests {
             response: response,
             data: data
         )
-        let client = DefaultAppleDocumentationClient(dependencies: transport)
+        let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
+            dependencies: transport
+        )
 
         let document = try await client.fetchType(
             named: "MXHangDiagnostic",
@@ -69,6 +73,7 @@ struct AppleDocumentationClientTests {
         )
         let data = Data("{\"newUpstreamShape\":true}".utf8)
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: TypePageTransport(
                 expectedURL: expectedURL,
                 response: response,
@@ -104,6 +109,7 @@ struct AppleDocumentationClientTests {
             )
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: TypePageTransport(
                 expectedURL: expectedURL,
                 response: response,
@@ -132,6 +138,7 @@ struct AppleDocumentationClientTests {
             )
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: TypePageTransport(
                 expectedURL: expectedURL,
                 response: response,

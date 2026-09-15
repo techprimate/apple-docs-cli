@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -28,6 +29,7 @@ struct AppleDocumentationClientSearchTests {
             )
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: SearchTestTransport(
                 responses: [
                     rootURL: rootSearchPage,
@@ -52,6 +54,7 @@ struct AppleDocumentationClientSearchTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftui.json")
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: SearchTestTransport(
                 responses: [rootURL: duplicateRootSearchPage]
             )
@@ -84,6 +87,7 @@ struct AppleDocumentationClientSearchTests {
             )
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: SearchFallbackTransport(
                 responses: [
                     rootURL: .init(statusCode: 200, data: partialFailureRootSearchPage),
@@ -120,6 +124,7 @@ struct AppleDocumentationClientSearchTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: SearchFallbackTransport(
                 responses: [
                     requestedRootURL: .init(statusCode: 404, data: Data()),
@@ -156,6 +161,7 @@ struct AppleDocumentationClientSearchTests {
             )
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: SearchTestTransport(
                 responses: [
                     rootURL: rootSearchPage,

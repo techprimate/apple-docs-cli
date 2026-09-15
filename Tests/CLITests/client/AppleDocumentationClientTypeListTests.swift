@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -16,6 +17,7 @@ struct AppleDocumentationClientTypeListTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftdata.json")
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: TypeCatalogTestTransport(
                 responses: [rootURL: .init(statusCode: 200, data: swiftDataRootData)]
             )
@@ -56,6 +58,7 @@ struct AppleDocumentationClientTypeListTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: TypeCatalogTestTransport(
                 responses: [
                     requestedRootURL: .init(statusCode: 404, data: Data()),
@@ -92,6 +95,7 @@ struct AppleDocumentationClientTypeListTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/technologies.json")
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: TypeCatalogTestTransport(
                 responses: [
                     rootURL: .init(statusCode: 404, data: Data()),
