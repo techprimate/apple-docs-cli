@@ -51,6 +51,10 @@ enum Dependencies {
         dependencies: httpDataTransport
     )
 
+    static func agentSkillInstaller() -> AgentSkillInstaller {
+        AgentSkillInstaller(logger: Logger(label: "com.techprimate.apple-docs.skills.installer"))
+    }
+
     static func documentationRenderer(
         json: Bool
     ) -> DefaultTypeDocumentationRenderer {

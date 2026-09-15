@@ -26,7 +26,7 @@ struct AgentSkillsInstallCommand: ParsableCommand {
     }
 
     mutating func run() throws {
-        let output = try AgentSkillInstaller().install(
+        let output = try Dependencies.agentSkillInstaller().install(
             selection.selectedSkills(), root: selection.dir, dryRun: selection.dryRun, force: force
         )
         print(output)
