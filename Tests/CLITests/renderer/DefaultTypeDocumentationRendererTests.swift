@@ -34,6 +34,7 @@ struct DefaultTypeDocumentationRendererTests {
                 MXHangDiagnostic
                 ━━━━━━━━━━━━━━━━
                 Class · MetricKit
+                Symbol kind: class
 
                   A diagnostic report.
                 """
@@ -68,6 +69,7 @@ struct DefaultTypeDocumentationRendererTests {
                 Package
                 ━━━━━━━
                 Structure · PackageDescription
+                Symbol kind: struct
 
                   The Swift package manifest representation.
                 """

@@ -49,7 +49,7 @@ struct AppleDocsCommandIntegrationTests {
         let output = try runAppleDocs(arguments)
 
         // -- Assert --
-        #expect(output.hasPrefix("String\n━━━━━━\nStructure · Swift\n"))
+        #expect(output.hasPrefix("String\n━━━━━━\nStructure · Swift\nSymbol kind: struct\n"))
         #expect(output.contains("Declaration\n───────────"))
         #expect(output.contains("│ @frozen struct String"))
         #expect(output.contains("Overview\n────────"))

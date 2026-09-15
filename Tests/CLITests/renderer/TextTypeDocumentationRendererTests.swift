@@ -46,6 +46,7 @@ struct TextTypeDocumentationRendererTests {
                 MXHangDiagnostic
                 ━━━━━━━━━━━━━━━━
                 Class · MetricKit
+                Symbol kind: class
 
                   An object representing a diagnostic report.
 
@@ -262,6 +263,6 @@ struct TextTypeDocumentationRendererTests {
         let output = TextTypeDocumentationRenderer().render(page)
 
         // -- Assert --
-        #expect(output == "String\n━━━━━━\nStructure · Swift")
+        #expect(output == "String\n━━━━━━\nStructure · Swift\nSymbol kind: struct")
     }
 }
