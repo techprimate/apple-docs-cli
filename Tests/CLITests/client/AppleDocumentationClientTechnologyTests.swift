@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -29,7 +30,10 @@ struct AppleDocumentationClientTechnologyTests {
             response: response,
             data: data
         )
-        let client = DefaultAppleDocumentationClient(dependencies: transport)
+        let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
+            dependencies: transport
+        )
 
         // -- Act --
         let technologies = try await client.fetchTechnologies()

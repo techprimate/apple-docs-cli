@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 
 #if canImport(FoundationNetworking)
     import FoundationNetworking
@@ -46,6 +47,7 @@ enum Dependencies {
     }
 
     static let documentationClient = DefaultAppleDocumentationClient(
+        logger: Logger(label: "com.techprimate.apple-docs.client"),
         dependencies: httpDataTransport
     )
 

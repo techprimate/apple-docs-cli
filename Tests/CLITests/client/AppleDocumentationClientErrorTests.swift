@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -22,6 +23,7 @@ struct AppleDocumentationClientErrorTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftdata.json")
         )
         let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: LookupTestTransport(
                 responses: [
                     typeURL: .init(statusCode: 404, data: Data()),

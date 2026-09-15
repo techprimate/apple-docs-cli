@@ -1,5 +1,12 @@
+import Foundation
+
 extension DefaultAppleDocumentationClient {
     func searchTypes(query: String, technology: String) async throws -> [DocumentationType] {
+        logger.debug(
+            "Searching documentation types",
+            metadata: [
+                "query": .string(query), "apple_docs.technology": .string(technology),
+            ])
         var slug = technology
         var displayName = technology
         var technologyURL = "https://developer.apple.com/documentation/\(technology.lowercased())"
@@ -10,25 +17,34 @@ extension DefaultAppleDocumentationClient {
                 path: "/documentation/\(technology.lowercased())"
             )
         } catch Error.httpStatus(404) {
+            logger.debug("Search root not found, resolving technology")
             let resolved = try await resolveTechnology(named: technology)
             guard let resolvedSlug = resolved.documentationSlug else {
+                logger.notice("Technology has no searchable documentation root")
                 throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
             }
             slug = resolvedSlug
             displayName = resolved.name
             technologyURL = resolved.url
+            logger.debug("Retrying search with canonical technology", metadata: ["slug": .string(resolvedSlug)])
             rootPage = try await fetchDocumentationPage(
                 path: "/documentation/\(resolvedSlug.lowercased())"
             )
         }
 
-        return try await searchTypes(
+        let matches = try await searchTypes(
             query: query,
             documentationSlug: slug,
             displayName: displayName,
             technologyURL: technologyURL,
             rootPage: rootPage
         )
+        logger.info(
+            "Documentation search completed",
+            metadata: [
+                "apple_docs.technology": .string(displayName), "matches": .stringConvertible(matches.count),
+            ])
+        return matches
     }
 
     private func searchTypes(
@@ -39,6 +55,7 @@ extension DefaultAppleDocumentationClient {
         rootPage: TechnologyDocumentationPageDTO
     ) async throws -> [DocumentationType] {
         let rootPath = "/documentation/\(documentationSlug.lowercased())"
+        logger.debug("Traversing documentation collection groups", metadata: ["path": .string(rootPath)])
         var typesByPath: [String: DocumentationType] = [:]
         for type in documentationTypes(in: rootPage, technology: documentationSlug) {
             typesByPath[type.path] = type
@@ -53,6 +70,11 @@ extension DefaultAppleDocumentationClient {
         while !pendingPaths.isEmpty {
             let batch = Array(pendingPaths.prefix(6))
             pendingPaths.removeFirst(batch.count)
+            logger.trace(
+                "Dequeued collection group batch",
+                metadata: [
+                    "batch_size": .stringConvertible(batch.count), "pending": .stringConvertible(pendingPaths.count),
+                ])
             let pages = await fetchDocumentationPages(paths: batch)
 
             for page in pages {
@@ -74,6 +96,12 @@ extension DefaultAppleDocumentationClient {
             }
         )
         guard !matches.isEmpty else {
+            logger.notice(
+                "No matching documentation types",
+                metadata: [
+                    "query": .string(query), "apple_docs.technology": .string(displayName),
+                    "candidates": .stringConvertible(typesByPath.count),
+                ])
             throw Error.typeSearchNoResults(
                 query: query,
                 technology: displayName,
@@ -86,7 +114,8 @@ extension DefaultAppleDocumentationClient {
     private func fetchDocumentationPages(
         paths: [String]
     ) async -> [TechnologyDocumentationPageDTO] {
-        await withTaskGroup(
+        logger.debug("Fetching collection group batch", metadata: ["count": .stringConvertible(paths.count)])
+        return await withTaskGroup(
             of: TechnologyDocumentationPageDTO?.self,
             returning: [TechnologyDocumentationPageDTO].self
         ) { group in
@@ -95,6 +124,12 @@ extension DefaultAppleDocumentationClient {
                     do {
                         return try await fetchDocumentationPage(path: path)
                     } catch {
+                        let cancelled = error is CancellationError || (error as? URLError)?.code == .cancelled
+                        logger.log(
+                            level: cancelled ? .debug : .warning, "Skipping unavailable collection group",
+                            metadata: [
+                                "path": .string(path), "error_type": .string(String(reflecting: type(of: error))),
+                            ])
                         return nil
                     }
                 }
@@ -106,6 +141,11 @@ extension DefaultAppleDocumentationClient {
                     pages.append(page)
                 }
             }
+            logger.debug(
+                "Fetched collection group batch",
+                metadata: [
+                    "requested": .stringConvertible(paths.count), "received": .stringConvertible(pages.count),
+                ])
             return pages
         }
     }
@@ -115,7 +155,7 @@ extension DefaultAppleDocumentationClient {
         technology: String
     ) -> [String] {
         let pathPrefix = "/documentation/\(technology.lowercased())/"
-        return page.references.values.compactMap { reference in
+        let paths: [String] = page.references.values.compactMap { reference in
             guard
                 reference.role == "collectionGroup",
                 let path = reference.url,
@@ -125,5 +165,11 @@ extension DefaultAppleDocumentationClient {
             }
             return path
         }
+        logger.trace(
+            "Filtered collection group paths",
+            metadata: [
+                "references": .stringConvertible(page.references.count), "count": .stringConvertible(paths.count),
+            ])
+        return paths
     }
 }
