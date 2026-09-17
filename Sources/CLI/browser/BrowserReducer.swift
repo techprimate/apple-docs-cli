@@ -5,10 +5,13 @@ enum BrowserReducer {
             return navigation(state: &state, action: action)
         case .expand, .collapse, .childrenLoaded, .childrenFailed:
             return tree(state: &state, action: action)
+        case .showSearch, .editQuery, .submitSearch, .searchLoaded, .searchFailed, .activateSearchResult,
+            .dismissSearch:
+            return SearchReducer.reduceBrowser(state: &state, action: action)
         case .toggleNavigator, .toggleLogs, .tab, .escape:
             return focus(state: &state, action: action)
         case .quit:
-            return cancel(state: &state) + [.quit]
+            return SearchReducer.dismiss(state: &state) + cancel(state: &state) + [.quit]
         }
     }
 
@@ -28,7 +31,11 @@ enum BrowserReducer {
         case .open(let destination): return begin(destination, history: nil, state: &state)
         case .pageLoaded(let requestID, let loaded):
             guard let request = state.pendingNavigation, request.id == requestID else { return [] }
+            let effects =
+                state.technology == loaded.page.destination.technology
+                ? [] : SearchReducer.dismiss(state: &state)
             complete(loaded.page, request: request, state: &state)
+            return effects
         case .pageFailed(let requestID, let message):
             guard state.pendingPageRequestID == requestID else { return [] }
             state.failedNavigation = state.pendingNavigation
@@ -37,7 +44,8 @@ enum BrowserReducer {
         case .retry:
             guard let failed = state.failedNavigation else { return [] }
             return begin(failed.destination, history: failed.history, state: &state)
-        case .back, .forward: return travel(back: action == .back, state: &state)
+        case .back, .forward:
+            return SearchReducer.dismiss(state: &state) + travel(back: action == .back, state: &state)
         default: break
         }
         return []
@@ -47,16 +55,25 @@ enum BrowserReducer {
         switch action {
         case .toggleNavigator: toggleNavigator(state: &state)
         case .toggleLogs: toggleLogs(state: &state)
-        case .tab:
-            if state.focus == .navigator {
-                state.focus = .document
-            } else if state.focus == .document && state.navigatorVisible {
-                state.focus = .navigator
-            }
+        case .tab: tab(state: &state)
         case .escape: return escape(state: &state)
         default: break
         }
         return []
+    }
+
+    private static func tab(state: inout BrowserState) {
+        if state.search?.isOpen == true {
+            if state.focus == .searchInput {
+                state.focus = .searchResults
+            } else if state.focus == .searchResults {
+                state.focus = .searchInput
+            }
+        } else if state.focus == .navigator {
+            state.focus = .document
+        } else if state.focus == .document && state.navigatorVisible {
+            state.focus = .navigator
+        }
     }
 
     private static func toggleNavigator(state: inout BrowserState) {
@@ -70,8 +87,9 @@ enum BrowserReducer {
     private static func begin(
         _ destination: DocumentationDestination, history: BrowserHistory?, state: inout BrowserState
     ) -> [BrowserEffect] {
+        let searchEffects = SearchReducer.dismiss(state: &state)
         if let snapshot = state.snapshot { state.history.updateCurrent(snapshot) }
-        let effects = cancel(state: &state)
+        let effects = searchEffects + cancel(state: &state)
         state.nextRequestID += 1
         state.pendingNavigation = BrowserPageRequest(
             id: state.nextRequestID, destination: destination, history: history)
@@ -122,6 +140,7 @@ enum BrowserReducer {
     }
 
     private static func focusMainPane(_ focus: BrowserFocus, state: inout BrowserState) {
+        if SearchReducer.focusUnderlyingPane(focus, state: &state) { return }
         if state.logsVisible && state.focus == .logs { state.previousLogFocus = focus } else { state.focus = focus }
     }
 
@@ -134,7 +153,7 @@ enum BrowserReducer {
     private static func toggleLogs(state: inout BrowserState) {
         if state.logsVisible {
             state.logsVisible = false
-            state.focus = state.previousLogFocus
+            if state.focus == .logs { state.focus = state.previousLogFocus }
         } else {
             state.previousLogFocus = state.focus
             state.logsVisible = true
@@ -143,6 +162,7 @@ enum BrowserReducer {
     }
 
     private static func escape(state: inout BrowserState) -> [BrowserEffect] {
+        if state.search?.isOpen == true { return SearchReducer.dismiss(state: &state) }
         if state.logsVisible && state.focus == .logs {
             toggleLogs(state: &state)
         } else if state.pendingNavigation != nil {
