@@ -51,6 +51,7 @@ struct BrowserState: Equatable, Sendable {
     var navigatorVisible = true
     var technologyNavigators: [String: NavigatorState] = [:]
     var catalogNavigator = NavigatorState()
+    var technologySearches: [String: SearchState] = [:]
     var viewport = BrowserViewport()
     var logsVisible = false
     var previousLogFocus: BrowserFocus = .document
@@ -61,6 +62,8 @@ struct BrowserState: Equatable, Sendable {
 
     var pendingPageRequestID: UInt64? { pendingNavigation?.id }
     var technology: String? { currentLocation.map(\.technology) ?? entry.technology }
+
+    var search: SearchState? { technology.flatMap { technologySearches[$0] } }
 
     var navigatorTree: NavigatorState {
         get {
@@ -79,9 +82,12 @@ struct BrowserState: Equatable, Sendable {
 
     var snapshot: BrowserHistoryEntry? {
         guard let currentLocation else { return nil }
+        var mainFocus = focus == .logs ? previousLogFocus : focus
+        if mainFocus == .searchInput || mainFocus == .searchResults, let search {
+            mainFocus = search.previousFocus == .logs ? search.previousLogFocus : search.previousFocus
+        }
         return BrowserHistoryEntry(
-            location: currentLocation, viewport: viewport, navigator: navigator,
-            focus: focus == .logs ? previousLogFocus : focus
+            location: currentLocation, viewport: viewport, navigator: navigator, focus: mainFocus
         )
     }
 }
