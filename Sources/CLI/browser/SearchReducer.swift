@@ -29,7 +29,9 @@ enum SearchReducer {
 
     static func reduceBrowser(state: inout BrowserState, action: BrowserAction) -> [BrowserEffect] {
         if case .activateSearchResult(let index) = action { return activate(index, state: &state) }
-        guard let technology = action.searchTechnology ?? state.technology else { return [] }
+        guard let requestedTechnology = action.searchTechnology ?? state.technology else { return [] }
+        let technology = state.canonicalTechnology(requestedTechnology)
+        let action = scoped(action, technology: technology)
         var search = state.technologySearches[technology] ?? SearchState(technology: technology)
         if action == .showSearch && !search.isOpen {
             search.previousFocus = state.focus
@@ -42,6 +44,16 @@ enum SearchReducer {
         if action == .showSearch { state.focus = .searchInput }
         if action == .dismissSearch { restoreFocus(search, state: &state) }
         return effects
+    }
+
+    private static func scoped(_ action: BrowserAction, technology: String) -> BrowserAction {
+        switch action {
+        case .searchLoaded(let id, _, let result):
+            return .searchLoaded(requestID: id, technology: technology, result: result)
+        case .searchFailed(let id, _, let message):
+            return .searchFailed(requestID: id, technology: technology, message: message)
+        default: return action
+        }
     }
 
     static func dismiss(state: inout BrowserState) -> [BrowserEffect] {
