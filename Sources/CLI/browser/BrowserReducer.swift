@@ -3,11 +3,24 @@ enum BrowserReducer {
         switch action {
         case .open, .pageLoaded, .pageFailed, .retry, .back, .forward:
             return navigation(state: &state, action: action)
+        case .expand, .collapse, .childrenLoaded, .childrenFailed:
+            return tree(state: &state, action: action)
         case .toggleNavigator, .toggleLogs, .tab, .escape:
             return focus(state: &state, action: action)
         case .quit:
             return cancel(state: &state) + [.quit]
         }
+    }
+
+    private static func tree(state: inout BrowserState, action: BrowserAction) -> [BrowserEffect] {
+        guard let technology = action.navigatorNodeID?.components.first,
+            var navigator = state.technologyNavigators[technology]
+        else { return [] }
+        navigator.nextRequestID = state.nextRequestID
+        let effects = NavigatorReducer.reduce(state: &navigator, action: action)
+        state.nextRequestID = navigator.nextRequestID
+        state.technologyNavigators[technology] = navigator
+        return effects
     }
 
     private static func navigation(state: inout BrowserState, action: BrowserAction) -> [BrowserEffect] {
@@ -68,19 +81,18 @@ enum BrowserReducer {
     }
 
     private static func complete(_ page: DocumentationPage, request: BrowserPageRequest, state: inout BrowserState) {
-        let previousTechnology = state.technology
         state.pendingNavigation = nil
         state.failedNavigation = nil
         state.pageError = nil
         state.currentPage = page
         state.currentLocation = .page(request.destination)
+        NavigatorReducer.showCurrentPage(page, state: &state.navigatorTree)
         if let history = request.history, let entry = history.current {
             state.history = history
             restore(entry, state: &state)
         } else {
             state.viewport = BrowserViewport()
             focusMainPane(.document, state: &state)
-            if previousTechnology != page.destination.technology { state.navigator = NavigatorSnapshot() }
             if let snapshot = state.snapshot { state.history.visit(snapshot) }
         }
     }
