@@ -1,5 +1,5 @@
 struct SearchState: Equatable, Sendable {
-    let technology: String
+    var technology: String
     var query = ""
     var results: [DocumentationType] = []
     var selectedResultIndex: Int?

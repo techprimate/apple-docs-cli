@@ -36,9 +36,27 @@ struct BrowserViewport: Equatable, Sendable {
     var selectedLinkID: String?
 }
 
+enum BrowserPageTarget: Equatable, Sendable {
+    case exact(DocumentationDestination)
+    case named(name: String, technology: String)
+
+    var destination: DocumentationDestination? {
+        guard case .exact(let destination) = self else { return nil }
+        return destination
+    }
+
+    func effect(requestID: UInt64) -> BrowserEffect {
+        switch self {
+        case .exact(let destination): return .loadPage(requestID: requestID, destination: destination)
+        case .named(let name, let technology):
+            return .loadNamedPage(requestID: requestID, name: name, technology: technology)
+        }
+    }
+}
+
 struct BrowserPageRequest: Equatable, Sendable {
     let id: UInt64
-    let destination: DocumentationDestination
+    let target: BrowserPageTarget
     let history: BrowserHistory?
 }
 
@@ -47,6 +65,7 @@ struct BrowserState: Equatable, Sendable {
     var currentLocation: BrowserLocation?
     var currentPage: DocumentationPage?
     var history = BrowserHistory()
+    var catalog = BrowserCatalogState()
     var focus: BrowserFocus = .document
     var navigatorVisible = true
     var technologyNavigators: [String: NavigatorState] = [:]
@@ -56,12 +75,18 @@ struct BrowserState: Equatable, Sendable {
     var logsVisible = false
     var previousLogFocus: BrowserFocus = .document
     var pageError: String?
+    var externalError: String?
+    var pendingExternalRequestID: UInt64?
     var pendingNavigation: BrowserPageRequest?
     var failedNavigation: BrowserPageRequest?
     var nextRequestID: UInt64 = 0
 
     var pendingPageRequestID: UInt64? { pendingNavigation?.id }
-    var technology: String? { currentLocation.map(\.technology) ?? entry.technology }
+    var technology: String? { (currentLocation.map(\.technology) ?? entry.technology).map(canonicalTechnology) }
+
+    func canonicalTechnology(_ technology: String) -> String {
+        catalog.aliases[technology.lowercased()] ?? technology.lowercased()
+    }
 
     var search: SearchState? { technology.flatMap { technologySearches[$0] } }
 
