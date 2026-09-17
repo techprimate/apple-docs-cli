@@ -41,7 +41,10 @@ struct BrowserReducerTests {
         #expect(state.currentPage?.destination == second)
         #expect(state.technology == "metrickit")
         #expect(state.history.current?.location == .page(second))
-        #expect(state.navigator == NavigatorSnapshot())
+        #expect(
+            state.navigator
+                == NavigatorSnapshot(
+                    selectedID: NavigatorNodeID(components: ["metrickit", "current", second.path])))
         #expect(state.pendingPageRequestID == nil)
     }
 
