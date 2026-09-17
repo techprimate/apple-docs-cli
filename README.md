@@ -14,7 +14,7 @@
 
 ## Installation
 
-On **macOS 13+**, install with Homebrew:
+On **macOS 15+**, install with Homebrew:
 
 ```bash
 brew install techprimate/tap/apple-docs

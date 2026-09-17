@@ -2,7 +2,7 @@
 
 ## Scope
 
-- This is a Swift 6.3 command-line package targeting macOS 13 or later.
+- This is a Swift 6.4 command-line package targeting macOS 15 or later.
 - Use SwiftPM for dependencies and the Makefile for standard development workflows.
 - Keep the CLI stateless. Commands must receive the technology they operate on.
 - Do not add or update dependencies unless the requested change requires it.
@@ -22,7 +22,7 @@
 - Use a gated `Dependencies` constraint when a default implementation needs injectable collaborators.
 - Keep `TypesViewCommandRunner` focused on orchestration. HTTP access and output rendering belong behind their respective abstractions.
 - Validate HTTP status and response types at the external boundary.
-- Derive `--json` output from the shared semantic presentation model. `--agent` selects the audience independently.
+- Derive `--json` output from the shared semantic presentation model. `--agent` selects the audience independently. JSON modes must be noninteractive.
 
 ## Workflow
 

@@ -1,14 +1,16 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 6.4
 
 import PackageDescription
 
 var packageDependencies: [Package.Dependency] = [
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.8.2"),
     .package(url: "https://github.com/apple/swift-log.git", exact: "1.15.1"),
+    .package(url: "https://github.com/SwiftTUI/swift-tui.git", exact: "0.13.5"),
 ]
 var cliDependencies: [Target.Dependency] = [
     .product(name: "ArgumentParser", package: "swift-argument-parser"),
     .product(name: "Logging", package: "swift-log"),
+    .product(name: "SwiftTUIRuntime", package: "swift-tui"),
 ]
 
 #if os(macOS)
@@ -32,7 +34,7 @@ var cliDependencies: [Target.Dependency] = [
 
 let package = Package(
     name: "apple-docs-cli",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v15)],
     products: [
         .executable(name: "apple-docs", targets: ["CLI"])
     ],
@@ -42,7 +44,13 @@ let package = Package(
             name: "CLI",
             dependencies: cliDependencies
         ),
-        .testTarget(name: "CLITests", dependencies: ["CLI"]),
+        .testTarget(
+            name: "CLITests",
+            dependencies: [
+                "CLI",
+                .product(name: "SwiftTUIRuntime", package: "swift-tui"),
+            ]
+        ),
         .testTarget(name: "CLIIntegrationTests"),
     ],
     swiftLanguageModes: [.v6]

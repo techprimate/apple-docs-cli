@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Swift 6.3 or later and Make. CI and Linux containers use Swift 6.4.0.
+- Swift 6.4 or later and Make. macOS builds require macOS 15 or later. CI and Linux containers use Swift 6.4.0.
 - Homebrew for `make init`, which installs actionlint, dprint, pre-commit, and SwiftLint.
 - Docker for container-based Linux build and test targets.
 
