@@ -4,8 +4,7 @@ enum SearchReducer {
     static func reduce(state: inout SearchState, action: BrowserAction) -> [BrowserEffect] {
         switch action {
         case .showSearch: state.isOpen = true
-        case .editQuery(let query):
-            if state.isOpen { state.query = query }
+        case .editQuery, .selectSearchResult: edit(state: &state, action: action)
         case .submitSearch: return submit(state: &state)
         case .dismissSearch:
             state.isOpen = false
@@ -44,6 +43,16 @@ enum SearchReducer {
         if action == .showSearch { state.focus = .searchInput }
         if action == .dismissSearch { restoreFocus(search, state: &state) }
         return effects
+    }
+
+    private static func edit(state: inout SearchState, action: BrowserAction) {
+        guard state.isOpen else { return }
+        switch action {
+        case .editQuery(let query): state.query = query
+        case .selectSearchResult(let index) where state.results.indices.contains(index):
+            state.selectedResultIndex = index
+        default: break
+        }
     }
 
     private static func scoped(_ action: BrowserAction, technology: String) -> BrowserAction {

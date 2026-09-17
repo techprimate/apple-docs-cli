@@ -8,13 +8,20 @@ enum BrowserReducer {
             return navigation(state: &state, action: action)
         case .expand, .collapse, .childrenLoaded, .childrenFailed:
             return tree(state: &state, action: action)
-        case .showSearch, .editQuery, .submitSearch, .searchLoaded, .searchFailed, .activateSearchResult,
+        case .showSearch, .editQuery, .submitSearch, .searchLoaded, .searchFailed, .selectSearchResult,
+            .activateSearchResult,
             .dismissSearch:
             return SearchReducer.reduceBrowser(state: &state, action: action)
         case .openExternal, .externalOpened, .externalFailed:
             return external(state: &state, action: action)
-        case .toggleNavigator, .toggleLogs, .tab, .escape:
+        case .setFocus, .toggleNavigator, .toggleLogs, .tab, .escape:
             return focus(state: &state, action: action)
+        case .updateNavigator(let snapshot):
+            state.navigator = snapshot
+            return []
+        case .updateViewport(let viewport):
+            state.viewport = viewport
+            return []
         case .operationCancelled(let requestID):
             clearCancelled(requestID, state: &state)
             return []
@@ -105,6 +112,7 @@ enum BrowserReducer {
 
     private static func focus(state: inout BrowserState, action: BrowserAction) -> [BrowserEffect] {
         switch action {
+        case .setFocus(let focus): state.focus = focus
         case .toggleNavigator: toggleNavigator(state: &state)
         case .toggleLogs: toggleLogs(state: &state)
         case .tab: tab(state: &state)

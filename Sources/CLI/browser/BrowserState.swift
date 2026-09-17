@@ -27,7 +27,7 @@ enum BrowserLocation: Equatable, Sendable {
     }
 }
 
-enum BrowserFocus: Equatable, Sendable {
+enum BrowserFocus: Hashable, Sendable {
     case navigator, document, searchInput, searchResults, logs
 }
 

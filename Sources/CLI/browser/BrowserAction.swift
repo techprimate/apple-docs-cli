@@ -28,6 +28,10 @@ enum BrowserAction: Equatable, Sendable {
     case searchFailed(requestID: UInt64, technology: String, message: String)
     case activateSearchResult(Int)
     case dismissSearch
+    case setFocus(BrowserFocus)
+    case updateNavigator(NavigatorSnapshot)
+    case selectSearchResult(Int)
+    case updateViewport(BrowserViewport)
     case operationCancelled(UInt64)
     case retry
     case back
