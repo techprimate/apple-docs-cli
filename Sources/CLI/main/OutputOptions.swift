@@ -13,6 +13,10 @@ enum OutputMode: Equatable, Sendable {
     case oneShot(audience: OutputAudience, format: OutputFormat)
 }
 
+protocol OutputOptionsProviding {
+    var output: OutputOptions { get }
+}
+
 struct OutputOptions: ParsableArguments {
     @Flag(help: "Print documentation once without opening the terminal browser.")
     var nonInteractive = false

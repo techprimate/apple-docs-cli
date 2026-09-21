@@ -6,19 +6,19 @@ struct TechnologiesListCommandRunner: Sendable {
         let technologyCount: Int
     }
 
-    private let client: TechnologyCatalogClient
+    private let client: DocumentationRepository
     private let renderer: TechnologyListRenderer
 
     init(
-        client: TechnologyCatalogClient,
+        client: DocumentationRepository,
         renderer: TechnologyListRenderer
     ) {
         self.client = client
         self.renderer = renderer
     }
 
-    func run(mode: OutputMode) async throws -> Result {
-        let technologies = try await client.fetchTechnologies().sorted {
+    func run() async throws -> Result {
+        let technologies = try await client.technologies().sorted {
             $0.name.compare($1.name, options: .caseInsensitive) == .orderedAscending
         }
         return Result(

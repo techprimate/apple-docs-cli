@@ -1,5 +1,6 @@
 import Foundation
 import Logging
+import SwiftTUIRuntime
 
 #if canImport(FoundationNetworking)
     import FoundationNetworking
@@ -17,6 +18,7 @@ struct Dependencies: Sendable {
     let httpCache: URLCache?
     let httpDataTransport: URLSession
     let documentationClient: DefaultAppleDocumentationClient<URLSession>
+    let documentationRepository: DefaultDocumentationRepository
 
     init() {
         if let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
@@ -39,6 +41,8 @@ struct Dependencies: Sendable {
         httpDataTransport = URLSession(configuration: configuration)
         documentationClient = DefaultAppleDocumentationClient(
             logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport)
+        documentationRepository = DefaultDocumentationRepository(
+            logger: Logger(label: "com.techprimate.apple-docs.repository"), dependencies: documentationClient)
     }
 
     var documentationCache: URLCache? {
@@ -62,5 +66,22 @@ struct Dependencies: Sendable {
 
     func technologyListRenderer(output: OutputOptions) -> DefaultTechnologyListRenderer {
         DefaultTechnologyListRenderer(output: output.json ? .json : .table, audience: output.audience)
+    }
+
+    @MainActor
+    func documentationDispatcher(
+        logs: SessionLogBuffer?, telemetry: Telemetry
+    ) -> DocumentationCommandDispatcher {
+        DocumentationCommandDispatcher(
+            browser: { entry in
+                let signals = try await TerminalSignals()
+                defer { signals.close() }
+                // Interactive mode allocates its shared log buffer before logging bootstrap.
+                let browser = DefaultDocumentationBrowser(
+                    repository: documentationRepository, logs: logs!, opener: DefaultExternalURLOpener(),
+                    session: TerminalSession(surface: TerminalHost(), input: InputReader(), signals: signals))
+                try await browser.run(entry: entry)
+            },
+            oneShot: OneShotDocumentationRunner(repository: documentationRepository), telemetry: telemetry)
     }
 }

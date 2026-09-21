@@ -35,7 +35,9 @@ apple-docs types search Button --technology SwiftUI
 apple-docs types view Button --technology SwiftUI
 ```
 
-Example output from the last command, abbreviated with `[...]`:
+In a terminal, these commands open the interactive browser. Press `q` or Ctrl+C to exit. Add `--non-interactive` for one-shot text, or pipe the output to select it automatically. Both stdin and stdout must be TTYs to start the browser.
+
+Example one-shot output from the last command with `--non-interactive`, abbreviated with `[...]`:
 
 ```text
 Button
@@ -85,7 +87,7 @@ apple-docs technologies list
 apple-docs technologies list --json
 ```
 
-The default output is a two-column table containing each technology's display name and full documentation identifier. Use a technology name such as `SwiftUI`, `Foundation`, or `MetricKit` with the `types` commands.
+The noninteractive text output is a two-column table containing each technology's display name and full documentation identifier. Use a technology name such as `SwiftUI`, `Foundation`, or `MetricKit` with the `types` commands.
 
 ### Type discovery
 
@@ -142,7 +144,7 @@ apple-docs types search Button --technology SwiftUI --agent
 apple-docs technologies list --agent
 ```
 
-Agent output uses the same normalized documentation content as human text. Follow-up commands are included only for destinations the CLI can represent safely. All commands remain one-shot, even when run in a terminal.
+Agent output uses the same normalized documentation content as human text. Follow-up commands are included only for destinations the CLI can represent safely. Both `--agent` and `--json` select one-shot output, even when run in a terminal. Use `--non-interactive` for one-shot human text.
 
 `--agent` selects the audience and `--json` selects the format independently. Combine them for JSON with agent navigation commands.
 
@@ -173,6 +175,19 @@ apple-docs types view String --technology Swift --json | jq -r '.title'
 This is a breaking change: page JSON is normalized rather than raw DocC, and title extraction uses `.title` instead of `.metadata.title`. There is no raw-DocC export flag. Normalization does not preserve every upstream field, so missing normalized content is not evidence that Apple supplies no such information. JSON stdout contains only the result, with warnings and verbose diagnostics sent to stderr.
 
 See [Output formats and JSON](docs/OUTPUT.md) for the complete normalized JSON shapes, link targets, and follow-up-command limitations.
+
+### Browser controls
+
+Use Tab to switch panes, arrow keys to select navigator rows, Right/Left to expand or collapse branches, and Enter to open a selection. In documentation, `]` and `[` select links, Enter follows the selected link, and Page Up/Page Down scroll.
+
+- Alt+Left/Right: back and forward.
+- Ctrl+B: hide or show the navigator. Narrow terminals temporarily hide it without changing your preference.
+- `/`: search the current technology. Edit the query, then press Enter to submit. Tab switches between input and results.
+- Backtick: show or hide session logs. Logs are captured while hidden, with debug detail when `--verbose` is set.
+- Escape: dismiss panels or cancel pending navigation.
+- `o`: open the current documentation page in your system browser.
+
+Printable shortcuts remain ordinary text while editing a search query. The CLI retains navigation and search state only for the current browser session.
 
 ### Cache
 

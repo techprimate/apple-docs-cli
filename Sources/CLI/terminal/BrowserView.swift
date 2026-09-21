@@ -4,11 +4,13 @@ struct BrowserView: View {
     let state: BrowserState
     let logs: [SessionLogEntry]
     let send: @MainActor @Sendable (BrowserAction) -> Void
+    @Environment(\.requestTermination) private var requestTermination
     @FocusState private var focusedPane: BrowserFocus?
     @State private var logViewport = LogViewport()
 
     var body: some View {
         GeometryReader { geometry in
+            let focusBinding = $focusedPane
             let width = max(1, geometry.size.width)
             let showsNavigator = state.navigatorVisible && width >= 69
             let documentWidth = max(1, width - (showsNavigator ? 29 : 0))
@@ -41,16 +43,17 @@ struct BrowserView: View {
                 Text(footer(focus)).lineLimit(1).frame(height: 1, alignment: .leading)
             }
             .defaultFocus($focusedPane, .document)
-            .onChange(of: focus, initial: true) {
-                focusedPane = focus
+            .onChange(of: [state.focus, focus], initial: true) {
+                focusBinding.wrappedValue = focus
                 if focus != state.focus { send(.setFocus(focus)) }
             }
-            .onChange(of: focusedPane) {
-                if let focusedPane, focusedPane != state.focus { send(.setFocus(focusedPane)) }
+            .onChange(of: focusBinding.wrappedValue) {
+                if let focused = focusBinding.wrappedValue, focused != state.focus { send(.setFocus(focused)) }
             }
             .onKeyPress { key in
                 guard let action = mapper.action(for: key, focus: focus, state: state) else { return .ignored }
                 send(action)
+                if action == .quit { requestTermination() }
                 return .handled
             }
             .environment(

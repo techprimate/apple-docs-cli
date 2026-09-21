@@ -33,10 +33,10 @@ struct TechnologiesListCommandRunnerTests {
     }
 }
 
-private struct UnsortedTechnologyCatalogClient: TechnologyCatalogClient {
+private struct UnsortedTechnologyCatalogClient: DocumentationRepository {
     let technologies: [Technology]
 
-    func fetchTechnologies() async throws -> [Technology] {
+    func technologies() async throws -> [Technology] {
         technologies
     }
 }

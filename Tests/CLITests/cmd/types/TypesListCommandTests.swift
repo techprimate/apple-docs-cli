@@ -4,44 +4,34 @@ import Testing
 @testable import CLI
 
 @Suite("Types list command dependencies")
+@MainActor
 struct TypesListCommandTests {
-    @Test("runs with a complete injected dependency provider")
+    @Test("runs with injected documentation dispatch dependencies")
     func usesInjectedDependencies() async throws {
         // -- Arrange --
         let command = try TypesListCommand.parse(["--technology", "SwiftData", "--json"])
-        let deps = TestDeps()
-        let telemetry = deps.telemetry
+        let telemetry = TypesListTelemetryRecorder()
+        var output: [String] = []
+        let dispatcher = DocumentationCommandDispatcher(
+            browser: { _ in throw UnexpectedRepositoryCall() },
+            oneShot: OneShotDocumentationRunner(repository: TypesListTestRepository()),
+            telemetry: telemetry,
+            writeOutput: { output.append($0) })
 
         // -- Act --
-        try await command.run(deps: deps)
+        try await command.run(
+            mode: .oneShot(audience: .human, format: .json), telemetry: telemetry, dispatcher: dispatcher)
 
         // -- Assert --
         #expect(telemetry.commands == ["types.list"])
         #expect(telemetry.typeCounts == [1])
+        #expect(output.count == 1)
+        #expect(output[0].contains("Model"))
     }
 }
 
-private typealias TestProviders = TelemetryProvider & TerminalCapabilitiesProvider
-    & DocumentationTypeCatalogClientProvider & DocumentationTypeListRendererProvider
-
-private struct TestDeps: TestProviders {
-    let telemetry = TypesListTelemetryRecorder()
-    let terminalCapabilities = TypesListTestTerminal()
-    let documentationClient = TypesListTestClient()
-
-    typealias Renderer = DefaultDocumentationTypeListRenderer
-
-    func documentationTypeListRenderer(output: OutputOptions, technology: String) -> Renderer {
-        DefaultDocumentationTypeListRenderer(output: .json, technology: technology)
-    }
-}
-
-private struct TypesListTestTerminal: TerminalCapabilities {
-    var stdinIsTTY: Bool { false }
-}
-
-private struct TypesListTestClient: DocumentationTypeCatalogClient {
-    func fetchTypes(technology: String) async throws -> [DocumentationType] {
+private struct TypesListTestRepository: DocumentationRepository {
+    func types(technology: String) async throws -> [DocumentationType] {
         #expect(technology == "SwiftData")
         return [
             DocumentationType(
