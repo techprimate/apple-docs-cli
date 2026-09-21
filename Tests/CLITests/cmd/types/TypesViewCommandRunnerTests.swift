@@ -24,15 +24,19 @@ struct TypesViewCommandRunnerTests {
             }
             """.utf8
         )
-        let document = TypeDocumentationDocument(
-            data: data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
+        let document = try LoadedDocumentationPage(
+            page: DocumentationPageDecoder().decode(
+                data,
+                destination: .init(
+                    technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic")),
+            responseByteCount: data.count)
         let client = RequestedTypeClient(
             expectedName: "MXHangDiagnostic",
             expectedTechnology: "MetricKit",
             document: document
         )
         let renderer = RequestedTypeRenderer(
-            expectedData: data,
+            expectedPage: document.page,
             output: "rendered documentation"
         )
         let runner = TypesViewCommandRunner(client: client, renderer: renderer)
@@ -49,12 +53,12 @@ struct TypesViewCommandRunnerTests {
     }
 }
 
-private struct RequestedTypeClient: AppleDocumentationClient {
+private struct RequestedTypeClient: DocumentationRepository {
     let expectedName: String
     let expectedTechnology: String
-    let document: TypeDocumentationDocument
+    let document: LoadedDocumentationPage
 
-    func fetchType(named name: String, technology: String) async throws -> TypeDocumentationDocument {
+    func type(named name: String, technology: String) async throws -> LoadedDocumentationPage {
         guard name == expectedName, technology == expectedTechnology else {
             throw TestDocumentationClientError.unexpectedRequest
         }
@@ -63,11 +67,11 @@ private struct RequestedTypeClient: AppleDocumentationClient {
 }
 
 private struct RequestedTypeRenderer: TypeDocumentationRenderer {
-    let expectedData: Data
+    let expectedPage: DocumentationPage
     let output: String
 
-    func render(_ document: TypeDocumentationDocument) -> String {
-        guard document.data == expectedData else {
+    func render(_ document: DocumentationPage) -> String {
+        guard document == expectedPage else {
             return "unexpected document"
         }
         return output

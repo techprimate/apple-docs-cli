@@ -4,8 +4,7 @@ struct DefaultTypeDocumentationRenderer: Sendable {
     let output: Output
     var audience: OutputAudience = .human
 
-    func render(_ document: TypeDocumentationDocument) throws -> String {
-        let page = try DocumentationPageDecoder().decode(document.data, destination: document.destination)
+    func render(_ page: DocumentationPage) throws -> String {
         let presentation = DocumentationPresenter().page(page, audience: audience)
         switch output {
         case .json:

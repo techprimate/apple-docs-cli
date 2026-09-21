@@ -5,11 +5,11 @@ struct TypesSearchCommandRunner: Sendable {
         let unavailableCollectionCount: Int
     }
 
-    private let client: DocumentationTypeSearchClient
+    private let client: DocumentationRepository
     private let renderer: DocumentationTypeListRenderer
 
     init(
-        client: DocumentationTypeSearchClient,
+        client: DocumentationRepository,
         renderer: DocumentationTypeListRenderer
     ) {
         self.client = client
@@ -17,7 +17,7 @@ struct TypesSearchCommandRunner: Sendable {
     }
 
     func run(query: String, technology: String) async throws -> Result {
-        let result = try await client.searchTypes(query: query, technology: technology)
+        let result = try await client.search(query: query, technology: technology)
         return Result(
             output: try renderer.render(result.types),
             matchCount: result.types.count,

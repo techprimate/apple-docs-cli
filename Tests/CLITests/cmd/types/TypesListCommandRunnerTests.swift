@@ -29,10 +29,10 @@ struct TypesListCommandRunnerTests {
     }
 }
 
-private struct RequestedTypesClient: DocumentationTypeCatalogClient {
+private struct RequestedTypesClient: DocumentationRepository {
     let types: [DocumentationType]
 
-    func fetchTypes(technology: String) async throws -> [DocumentationType] {
+    func types(technology: String) async throws -> [DocumentationType] {
         guard technology == "SwiftData" else {
             throw TypesListRunnerTestError.unexpectedTechnology
         }

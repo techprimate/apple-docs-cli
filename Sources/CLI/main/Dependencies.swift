@@ -1,5 +1,6 @@
 import Foundation
 import Logging
+import SwiftTUIRuntime
 
 #if canImport(FoundationNetworking)
     import FoundationNetworking
@@ -61,18 +62,23 @@ enum Dependencies {
         AgentSkillInstaller(logger: Logger(label: "com.techprimate.apple-docs.skills.installer"))
     }
 
-    static func documentationRenderer(output: OutputOptions) -> DefaultTypeDocumentationRenderer {
-        DefaultTypeDocumentationRenderer(output: output.format, audience: output.audience)
-    }
+    static let documentationRepository = DefaultDocumentationRepository(
+        logger: Logger(label: "com.techprimate.apple-docs.repository"), dependencies: documentationClient)
 
-    static func documentationTypeListRenderer(
-        output: OutputOptions, technology: String
-    ) -> DefaultDocumentationTypeListRenderer {
-        DefaultDocumentationTypeListRenderer(
-            output: output.json ? .json : .table, audience: output.audience, technology: technology)
-    }
-
-    static func technologyListRenderer(output: OutputOptions) -> DefaultTechnologyListRenderer {
-        DefaultTechnologyListRenderer(output: output.json ? .json : .table, audience: output.audience)
+    @MainActor
+    static func documentationDispatcher(
+        logs: SessionLogBuffer?, telemetry: Telemetry
+    ) -> DocumentationCommandDispatcher {
+        DocumentationCommandDispatcher(
+            browser: { entry in
+                let signals = try await TerminalSignals()
+                defer { signals.close() }
+                // Interactive mode allocates its shared log buffer before logging bootstrap.
+                let browser = DefaultDocumentationBrowser(
+                    repository: documentationRepository, logs: logs!, opener: DefaultExternalURLOpener(),
+                    session: TerminalSession(surface: TerminalHost(), input: InputReader(), signals: signals))
+                try await browser.run(entry: entry)
+            },
+            oneShot: OneShotDocumentationRunner(repository: documentationRepository), telemetry: telemetry)
     }
 }

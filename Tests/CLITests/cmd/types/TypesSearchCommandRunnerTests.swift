@@ -46,10 +46,10 @@ struct TypesSearchCommandRunnerTests {
     }
 }
 
-private struct RequestedTypeSearchClient: DocumentationTypeSearchClient {
+private struct RequestedTypeSearchClient: DocumentationRepository {
     let types: [DocumentationType]
 
-    func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult {
+    func search(query: String, technology: String) async throws -> DocumentationSearchResult {
         guard query == "Button", technology == "SwiftUI" else {
             throw TypesSearchRunnerTestError.unexpectedRequest
         }

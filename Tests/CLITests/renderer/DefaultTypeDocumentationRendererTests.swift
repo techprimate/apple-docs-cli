@@ -8,8 +8,8 @@ struct DefaultTypeDocumentationRendererTests {
     @Test("renders sparse collection pages")
     func rendersSparseCollection() throws {
         // -- Arrange --
-        let document = TypeDocumentationDocument(
-            data: Data(#"{"kind":"article","metadata":{"title":"SwiftUI","role":"collection"}}"#.utf8),
+        let document = try DocumentationPageDecoder().decode(
+            Data(#"{"kind":"article","metadata":{"title":"SwiftUI","role":"collection"}}"#.utf8),
             destination: .init(technology: "swiftui", path: "/documentation/swiftui"))
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
@@ -162,21 +162,20 @@ struct DefaultTypeDocumentationRendererTests {
     @Test("JSON rejects documents without required semantic metadata")
     func rejectsMalformedJSONPage() throws {
         // -- Arrange --
-        let document = try makeDocument(#"{"unknownField":true}"#)
-        let renderer = DefaultTypeDocumentationRenderer(output: .json)
+        let rawJSON = #"{"unknownField":true}"#
 
         // -- Act --
-        let render = { try renderer.render(document) }
+        let decode = { try makeDocument(rawJSON) }
 
         // -- Assert --
-        #expect(throws: (any Error).self) { try render() }
+        #expect(throws: DecodingError.self) { try decode() }
     }
 
     private func makeDocument(
         _ rawJSON: String, technology: String = "metrickit", path: String = "mxhangdiagnostic"
-    ) throws -> TypeDocumentationDocument {
-        TypeDocumentationDocument(
-            data: Data(rawJSON.utf8),
+    ) throws -> DocumentationPage {
+        try DocumentationPageDecoder().decode(
+            Data(rawJSON.utf8),
             destination: .init(technology: technology, path: "/documentation/\(technology)/\(path)"))
     }
 }

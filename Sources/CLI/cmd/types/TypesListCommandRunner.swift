@@ -4,11 +4,11 @@ struct TypesListCommandRunner: Sendable {
         let typeCount: Int
     }
 
-    private let client: DocumentationTypeCatalogClient
+    private let client: DocumentationRepository
     private let renderer: DocumentationTypeListRenderer
 
     init(
-        client: DocumentationTypeCatalogClient,
+        client: DocumentationRepository,
         renderer: DocumentationTypeListRenderer
     ) {
         self.client = client
@@ -16,7 +16,7 @@ struct TypesListCommandRunner: Sendable {
     }
 
     func run(technology: String) async throws -> Result {
-        let types = try await client.fetchTypes(technology: technology)
+        let types = try await client.types(technology: technology)
         return Result(
             output: try renderer.render(types),
             typeCount: types.count
