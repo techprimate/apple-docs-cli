@@ -19,6 +19,29 @@ make build
 
 The release binary is written to `dist/apple-docs`. You can run it directly or install it into a directory on your `PATH`.
 
+## Toolchain selection
+
+Check the selected toolchain with `swift --version`. On macOS, an installed Xcode containing Swift 6.4 can be selected for an individual command without changing the global Xcode selection. For example, when Xcode 27 is installed at this path:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-27.0.0.app/Contents/Developer make test
+```
+
+Use the actual path of your installed Xcode. The manifest requires Swift 6.4 even when a different Xcode is the system default.
+
+## Linux status
+
+The official `swift:6.4` container is available for Linux amd64 and arm64. Its startup and Swift 6.4 toolchain have been verified locally on arm64 Linux. Check registry availability and the container toolchain independently:
+
+```bash
+docker manifest inspect swift:6.4
+docker run --rm --network none swift:6.4 swift --version
+```
+
+These checks do not compile or test this package. `make test-linux` still selects `swift:6.3.3`, and CI/static SDK configuration still needs migration. The old container cannot build this branch's manifest. Updating the verified container tag, CI toolchain, and official static SDK URL/checksum is separate from confirming image availability. Both Linux release architectures must remain supported.
+
+See [Testing and acceptance](TESTING.md) for the remaining application and native-terminal checks.
+
 ## Setup
 
 From the repository root, install development tools and resolve SwiftPM dependencies:
@@ -81,6 +104,6 @@ Container targets accept `LINUX_DOCKER_FLAGS`. Direct container targets also acc
 
 ## Before submitting
 
-Follow the [repository instructions](../AGENTS.md), keep changes focused, and add a regression test for behavior changes and bug fixes.
+Follow the [repository instructions](../AGENTS.md), keep changes focused, and add a regression test for behavior changes and bug fixes. See [Architecture](ARCHITECTURE.md) for component ownership and [Testing](TESTING.md) for release and terminal acceptance.
 
 Run `make test`, `make analyze`, and `make build`. After Swift edits, run `make format` and rerun `make analyze`. For command-facing changes, also exercise the affected release command directly.

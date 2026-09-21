@@ -174,7 +174,7 @@ apple-docs types view String --technology Swift --json | jq -r '.title'
 
 This is a breaking change: page JSON is normalized rather than raw DocC, and title extraction uses `.title` instead of `.metadata.title`. There is no raw-DocC export flag. Normalization does not preserve every upstream field, so missing normalized content is not evidence that Apple supplies no such information. JSON stdout contains only the result, with warnings and verbose diagnostics sent to stderr.
 
-See [Output formats and JSON](docs/OUTPUT.md) for the complete normalized JSON shapes, link targets, and follow-up-command limitations.
+See [Output modes and JSON](docs/OUTPUT.md) for the complete normalized JSON shapes, link targets, and follow-up-command limitations.
 
 ### Browser controls
 
@@ -222,6 +222,15 @@ TELEMETRY_DISABLED=true apple-docs types view Button --technology SwiftUI
 ```
 
 Or set `export TELEMETRY_DISABLED=true` in your shell configuration. Disabling telemetry does not stop documentation requests to Apple.
+
+## Documentation
+
+- [Terminal browsing](docs/BROWSING.md): navigation, keyboard controls, search, session logs, and lifecycle.
+- [Output modes and JSON](docs/OUTPUT.md): human/agent contracts, semantic fields, and compatibility changes.
+- [Architecture](docs/ARCHITECTURE.md): repository, state/effects, presentations, and the terminal adapter.
+- [Testing and acceptance](docs/TESTING.md): unit, release, PTY, redirection, and platform verification.
+- [Development](docs/DEVELOPMENT.md): toolchains, setup, and build commands.
+- [Telemetry](docs/TELEMETRY.md): local diagnostics, collected fields, privacy, and opt-out.
 
 ## Support and contributing
 

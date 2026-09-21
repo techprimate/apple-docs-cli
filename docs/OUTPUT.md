@@ -1,22 +1,26 @@
-# Output formats and JSON
+# Output modes and JSON
 
-Documentation commands select audience and format independently. Human text, agent Markdown, and JSON derive from shared presentations of normalized documentation content.
+Documentation commands select interaction, audience, and format independently. The browser, human text, agent Markdown, and JSON share normalized documentation content.
 
-## Audience and format selection
+## Mode, audience, and format selection
 
-| Flags            | Audience | Format                        |
-| ---------------- | -------- | ----------------------------- |
-| No output flags  | Human    | Text or discovery tables      |
-| `--json`         | Human    | JSON                          |
-| `--agent`        | Agent    | Markdown                      |
-| `--agent --json` | Agent    | JSON with navigation commands |
+| Invocation                                       | Audience | Format                        | Interaction |
+| ------------------------------------------------ | -------- | ----------------------------- | ----------- |
+| No output flags, both stdin and stdout are TTYs  | Human    | Terminal UI                   | Interactive |
+| No output flags, either descriptor is redirected | Human    | Text or discovery tables      | One-shot    |
+| `--non-interactive`                              | Human    | Text or discovery tables      | One-shot    |
+| `--json`                                         | Human    | JSON                          | One-shot    |
+| `--agent`                                        | Agent    | Markdown                      | One-shot    |
+| `--agent --json`                                 | Agent    | JSON with navigation commands | One-shot    |
 
-All commands print once and exit, including when stdin and stdout are terminals. There is no interactive browser or `--non-interactive` flag. Flag order does not matter. These output options belong to `types view`, `types list`, `types search`, and `technologies list`, not to cache or skill commands.
+`--agent` and `--json` each prevent interactive execution. Adding `--non-interactive` to either is valid and redundant. Flag order does not matter. These output options belong to `types view`, `types list`, `types search`, and `technologies list`, not to cache or skill commands.
 
-Successful output goes to stdout. Errors, partial-search warnings, and requested verbose diagnostics go to stderr. Unhandled command failures exit nonzero. JSON stdout contains only the structured result, without terminal escape sequences or progress messages.
+Mode selection happens before terminal resources are initialized, raw mode is entered, or interactive input is read.
+
+Successful one-shot output goes to stdout. Errors, partial-search warnings, and requested verbose diagnostics go to stderr. Unhandled command failures exit nonzero. JSON stdout contains only the structured result, without terminal escape sequences or progress messages.
 
 ```bash
-apple-docs types view String --technology Swift
+apple-docs types view String --technology Swift --non-interactive
 apple-docs types view String --technology Swift --agent
 apple-docs types view String --technology Swift --json
 apple-docs types view String --technology Swift --agent --json
@@ -85,7 +89,9 @@ No search matches is a successful empty array, not an error. Partial results rem
 
 ## Compatibility with older output
 
-The current output contracts differ from the earlier raw-DocC interface:
+Documentation commands now open the browser when both stdin and stdout are terminals. Use `--non-interactive` to retain one-shot human output. Agent and JSON output remain one-shot.
+
+The current output contracts also differ from the earlier raw-DocC interface:
 
 - `--agent` emits Markdown rather than acting as an alias for `--json`.
 - Use both `--agent --json` for structured agent output.
@@ -98,4 +104,4 @@ For example, title extraction uses `.title`, not `.metadata.title`:
 apple-docs types view String --technology Swift --json | jq -r '.title'
 ```
 
-See [Development](DEVELOPMENT.md) for verification commands and [Telemetry](TELEMETRY.md) for the separate diagnostic-upload policy.
+See [Browsing](BROWSING.md) for interactive use, [Testing](TESTING.md) for output-contract verification, and [Telemetry](TELEMETRY.md) for the separate diagnostic-upload policy.
