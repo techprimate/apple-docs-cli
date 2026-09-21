@@ -44,6 +44,22 @@ Application logs use `apple/swift-log` with the Sentry Swift Log handler. Messag
 
 Source file paths, function names, arbitrary metadata, interpolated values, and unapproved log messages are removed before transmission.
 
+### Local browser diagnostics
+
+Local session capture and telemetry transmission are separate. The entry point owns the single SwiftLog bootstrap and selects its handlers before starting the terminal runtime.
+
+While the browser owns the terminal, console logging is disabled so diagnostics cannot overwrite the screen. Instead, a thread-safe in-memory buffer captures warning-and-higher entries by default or debug-and-higher entries with `--verbose`, including while the log panel is hidden. Backtick opens the panel. It retains at most 500 entries, evicts the oldest first, and writes no session-log file.
+
+The existing telemetry handler remains active at its existing info-and-higher threshold when enabled. Its allowlist and privacy filtering still apply. Disabling telemetry does not disable local session capture. Local panel contents should not be mistaken for the exact data uploaded to Sentry.
+
+SwiftTUI runtime issues go through the host logger rather than a second bootstrap or a direct telemetry integration. Log redraw notifications are coalesced, and rendering the panel does not generate more logs. New browser logging does not add raw documentation bodies, credentials, or search-query text.
+
+One-shot results remain on stdout. With `--verbose`, console diagnostics go to stderr instead of a session panel. Errors and incomplete-search warnings likewise stay off JSON stdout.
+
+The host installs handlers only for resize and nonfatal shutdown signals. It does not replace Sentry's fatal-signal handlers. A browser command's telemetry lifetime ends after the session returns or fails.
+
+See [Browsing](BROWSING.md) for panel interaction and [Architecture](ARCHITECTURE.md) for ownership boundaries.
+
 ### Breadcrumbs
 
 A command invocation adds one breadcrumb to subsequent errors. Its message and category are fixed, and its data is restricted to the approved command context.
