@@ -6,10 +6,13 @@ export SWIFTLY_HOME_DIR="$SWIFT_CACHE_PATH/home"
 export SWIFTLY_BIN_DIR="$SWIFT_CACHE_PATH/bin"
 export SWIFTLY_TOOLCHAINS_DIR="$SWIFT_CACHE_PATH/toolchains"
 
+# Keep Swiftly's version selection outside the checked-out repository.
+mkdir -p "$SWIFT_CACHE_PATH"
+cd "$SWIFT_CACHE_PATH"
+
 if [[ ! -f "$SWIFT_CACHE_PATH.complete" ]]; then
   SWIFTLY_VERSION=1.1.4
   DOWNLOAD_DIR=$(mktemp -d "$RUNNER_TEMP/setup-swift.XXXXXX")
-  mkdir -p "$SWIFT_CACHE_PATH"
 
   case "$RUNNER_OS" in
     Linux)
@@ -55,7 +58,10 @@ fi
 
 # A restored toolchain still needs its system dependencies on a fresh runner.
 if [[ -f "$SWIFT_CACHE_PATH/post-install.sh" ]]; then
-  bash "$SWIFT_CACHE_PATH/post-install.sh"
+  if [[ "$RUNNER_OS" == Linux ]]; then
+    sudo apt-get update
+  fi
+  sudo bash "$SWIFT_CACHE_PATH/post-install.sh"
 fi
 
 TOOLCHAIN=$("$SWIFTLY_BIN_DIR/swiftly" use --print-location)
