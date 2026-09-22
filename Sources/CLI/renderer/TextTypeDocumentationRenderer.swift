@@ -5,10 +5,11 @@ struct TextTypeDocumentationRenderer: Sendable {
         let content = DocumentationContentRenderer(references: page.references)
         let metadata = ([page.metadata.roleHeading] + page.metadata.modules.map(\.name))
             .filter { !$0.isEmpty }.joined(separator: " · ")
-        var sections = [
-            layout.heading(page.metadata.title, prominent: true) + "\n" + metadata
-                + "\nSymbol kind: " + page.metadata.symbolKind
-        ]
+        var header = layout.heading(page.metadata.title, prominent: true) + "\n" + metadata
+        if let symbolKind = page.metadata.symbolKind {
+            header += "\nSymbol kind: " + symbolKind
+        }
+        var sections = [header]
 
         let abstract = content.inlineText(page.abstract)
         if !abstract.isEmpty {
