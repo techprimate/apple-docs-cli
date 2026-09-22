@@ -86,7 +86,7 @@ struct DocumentationViewTests {
 
         // -- Act --
         let frame = DefaultRenderer().render(
-            DocumentationView(model: model, viewport: BrowserViewport(), send: { _ in }),
+            DocumentationView(model: model, viewport: .constant(BrowserViewport())),
             proposal: .init(width: 51, height: 15))
         let text = frame.rasterSurface.lines.joined(separator: "\n")
 
@@ -116,7 +116,7 @@ struct DocumentationViewTests {
         // -- Act --
         let viewport = model.selectLink(step: 1, viewport: BrowserViewport(), height: 6)
         let frame = DefaultRenderer().render(
-            DocumentationView(model: model, viewport: viewport, send: { _ in }),
+            DocumentationView(model: model, viewport: .constant(viewport)),
             proposal: .init(width: 21, height: 6))
 
         // -- Assert --
@@ -168,10 +168,10 @@ struct DocumentationViewTests {
 
         // -- Act --
         let normal = renderer.render(
-            DocumentationView(model: model, viewport: BrowserViewport(), send: { _ in }),
+            DocumentationView(model: model, viewport: .constant(BrowserViewport())),
             proposal: .init(width: 40, height: 10))
         let selected = renderer.render(
-            DocumentationView(model: model, viewport: .init(selectedLinkID: link.id), send: { _ in }),
+            DocumentationView(model: model, viewport: .constant(.init(selectedLinkID: link.id))),
             proposal: .init(width: 40, height: 10))
 
         // -- Assert --

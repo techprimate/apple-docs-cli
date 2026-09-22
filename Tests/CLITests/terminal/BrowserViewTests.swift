@@ -132,7 +132,9 @@ struct BrowserViewTests {
         _ state: BrowserState, logs: [SessionLogEntry] = [], width: Int, height: Int
     ) -> String {
         DefaultRenderer().render(
-            BrowserView(state: state, logs: logs, send: { _ in }),
+            BrowserView(
+                state: state, logs: logs, model: DocumentationViewportModel(state: state, terminalWidth: width),
+                readState: { state }, send: { _ in }),
             proposal: .init(width: width, height: height)
         ).rasterSurface.lines.joined(separator: "\n")
     }

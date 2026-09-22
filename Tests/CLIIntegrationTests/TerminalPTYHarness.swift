@@ -24,9 +24,14 @@ final class TerminalPTYHarness {
     private var captured = Data()
     private var pendingProbes = Data()
     private let enhancedKeyboard: Bool
+    private var redirectedOutput: Pipe?
     var output: String { String(bytes: captured, encoding: .utf8) ?? "" }
+    var checkpoint: Int { captured.count }
 
-    init(enhancedKeyboard: Bool = false) throws {
+    init(
+        arguments: [String] = ["types", "view", "String", "--technology", "Swift"],
+        enhancedKeyboard: Bool = false, inputIsTTY: Bool = true, outputIsTTY: Bool = true
+    ) throws {
         self.enhancedKeyboard = enhancedKeyboard
         guard let executable = ProcessInfo.processInfo.environment["APPLE_DOCS_EXECUTABLE"] else {
             throw AppleDocsCommandError.missingExecutable
@@ -40,9 +45,15 @@ final class TerminalPTYHarness {
             originalFlags = fileStatusFlags()
             let handle = FileHandle(fileDescriptor: terminalDescriptor, closeOnDealloc: false)
             process.executableURL = URL(fileURLWithPath: executable)
-            process.arguments = ["types", "view", "String", "--technology", "Swift"]
-            process.standardInput = handle
-            process.standardOutput = handle
+            process.arguments = arguments
+            process.standardInput = inputIsTTY ? handle : FileHandle.nullDevice
+            if outputIsTTY {
+                process.standardOutput = handle
+            } else {
+                let pipe = Pipe()
+                redirectedOutput = pipe
+                process.standardOutput = pipe
+            }
             process.standardError = handle
             var environment = ProcessInfo.processInfo.environment
             environment["TELEMETRY_DISABLED"] = "true"
@@ -62,7 +73,7 @@ final class TerminalPTYHarness {
         if process.isRunning {
             process.terminate()
             let deadline = ContinuousClock.now.advanced(by: .seconds(1))
-            while process.isRunning && ContinuousClock.now < deadline { try? pump() }
+            while process.isRunning && ContinuousClock.now < deadline { _ = try? pump() }
             if process.isRunning { kill(process.processIdentifier, SIGKILL) }
         }
         closeDescriptors()
@@ -81,12 +92,12 @@ final class TerminalPTYHarness {
         }
     }
 
-    func waitFor(_ text: String, timeout: Double = 30) throws {
+    func waitFor(_ text: String, after checkpoint: Int = 0, timeout: Double = 30) throws {
         let deadline = ContinuousClock.now.advanced(by: .seconds(timeout))
-        while !output.contains(text) {
-            guard process.isRunning else { throw Failure.exited(process.terminationStatus, output) }
-            guard ContinuousClock.now < deadline else { throw Failure.timeout(text) }
-            try pump()
+        while !(String(bytes: captured.dropFirst(checkpoint), encoding: .utf8) ?? "").contains(text) {
+            guard ContinuousClock.now < deadline else { throw Failure.timeout(text + "\n" + output.suffix(6000)) }
+            let received = try pump()
+            if !received && !process.isRunning { throw Failure.exited(process.terminationStatus, output) }
         }
     }
 
@@ -96,7 +107,7 @@ final class TerminalPTYHarness {
             guard ContinuousClock.now < deadline else { throw Failure.timeout("process exit") }
             try pump()
         }
-        try pump()
+        while try pump() {}
     }
 
     func resize(width: UInt16, height: UInt16) throws {
@@ -121,20 +132,28 @@ final class TerminalPTYHarness {
         return fcntl(terminalDescriptor, F_GETFL) & mask
     }
 
-    private func pump() throws {
-        var descriptor = pollfd(fd: controllerDescriptor, events: Int16(POLLIN), revents: 0)
-        let ready = poll(&descriptor, 1, 50)
-        if ready < 0 && errno == EINTR { return }
+    @discardableResult private func pump() throws -> Bool {
+        var descriptors = [pollfd(fd: controllerDescriptor, events: Int16(POLLIN), revents: 0)]
+        if let redirectedOutput {
+            descriptors.append(
+                .init(fd: redirectedOutput.fileHandleForReading.fileDescriptor, events: Int16(POLLIN), revents: 0))
+        }
+        let ready = poll(&descriptors, nfds_t(descriptors.count), 50)
+        if ready < 0 && errno == EINTR { return false }
         guard ready >= 0 else { throw Failure.system(errno) }
-        guard ready > 0 && descriptor.revents & Int16(POLLIN) != 0 else { return }
-        var bytes = [UInt8](repeating: 0, count: 16384)
-        let count = read(controllerDescriptor, &bytes, bytes.count)
-        guard count > 0 else { return }
-        guard captured.count + count <= 2_000_000 else { throw Failure.outputLimit }
-        captured.append(contentsOf: bytes.prefix(count))
-        pendingProbes.append(contentsOf: bytes.prefix(count))
-        try answerProbes()
-        pendingProbes = Data(pendingProbes.suffix(64))
+        var received = false
+        for descriptor in descriptors where descriptor.revents & Int16(POLLIN) != 0 {
+            var bytes = [UInt8](repeating: 0, count: 16384)
+            let count = read(descriptor.fd, &bytes, bytes.count)
+            guard count > 0 else { continue }
+            guard captured.count + count <= 2_000_000 else { throw Failure.outputLimit }
+            captured.append(contentsOf: bytes.prefix(count))
+            pendingProbes.append(contentsOf: bytes.prefix(count))
+            try answerProbes()
+            pendingProbes = Data(pendingProbes.suffix(64))
+            received = true
+        }
+        return received
     }
 
     private func answerProbes() throws {

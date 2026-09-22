@@ -101,6 +101,96 @@ struct TerminalSessionTests {
         #expect(surface.rawModeEvents == [true, false])
     }
 
+    @Test func searchCharacterBurstRetainsEveryCharacter() async throws {
+        // -- Arrange --
+        let coordinator = BrowserCoordinator(
+            repository: ControlledDocumentationRepository(),
+            entry: .types(technology: "swift"), openExternal: { _ in })
+        let surface = RecordingTerminalSurface()
+        let input = ControlledTerminalInput()
+        let session = TerminalSession(surface: surface, input: input)
+        let running = Task { try await session.run(coordinator: coordinator, logs: SessionLogBuffer()) }
+        defer { running.cancel() }
+        try await surface.waitForFrame(containing: "Symbols")
+        input.send(.init(.character("/")))
+        try await surface.waitForFrame(containing: "Enter submits")
+
+        // -- Act --
+        for character in "q/`o[]" { input.send(.init(.character(character))) }
+        try await surface.waitForFrame(containing: "q/`o[]")
+        input.finish()
+        try await finish(running)
+
+        // -- Assert --
+        #expect(coordinator.state.search?.query == "q/`o[]")
+        #expect(surface.rawModeEvents == [true, false])
+    }
+
+    @Test func linkSelectionBurstUsesEachPreviousSelection() async throws {
+        // -- Arrange --
+        let repository = ControlledDocumentationRepository()
+        let coordinator = coordinator(repository)
+        let surface = RecordingTerminalSurface()
+        let input = ControlledTerminalInput()
+        let session = TerminalSession(surface: surface, input: input)
+        let running = Task { try await session.run(coordinator: coordinator, logs: SessionLogBuffer()) }
+        defer { running.cancel() }
+        let request = try await repository.waitForRequest(.technologies)
+        await repository.complete(
+            request,
+            with: .technologies([
+                .init(name: "First framework", identifier: "doc://com.apple.documentation/documentation/swift"),
+                .init(name: "Second framework", identifier: "doc://com.apple.documentation/documentation/foundation"),
+            ]))
+        try await surface.waitForFrame(containing: "Second framework")
+
+        // -- Act --
+        input.send(.init(.character("]")))
+        input.send(.init(.character("]")))
+        input.send(.init(.character("q")))
+        try await finish(running)
+
+        // -- Assert --
+        #expect(coordinator.state.viewport.selectedLinkID == "technology/1/link/0")
+        #expect(surface.rawModeEvents == [true, false])
+    }
+
+    @Test func populatedSearchResultsAcceptFocusAndActivation() async throws {
+        // -- Arrange --
+        let repository = ControlledDocumentationRepository()
+        let coordinator = BrowserCoordinator(
+            repository: repository, entry: .search(query: "Example", technology: "swift"), openExternal: { _ in })
+        let surface = RecordingTerminalSurface()
+        let input = ControlledTerminalInput()
+        let session = TerminalSession(surface: surface, input: input)
+        let running = Task { try await session.run(coordinator: coordinator, logs: SessionLogBuffer()) }
+        defer { running.cancel() }
+        let request = try await repository.waitForRequest(.search("Example", "swift"))
+        await repository.complete(
+            request,
+            with: .search(
+                .init(
+                    types: [
+                        .init(
+                            name: "Example result", kind: "struct", path: "example",
+                            url: "https://developer.apple.com/documentation/swift/example")
+                    ], unavailableCollectionPaths: [])))
+        try await surface.waitForFrame(containing: "Example result")
+
+        // -- Act --
+        input.send(.init(.tab))
+        try await surface.waitForFrame(containing: "Tab query")
+        input.send(.init(.return))
+        try await surface.waitForFrame(containing: "Loading documentation")
+        input.send(.init(.character("c"), modifiers: .ctrl))
+        try await finish(running)
+
+        // -- Assert --
+        #expect(coordinator.state.search?.isOpen == false)
+        #expect(coordinator.state.search?.query == "Example")
+        #expect(surface.rawModeEvents == [true, false])
+    }
+
     @Test func backgroundCompletionAndLogsWakeRenderingWithoutKeys() async throws {
         // -- Arrange --
         let repository = ControlledDocumentationRepository()
@@ -235,7 +325,10 @@ struct TerminalSessionTests {
         #expect(entries.first?.message == "Could not lay out a view")
     }
 
-    private func coordinator(_ repository: ControlledDocumentationRepository) -> BrowserCoordinator {
+}
+
+extension TerminalSessionTests {
+    fileprivate func coordinator(_ repository: ControlledDocumentationRepository) -> BrowserCoordinator {
         BrowserCoordinator(
             repository: repository, entry: .technologies,
             openExternal: { _ in
@@ -243,7 +336,7 @@ struct TerminalSessionTests {
             })
     }
 
-    private func finish(_ task: Task<Void, any Error>) async throws {
+    fileprivate func finish(_ task: Task<Void, any Error>) async throws {
         try await withTaskCancellationHandler(operation: { try await task.value }, onCancel: { task.cancel() })
     }
 }

@@ -3,6 +3,8 @@ import SwiftTUIRuntime
 struct BrowserView: View {
     let state: BrowserState
     let logs: [SessionLogEntry]
+    let model: DocumentationViewportModel
+    let readState: @MainActor @Sendable () -> BrowserState
     let send: @MainActor @Sendable (BrowserAction) -> Void
     @Environment(\.requestTermination) private var requestTermination
     @FocusState private var focusedPane: BrowserFocus?
@@ -17,8 +19,6 @@ struct BrowserView: View {
             let logHeight = state.logsVisible ? min(8, max(2, geometry.size.height / 3)) : 0
             let statusHeight = status == nil ? 0 : 1
             let mainHeight = max(2, geometry.size.height - 2 - logHeight - statusHeight)
-            let model = DocumentationViewportModel(
-                content: DocumentationViewContent(state: state), width: documentWidth)
             let focus = state.focus == .navigator && !showsNavigator ? BrowserFocus.document : state.focus
             let mapper = TerminalKeyMapper(
                 document: model, viewportHeight: max(1, mainHeight - 1),
@@ -51,7 +51,10 @@ struct BrowserView: View {
                 if let focused = focusBinding.wrappedValue, focused != state.focus { send(.setFocus(focused)) }
             }
             .onKeyPress { key in
-                guard let action = mapper.action(for: key, focus: focus, state: state) else { return .ignored }
+                let current = readState()
+                let currentFocus =
+                    current.focus == .navigator && !showsNavigator ? BrowserFocus.document : current.focus
+                guard let action = mapper.action(for: key, focus: currentFocus, state: current) else { return .ignored }
                 send(action)
                 if action == .quit { requestTermination() }
                 return .handled
@@ -70,12 +73,20 @@ struct BrowserView: View {
 
     @ViewBuilder private func mainPane(model: DocumentationViewportModel) -> some View {
         if let search = state.search, search.isOpen {
-            SearchPanel(state: search, focus: $focusedPane, send: send)
+            SearchPanel(
+                state: search, focus: $focusedPane,
+                query: Binding(get: { readState().search?.query ?? "" }, set: { send(.editQuery($0)) }),
+                selection: Binding(
+                    get: { readState().search?.selectedResultIndex },
+                    set: { if let index = $0 { send(.selectSearchResult(index)) } }))
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Documentation").bold().lineLimit(1)
-                DocumentationView(model: model, viewport: state.viewport, send: send)
-                    .focused($focusedPane, equals: .document)
+                DocumentationView(
+                    model: model,
+                    viewport: Binding(get: { readState().viewport }, set: { send(.updateViewport($0)) })
+                )
+                .focused($focusedPane, equals: .document)
             }
         }
     }

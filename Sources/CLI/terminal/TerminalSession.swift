@@ -43,7 +43,11 @@ struct TerminalSession {
             signalReader: signals, stateContainer: container,
             focusTracker: FocusTracker(invalidationIdentities: [identity]), exitKeyBindings: .none,
             viewBuilder: { snapshot, _ in
-                BrowserView(state: snapshot.browser, logs: snapshot.logs, send: coordinator.send)
+                BrowserView(
+                    state: snapshot.browser, logs: snapshot.logs,
+                    model: DocumentationViewportModel(
+                        state: snapshot.browser, terminalWidth: surface.surfaceSize.width),
+                    readState: { coordinator.state }, send: coordinator.send)
             })
         runtime.runtimeIssueSink = issueSink
         coordinator.start()
