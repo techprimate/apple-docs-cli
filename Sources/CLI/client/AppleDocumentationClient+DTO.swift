@@ -111,7 +111,7 @@ struct DocumentationMetadataDTO: Decodable, Sendable {
     let modules: [DocumentationModule]
     let platforms: [DocumentationPlatform]
     let roleHeading: String
-    let symbolKind: String
+    let symbolKind: String?
     let title: String
 
     private enum CodingKeys: CodingKey {
@@ -124,10 +124,10 @@ struct DocumentationMetadataDTO: Decodable, Sendable {
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        modules = try container.decode([DocumentationModule].self, forKey: .modules)
+        modules = try container.decodeIfPresent([DocumentationModule].self, forKey: .modules) ?? []
         platforms = try container.decodeIfPresent([DocumentationPlatform].self, forKey: .platforms) ?? []
         roleHeading = try container.decode(String.self, forKey: .roleHeading)
-        symbolKind = try container.decode(String.self, forKey: .symbolKind)
+        symbolKind = try container.decodeIfPresent(String.self, forKey: .symbolKind)
         title = try container.decode(String.self, forKey: .title)
     }
 }
