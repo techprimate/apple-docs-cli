@@ -31,16 +31,24 @@ Use the actual path of your installed Xcode. The manifest requires Swift 6.4 eve
 
 ## Linux status
 
-The official `swift:6.4` container is available for Linux amd64 and arm64. Its startup and Swift 6.4 toolchain have been verified locally on arm64 Linux. Check registry availability and the container toolchain independently:
+`make test-linux` uses the official `swift:6.4.0` container, available for Linux amd64 and arm64. Check registry availability and the container toolchain independently:
 
 ```bash
-docker manifest inspect swift:6.4
-docker run --rm --network none swift:6.4 swift --version
+docker manifest inspect swift:6.4.0
+docker run --rm --network none swift:6.4.0 swift --version
 ```
 
-These checks do not compile or test this package. `make test-linux` still selects `swift:6.3.3`, and CI/static SDK configuration still needs migration. The old container cannot build this branch's manifest. Updating the verified container tag, CI toolchain, and official static SDK URL/checksum is separate from confirming image availability. Both Linux release architectures must remain supported.
+These checks do not compile or test this package. Run `make test-linux` for application tests. With the Swift.org 6.4.0 toolchain selected, install the static SDK and build either release architecture:
 
-See [Testing and acceptance](TESTING.md) for the remaining application and native-terminal checks.
+```bash
+make install-linux-sdk
+make build-linux SWIFT_SDK=x86_64-swift-linux-musl
+make build-linux SWIFT_SDK=aarch64-swift-linux-musl
+```
+
+The Makefile pins the official SDK URL and SHA-256 checksum. CI uses these same install/build targets for both architectures. `make build-linux` defaults to x86_64 and leaves the binary in SwiftPM's release output directory for the selected SDK. Locate that directory with `swift build -c release --swift-sdk <SWIFT_SDK> --show-bin-path`. It does not replace the host binary in `dist/`. Configuration migration alone does not establish Linux runtime or release-artifact acceptance.
+
+See [Testing and acceptance](TESTING.md) for verified platforms and the remaining native-terminal and release-artifact checks.
 
 ## Setup
 
@@ -66,6 +74,8 @@ pre-commit install
 | `make build`                                             | Build the release binary at `dist/apple-docs`.                                                     |
 | `make test`                                              | Run the test suite.                                                                                |
 | `make test-linux`                                        | Run tests in pinned Swift 6.4.0 containers for amd64 and arm64.                                    |
+| `make install-linux-sdk`                                 | Install the pinned static Linux SDK with checksum verification.                                    |
+| `make build-linux SWIFT_SDK=aarch64-swift-linux-musl`    | Build a static Linux release binary. Defaults to x86_64 if `SWIFT_SDK` is omitted.                 |
 | `make test-integration`                                  | Build the release binary and run live tests against Apple documentation. Requires internet access. |
 | `make analyze`                                           | Run SwiftLint, formatting checks, and actionlint.                                                  |
 | `make format`                                            | Format Swift with `swift format` and JSON, YAML, Markdown, and TOML with dprint.                   |
