@@ -101,7 +101,7 @@ final class TerminalPTYHarness {
 
     func resize(width: UInt16, height: UInt16) throws {
         var size = winsize(ws_row: height, ws_col: width, ws_xpixel: width * 8, ws_ypixel: height * 16)
-        guard ioctl(terminalDescriptor, TIOCSWINSZ, &size) == 0 else { throw Failure.system(errno) }
+        guard ioctl(terminalDescriptor, UInt(TIOCSWINSZ), &size) == 0 else { throw Failure.system(errno) }
         kill(process.processIdentifier, SIGWINCH)
     }
 

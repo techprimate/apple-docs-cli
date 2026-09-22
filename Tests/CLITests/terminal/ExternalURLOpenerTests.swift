@@ -8,10 +8,14 @@ import Testing
 struct ExternalURLOpenerTests {
     @Test func passesTheEntireURLAsOneArgumentWithoutAShell() async throws {
         // -- Arrange --
+        let directory = try makeLauncherDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
         let calls = Mutex<[(URL, [String])]>([])
-        let opener = DefaultExternalURLOpener(launch: { executable, arguments in
-            calls.withLock { $0.append((executable, arguments)) }
-        })
+        let opener = DefaultExternalURLOpener(
+            environment: ["PATH": directory.path],
+            launch: { executable, arguments in
+                calls.withLock { $0.append((executable, arguments)) }
+            })
         let url = try #require(URL(string: "https://example.com/path?q=$(echo+hello)&name='quoted'"))
 
         // -- Act --
@@ -24,7 +28,7 @@ struct ExternalURLOpenerTests {
         #if os(macOS)
             #expect(recorded.first?.0.path == "/usr/bin/open")
         #else
-            #expect(recorded.first?.0.lastPathComponent == "xdg-open")
+            #expect(recorded.first?.0 == directory.appendingPathComponent("xdg-open"))
         #endif
     }
 
@@ -47,7 +51,11 @@ struct ExternalURLOpenerTests {
 
     @Test func propagatesLauncherFailure() async throws {
         // -- Arrange --
-        let opener = DefaultExternalURLOpener(launch: { _, _ in throw ExternalOpeningError.failed(status: 7) })
+        let directory = try makeLauncherDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let opener = DefaultExternalURLOpener(
+            environment: ["PATH": directory.path],
+            launch: { _, _ in throw ExternalOpeningError.failed(status: 7) })
         let url = try #require(URL(string: "https://example.com"))
 
         // -- Act --
@@ -55,6 +63,16 @@ struct ExternalURLOpenerTests {
 
         // -- Assert --
         #expect(result != nil)
+    }
+
+    private func makeLauncherDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let executable = directory.appendingPathComponent("xdg-open")
+        try #require(
+            FileManager.default.createFile(
+                atPath: executable.path, contents: Data(), attributes: [.posixPermissions: 0o700]))
+        return directory
     }
 
     #if os(Linux)

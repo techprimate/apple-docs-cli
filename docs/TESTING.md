@@ -87,8 +87,8 @@ The first retains terminal stdin but pipes stdout. The second redirects stdin wh
 
 macOS unit tests, release builds, and the current live CLI/PTY suite have passed. That does not establish broader native navigation acceptance, runtime behavior on macOS 15 hardware, or Linux support.
 
-The official `swift:6.4` image is now published for Linux amd64 and arm64. Container startup and `swift --version` have been verified on arm64 Linux. Application tests inside that image, native Linux PTY behavior, and both static Linux release artifacts remain unverified.
+The official `swift:6.4.0` image is published for Linux amd64 and arm64. `make test-linux` passes on arm64 Linux with 254 tests and one expected known issue. Integration suites are gated off in that run. Native Linux PTY behavior, x86_64 application tests, and both static Linux release artifacts remain unverified.
 
-The Makefile and CI still select Swift 6.3.3 in their deferred paths. Updating those settings and verifying the official static SDK URL/checksum remain required before distribution acceptance. The release workflow's old `.metadata.title` JSON smoke assertion also needs migration to `.title`.
+The Makefile and CI select Swift 6.4.0. The static SDK archive's SHA-256 has been verified against Swift.org's published checksum, and the Makefile-generated install command has succeeded in a disposable Swift 6.4.0 Linux container. CI uses `make install-linux-sdk` and `make build-linux` for both architectures, and its JSON smoke assertion checks the normalized `.title` field. These configuration checks do not establish distribution acceptance.
 
 Before calling platform acceptance complete, run native Linux tests and terminal checks and build both `x86_64-swift-linux-musl` and `aarch64-swift-linux-musl` artifacts with the matching verified Swift 6.4 SDK. Preserve both architectures. Review dependency changes, working-tree diffs, and the documented contracts. Report unavailable checks explicitly rather than treating local macOS success as cross-platform proof.
