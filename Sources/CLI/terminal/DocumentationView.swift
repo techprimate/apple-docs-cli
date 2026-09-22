@@ -14,6 +14,11 @@ struct DocumentationViewportModel {
     let blockHeights: [Int]
     let height: Int
 
+    init(state: BrowserState, terminalWidth: Int) {
+        let showsNavigator = state.navigatorVisible && terminalWidth >= 69
+        self.init(content: DocumentationViewContent(state: state), width: terminalWidth - (showsNavigator ? 29 : 0))
+    }
+
     init(page: DocumentationPage, width: Int) {
         self.init(
             content: DocumentationViewContent(presentation: DocumentationPresenter().page(page, audience: .human)),
@@ -71,8 +76,7 @@ struct DocumentationViewportModel {
 
 struct DocumentationView: View {
     let model: DocumentationViewportModel
-    let viewport: BrowserViewport
-    let send: @MainActor @Sendable (BrowserAction) -> Void
+    @Binding var viewport: BrowserViewport
 
     var body: some View {
         ScrollView(
@@ -82,7 +86,7 @@ struct DocumentationView: View {
                 set: { offset in
                     var updated = viewport
                     updated.topRow = offset.y
-                    if updated != viewport { send(.updateViewport(updated)) }
+                    if updated != viewport { viewport = updated }
                 }
             )
         ) {

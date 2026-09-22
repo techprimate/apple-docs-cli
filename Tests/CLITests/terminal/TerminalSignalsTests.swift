@@ -45,7 +45,12 @@ struct TerminalSignalsTests {
             #else
                 handler = unsafeBitCast(action.__sigaction_handler.sa_handler, to: UInt.self)
             #endif
-            flags = action.sa_flags
+            #if os(Linux) && arch(x86_64)
+                // glibc adds SA_RESTORER even when reinstalling the original sigaction unchanged.
+                flags = action.sa_flags & ~0x0400_0000
+            #else
+                flags = action.sa_flags
+            #endif
             mask = (1..<NSIG).filter { sigismember(&action.sa_mask, $0) == 1 }
         }
     }
