@@ -76,6 +76,46 @@ struct DefaultTypeDocumentationRendererTests {
         )
     }
 
+    @Test("renders articles without module or symbol metadata")
+    func rendersArticleWithoutSymbolMetadata() throws {
+        // -- Arrange --
+        let rawJSON = """
+            {
+              "kind": "article",
+              "abstract": [{"text": "Distribute binaries in Swift packages.", "type": "text"}],
+              "metadata": {
+                "role": "article",
+                "roleHeading": "Article",
+                "title": "Distributing binary frameworks as Swift packages"
+              },
+              "primaryContentSections": [{
+                "kind": "content",
+                "content": [
+                  {"type": "heading", "level": 2, "text": "Overview"},
+                  {
+                    "type": "paragraph",
+                    "inlineContent": [{"type": "text", "text": "Create an XCFramework bundle."}]
+                  }
+                ]
+              }],
+              "references": {}
+            }
+            """
+        let document = try makeDocument(rawJSON)
+        let renderer = DefaultTypeDocumentationRenderer(output: .text)
+
+        // -- Act --
+        let output = try renderer.render(document)
+
+        // -- Assert --
+        #expect(output.hasPrefix("Distributing binary frameworks as Swift packages\n"))
+        #expect(output.contains("\nArticle\n\n  Distribute binaries in Swift packages."))
+        #expect(output.contains("Overview\n────────\n\n  Create an XCFramework bundle."))
+        #expect(!output.contains("Symbol kind:"))
+        #expect(!output.contains("Availability"))
+        #expect(!output.contains("Declaration"))
+    }
+
     @Test("returns Apple's DocC JSON unchanged")
     func rendersRawJSON() throws {
         // -- Arrange --
