@@ -18,8 +18,8 @@ struct AppleDocsCommandTests {
         #expect(diagnostics == "diagnostics")
     }
 
-    @Test("drains large stderr while stdout is still open")
-    func drainsBothPipes() throws {
+    @Test("drains large stderr while stdout is still open", arguments: 0..<32)
+    func drainsBothPipes(iteration _: Int) throws {
         // -- Arrange --
         // The watchdog turns a pipe deadlock into an ordinary subprocess failure.
         let script = """

@@ -52,7 +52,9 @@ func runAppleDocs(
     let errorBuffer = CommandErrorBuffer()
     let draining = DispatchGroup()
     draining.enter()
-    DispatchQueue.global().async {
+    // Synchronous callers can occupy every cooperative worker. The pipe reader must not
+    // depend on that same dispatch pool to unblock them.
+    Thread.detachNewThread {
         let result = Result { try readCommandOutput(standardError.fileHandleForReading) }
         errorBuffer.store(result)
         draining.leave()
