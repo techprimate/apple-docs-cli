@@ -10,8 +10,8 @@ struct OutputOptionsTests {
             ([], OutputAudience.human, OutputFormat.text),
             (["--agent"], .agent, .text),
             (["--json"], .human, .json),
-            (["--agent", "--json"], .human, .json),
-            (["--json", "--agent"], .human, .json),
+            (["--agent", "--json"], .agent, .json),
+            (["--json", "--agent"], .agent, .json),
         ])
     func selectsOutput(flags: [String], audience: OutputAudience, format: OutputFormat) throws {
         // -- Arrange --

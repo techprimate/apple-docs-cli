@@ -34,12 +34,12 @@ indirect enum DocumentationBlock: Equatable, Sendable {
     case aside(content: [DocumentationBlock], style: String, name: String?)
 }
 
-struct DocumentationDeclaration: Equatable, Sendable {
+struct DocumentationDeclaration: Encodable, Equatable, Sendable {
     let languages: [String]
     let text: String
 }
 
-struct DocumentationAvailability: Equatable, Sendable {
+struct DocumentationAvailability: Encodable, Equatable, Sendable {
     let name: String
     let introducedAt: String?
     let deprecatedAt: String?

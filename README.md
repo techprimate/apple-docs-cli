@@ -7,7 +7,7 @@
 
 - Read APIs, inspect declarations, platform availability, conformances, and documented members.
 - Discover symbols, list technologies and search their documentation collections.
-- Use in scripts and agents to retrieve structured results, unchanged DocC documents, and bundled Agent Skills.
+- Use in scripts and agents to retrieve structured results, agent Markdown, and bundled Agent Skills.
 
 > [!NOTE]
 > This project is not affiliated with, endorsed by, or sponsored by Apple Inc. It is an independent tool for accessing Apple Developer documentation.
@@ -123,7 +123,7 @@ The terminal output includes available information such as:
 - Documented members and related APIs
 - Canonical Apple Developer URL
 
-Text rendering also supports sparse article and collection pages, resolves reference links, and strips remote terminal control characters. It uses normalized documentation content, which does not cover every upstream DocC field. Use `--json` when you need the original document.
+Text rendering also supports sparse article and collection pages, resolves reference links, and strips remote terminal control characters. It uses normalized documentation content, which does not cover every upstream DocC field. JSON uses the same normalized content, not the original DocC document.
 
 Every `types` command requires `--technology`. The CLI does not persist a selected framework. Nested symbols accept either dotted Swift spelling or slash-separated DocC paths:
 
@@ -144,30 +144,33 @@ apple-docs technologies list --agent
 
 Agent output uses the same normalized documentation content as human text. Follow-up commands are included only for destinations the CLI can represent safely. All commands remain one-shot, even when run in a terminal.
 
-`--agent` no longer aliases `--json`. Existing scripts that require JSON should use `--json`, which takes precedence if both flags are supplied.
+`--agent` selects the audience and `--json` selects the format independently. Combine them for JSON with agent navigation commands.
 
 ### JSON output
 
-The documentation commands accept `--json`, but their output contracts differ:
+The documentation commands accept `--json` for normalized semantic output:
 
-| Command                       | JSON output                                                               |
-| ----------------------------- | ------------------------------------------------------------------------- |
-| `types view`                  | Apple's upstream DocC document, with its response bytes unchanged.        |
-| `types list` / `types search` | An array of symbol results with `name`, `kind`, `path`, and `url` fields. |
-| `technologies list`           | The sorted catalog as an array of `name` and `identifier` objects.        |
+| Command                       | JSON output                                                                                                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types view`                  | An object with `title`, `kind`, `technology`, `path`, `url`, `modules`, `abstract`, `deprecation`, `declarations`, `availability`, `content`, `relationships`, `topics`, and `seeAlso`. |
+| `types list` / `types search` | An array with `name`, `kind`, `path`, and `url` fields.                                                                                                                                 |
+| `technologies list`           | A sorted array of `name` and `identifier` objects.                                                                                                                                      |
+
+Add `--agent` to include `navigation` commands for supported destinations. Content blocks retain semantic types and links distinguish documentation, external, and unavailable targets. Availability includes `introducedAt`, `deprecatedAt`, `obsoletedAt`, `isBeta`, and `isUnavailable` when applicable. Inapplicable optional fields are omitted.
 
 ```bash
-apple-docs types view MXHangDiagnostic --technology MetricKit --json
-apple-docs types list --technology MetricKit --json
-apple-docs types search Button --technology SwiftUI --json
+apple-docs types view String --technology Swift --json
+apple-docs types view String --technology Swift --agent --json
+apple-docs types search Button --technology SwiftUI --agent --json
 ```
 
 For example, extract the documented title using [jq](https://jqlang.org/), installed separately:
 
 ```bash
-apple-docs types view MXHangDiagnostic --technology MetricKit --json \
-  | jq -r '.metadata.title'
+apple-docs types view String --technology Swift --json | jq -r '.title'
 ```
+
+This is a breaking change: page JSON is normalized rather than raw DocC, and title extraction uses `.title` instead of `.metadata.title`. There is no raw-DocC export flag. Normalization does not preserve every upstream field, so missing normalized content is not evidence that Apple supplies no such information. JSON stdout contains only the result, with warnings and verbose diagnostics sent to stderr.
 
 ### Cache
 
