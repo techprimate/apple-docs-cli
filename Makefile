@@ -17,6 +17,21 @@ CLI_NAME := apple-docs
 DIST_DIR := dist
 CLI_BINARY := $(DIST_DIR)/$(CLI_NAME)
 RELEASE_BIN_DIR = $(shell swift build -c release --show-bin-path)
+LINUX_SWIFT_IMAGE := swift:6.4.0
+LINUX_DOCKER_FLAGS ?=
+LINUX_BUILD_VOLUME ?= apple-docs-cli-linux-build
+LINUX_SDK_VOLUME ?= apple-docs-cli-linux-sdks
+LINUX_CONTAINER = docker run --rm $(LINUX_DOCKER_FLAGS) \
+	--mount "type=bind,source=$(CURDIR),target=/workspace,readonly" \
+	--volume "$(LINUX_BUILD_VOLUME):/workspace/.build" \
+	--volume "$(LINUX_SDK_VOLUME):/root/.swiftpm/swift-sdks" \
+	--workdir /workspace $(LINUX_SWIFT_IMAGE)
+LINUX_RELEASE_BIN_DIR = $(shell $(LINUX_CONTAINER) swift build -c release --show-bin-path)
+INTEGRATION_FILTER ?= CLIIntegrationTests
+SWIFT_SDK ?= x86_64-swift-linux-musl
+# Official URL and checksum from https://www.swift.org/install/linux/.
+LINUX_SDK_URL := https://download.swift.org/swift-6.4.0-release/static-sdk/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz
+LINUX_SDK_CHECKSUM := 47d2fd89eebfdf9eb4d536b6710414297f755c17926cdebc4742c08982b40a9e
 
 # Source files used to determine when the distribution binary needs rebuilding
 SWIFT_SOURCES := $(shell find Sources Tests -type f -name '*.swift')
@@ -50,6 +65,20 @@ init:
 resolve:
 	swift package resolve
 
+## Install the matching Swift 6.4.0 static Linux SDK
+#
+# Requires the Swift.org 6.4.0 toolchain, not the compiler bundled with Xcode.
+.PHONY: install-linux-sdk
+install-linux-sdk:
+	swift sdk install "$(LINUX_SDK_URL)" --checksum "$(LINUX_SDK_CHECKSUM)"
+
+## Install the static Linux SDK in the verification container
+#
+# Persists the SDK in LINUX_SDK_VOLUME, without changing the host toolchain.
+.PHONY: install-linux-sdk-container
+install-linux-sdk-container:
+	$(LINUX_CONTAINER) swift sdk install "$(LINUX_SDK_URL)" --checksum "$(LINUX_SDK_CHECKSUM)"
+
 # ============================================================================
 # BUILDING & RUNNING
 # ============================================================================
@@ -63,6 +92,36 @@ build: $(CLI_BINARY)
 $(CLI_BINARY): $(SWIFT_SOURCES) $(PACKAGE_FILES) | $(DIST_DIR)
 	swift build -c release
 	cp "$(RELEASE_BIN_DIR)/$(CLI_NAME)" "$@"
+
+## Build a static Linux release binary
+#
+# Run make install-linux-sdk first. Defaults to x86_64-swift-linux-musl.
+# For arm64, use make build-linux SWIFT_SDK=aarch64-swift-linux-musl.
+# Leaves the binary in the selected SDK's SwiftPM release output directory.
+.PHONY: build-linux
+build-linux:
+	swift build -c release --swift-sdk "$(SWIFT_SDK)"
+
+## Build a static Linux release binary in the verification container
+#
+# Run make install-linux-sdk-container first. Select either architecture with SWIFT_SDK.
+.PHONY: build-linux-container
+build-linux-container:
+	$(LINUX_CONTAINER) swift build -c release --swift-sdk "$(SWIFT_SDK)" --disable-automatic-resolution
+
+## Build the native Linux release CLI in the verification container
+#
+# Builds against the container's libc for native CLI integration tests.
+.PHONY: build-linux-native
+build-linux-native:
+	$(LINUX_CONTAINER) swift build -c release --disable-automatic-resolution
+
+## Run a command in the Linux verification container
+#
+# For example: make run-linux ARGS="swift sdk list".
+.PHONY: run-linux
+run-linux:
+	$(LINUX_CONTAINER) $(ARGS)
 
 ## Build and run the CLI
 #
@@ -79,29 +138,50 @@ run:
 ## Run all tests
 #
 # Executes the complete Swift Testing suite.
+# Narrow a run with TEST_ARGS="--filter SuiteName".
 .PHONY: test
 test:
-	swift test
+	swift test $(TEST_ARGS)
 
-## Run all tests in a Linux container
+## Run Linux tests on both amd64 and arm64
 #
-# Uses a Docker volume for SwiftPM build output so Linux artifacts do not conflict
-# with the host build directory.
+# Each architecture has an isolated build volume. Both accept TEST_ARGS.
 .PHONY: test-linux
-test-linux:
-	docker run --rm \
-		--mount "type=bind,source=$(CURDIR),target=/workspace,readonly" \
-		--volume "apple-docs-cli-linux-build:/workspace/.build" \
-		--workdir /workspace \
-		swift:6.3.3 \
-		swift test --disable-automatic-resolution
+test-linux: test-linux-amd64 test-linux-arm64
+
+## Run tests in the amd64 Linux container
+#
+# Uses an isolated amd64 SwiftPM build volume. Accepts TEST_ARGS.
+.PHONY: test-linux-amd64
+test-linux-amd64:
+	$(MAKE) run-linux LINUX_DOCKER_FLAGS="$(LINUX_DOCKER_FLAGS) --platform=linux/amd64" \
+		LINUX_BUILD_VOLUME=apple-docs-cli-linux-amd64-build \
+		ARGS="swift test --disable-automatic-resolution $(TEST_ARGS)"
+
+## Run tests in the arm64 Linux container
+#
+# Uses an isolated arm64 SwiftPM build volume. Accepts TEST_ARGS.
+.PHONY: test-linux-arm64
+test-linux-arm64:
+	$(MAKE) run-linux LINUX_DOCKER_FLAGS="$(LINUX_DOCKER_FLAGS) --platform=linux/arm64" \
+		LINUX_BUILD_VOLUME=apple-docs-cli-linux-arm64-build \
+		ARGS="swift test --disable-automatic-resolution $(TEST_ARGS)"
 
 ## Run live CLI integration tests
 #
 # Builds the release executable and runs network-dependent command tests against Apple documentation.
 .PHONY: test-integration
 test-integration: build
-	APPLE_DOCS_EXECUTABLE="$(CURDIR)/$(CLI_BINARY)" swift test --filter CLIIntegrationTests
+	APPLE_DOCS_EXECUTABLE="$(CURDIR)/$(CLI_BINARY)" swift test --no-parallel --filter "$(INTEGRATION_FILTER)"
+
+## Run live release CLI tests in the Linux verification container
+#
+# Disables telemetry. Narrow the integration suite with INTEGRATION_FILTER=SuiteName.
+.PHONY: test-integration-linux
+test-integration-linux: build-linux-native
+	$(LINUX_CONTAINER) env TELEMETRY_DISABLED=true \
+		APPLE_DOCS_EXECUTABLE="$(LINUX_RELEASE_BIN_DIR)/$(CLI_NAME)" \
+		swift test --disable-automatic-resolution --no-parallel --filter "$(INTEGRATION_FILTER)"
 
 ## Run SwiftLint
 #
@@ -174,7 +254,7 @@ help:
 	/^## / { desc = substr($$0, 4) } \
 	/^\.PHONY: / && desc != "" { \
 		target = $$2; \
-		printf "\033[36m%-20s\033[0m %s\n", target, desc; \
+		printf "\033[36m%-32s\033[0m %s\n", target, desc; \
 		desc = ""; target = "" \
 	}' $(MAKEFILE_LIST)
 	@echo ""

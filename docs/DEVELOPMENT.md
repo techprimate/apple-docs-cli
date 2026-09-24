@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Swift 6.3 or later and Make. CI uses Swift 6.3.3.
+- Swift 6.3 or later and Make. CI and Linux containers use Swift 6.4.0.
 - Homebrew for `make init`, which installs actionlint, dprint, pre-commit, and SwiftLint.
-- Docker only if you want to run `make test-linux`.
+- Docker for container-based Linux build and test targets.
 
 ## Build from source
 
@@ -42,11 +42,42 @@ pre-commit install
 | `make run ARGS="types view Button --technology SwiftUI"` | Run the executable through SwiftPM.                                                                |
 | `make build`                                             | Build the release binary at `dist/apple-docs`.                                                     |
 | `make test`                                              | Run the test suite.                                                                                |
-| `make test-linux`                                        | Run tests in a pinned Swift 6.3.3 Linux container using Docker.                                    |
+| `make test-linux`                                        | Run tests in pinned Swift 6.4.0 containers for amd64 and arm64.                                    |
 | `make test-integration`                                  | Build the release binary and run live tests against Apple documentation. Requires internet access. |
 | `make analyze`                                           | Run SwiftLint, formatting checks, and actionlint.                                                  |
 | `make format`                                            | Format Swift with `swift format` and JSON, YAML, Markdown, and TOML with dprint.                   |
 | `make help`                                              | Show all development commands.                                                                     |
+
+## Linux workflows
+
+Container commands mount the source read-only and keep build products in Docker volumes, separate from the host build directory. The two test architectures use isolated volumes. Select one architecture or narrow the tests when needed:
+
+```bash
+make test-linux-amd64
+make test-linux-arm64 TEST_ARGS="--filter AppleDocumentationClientSearchTests"
+make build-linux-native
+make test-integration-linux
+```
+
+Live integration tests require internet access. Both integration targets accept `INTEGRATION_FILTER=SuiteName`. `make test` also accepts `TEST_ARGS`.
+
+For static release builds, use the matching Swift.org 6.4.0 toolchain, not Xcode's bundled compiler:
+
+```bash
+make install-linux-sdk
+make build-linux SWIFT_SDK=x86_64-swift-linux-musl
+make build-linux SWIFT_SDK=aarch64-swift-linux-musl
+```
+
+Alternatively, install the SDK and build inside the container without changing the host toolchain:
+
+```bash
+make install-linux-sdk-container
+make build-linux-container SWIFT_SDK=x86_64-swift-linux-musl
+make run-linux ARGS="swift sdk list"
+```
+
+Container targets accept `LINUX_DOCKER_FLAGS`. Direct container targets also accept `LINUX_BUILD_VOLUME` and `LINUX_SDK_VOLUME` to isolate build and SDK storage. Static outputs remain in SwiftPM's SDK-specific release directory. `make build-linux-native` uses the container's libc for release CLI integration tests.
 
 ## Before submitting
 
