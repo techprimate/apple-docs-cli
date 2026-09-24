@@ -4,9 +4,14 @@ import Foundation
     import FoundationNetworking
 #endif
 
+struct DocumentationSearchResult: Equatable, Sendable {
+    let types: [DocumentationType]
+    let unavailableCollectionPaths: [String]
+}
+
 #if DEBUG
     protocol DocumentationTypeSearchClient: Sendable {
-        func searchTypes(query: String, technology: String) async throws -> [DocumentationType]
+        func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult
     }
 
     extension DefaultAppleDocumentationClient: DocumentationTypeSearchClient {}

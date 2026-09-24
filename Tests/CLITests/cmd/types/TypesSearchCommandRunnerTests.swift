@@ -26,17 +26,34 @@ struct TypesSearchCommandRunnerTests {
         // -- Assert --
         #expect(result.output == "rendered matches")
         #expect(result.matchCount == 1)
+        #expect(result.unavailableCollectionCount == 1)
+    }
+
+    @Test("empty searches are successful JSON arrays")
+    func rendersEmptySearch() async throws {
+        // -- Arrange --
+        let runner = TypesSearchCommandRunner(
+            client: RequestedTypeSearchClient(types: []),
+            renderer: DefaultDocumentationTypeListRenderer(output: .json))
+
+        // -- Act --
+        let result = try await runner.run(query: "Button", technology: "SwiftUI")
+
+        // -- Assert --
+        #expect(result.output == "[\n\n]")
+        #expect(result.matchCount == 0)
+        #expect(result.unavailableCollectionCount == 1)
     }
 }
 
 private struct RequestedTypeSearchClient: DocumentationTypeSearchClient {
     let types: [DocumentationType]
 
-    func searchTypes(query: String, technology: String) async throws -> [DocumentationType] {
+    func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult {
         guard query == "Button", technology == "SwiftUI" else {
             throw TypesSearchRunnerTestError.unexpectedRequest
         }
-        return types
+        return DocumentationSearchResult(types: types, unavailableCollectionPaths: ["/documentation/swiftui/styles"])
     }
 }
 

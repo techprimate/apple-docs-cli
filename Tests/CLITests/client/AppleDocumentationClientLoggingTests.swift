@@ -166,15 +166,10 @@ struct AppleDocumentationClientLoggingTests {
         )
 
         // -- Act --
-        await #expect(
-            throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.typeSearchNoResults(
-                query: "Missing", technology: "Swift", technologyURL: "https://developer.apple.com/documentation/swift"
-            )
-        ) {
-            try await client.searchTypes(query: "Missing", technology: "Swift")
-        }
+        let result = try await client.searchTypes(query: "Missing", technology: "Swift")
 
         // -- Assert --
+        #expect(result.types.isEmpty)
         #expect(
             recorder.events.contains {
                 $0.level == .notice && $0.message.description == "No matching documentation types"
@@ -205,7 +200,7 @@ struct AppleDocumentationClientLoggingTests {
         let types = try await client.searchTypes(query: "button", technology: "SwiftUI")
 
         // -- Assert --
-        #expect(types.map(\.name) == ["Button"])
+        #expect(types.types.map(\.name) == ["Button"])
         let skipped = try #require(
             recorder.events.first { $0.message.description == "Skipping unavailable collection group" })
         #expect(skipped.level == .warning)

@@ -6,24 +6,83 @@ import Testing
 
 @Suite("Apple documentation type search client")
 struct AppleDocumentationClientSearchTests {
+    @available(macOS 15, *)
+    @Test("detailed search returns partial-result paths and successful matches")
+    func reportsPartialResults() async throws {
+        // -- Arrange --
+        let rootURL = try searchURL("swiftui")
+        let controlsURL = try searchURL("swiftui/controls")
+        let stylesURL = try searchURL("swiftui/styles")
+        let transport = HTTPTestTransport(responses: [
+            rootURL: .http(data: partialFailureRootSearchPage),
+            controlsURL: .http(statusCode: 404, data: Data()), stylesURL: .http(data: stylesSearchPage),
+        ])
+        let recorder = ClientLogRecorder()
+        let client = DefaultAppleDocumentationClient(logger: recorder.logger(), dependencies: transport)
+
+        // -- Act --
+        let result = try await client.searchTypes(query: "buttonstyle", technology: "SwiftUI")
+
+        // -- Assert --
+        #expect(result.types.map(\.name) == ["ButtonStyle"])
+        #expect(result.unavailableCollectionPaths == ["/documentation/swiftui/controls"])
+        #expect(Set(await transport.requestedURLs) == Set([rootURL, controlsURL, stylesURL]))
+        let coverage = try #require(recorder.events.first { $0.message.description == "Documentation search coverage" })
+        #expect(coverage.level == .debug)
+        #expect(coverage.metadata?["unavailable"]?.description == "1")
+        #expect(coverage.metadata?["query"] == nil)
+    }
+
+    @Test("detailed search treats no matches as a successful empty result")
+    func returnsEmptyResults() async throws {
+        // -- Arrange --
+        let rootURL = try searchURL("swiftui")
+        let transport = HTTPTestTransport(responses: [rootURL: .http(data: duplicateRootSearchPage)])
+        let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
+        )
+
+        // -- Act --
+        let result = try await client.searchTypes(query: "Missing", technology: "SwiftUI")
+
+        // -- Assert --
+        #expect(result.types.isEmpty)
+        #expect(result.unavailableCollectionPaths.isEmpty)
+        #expect(await transport.requestedURLs == [rootURL])
+    }
+
+    @Test("collection cancellation propagates instead of returning partial results", arguments: [true, false])
+    func propagatesCancellation(urlCancellation: Bool) async throws {
+        // -- Arrange --
+        let rootURL = try searchURL("swiftui")
+        let controlsURL = try searchURL("swiftui/controls")
+        let error: any Error = urlCancellation ? URLError(.cancelled) : CancellationError()
+        let transport = HTTPTestTransport(responses: [
+            rootURL: .http(data: rootSearchPage), controlsURL: .failure(error),
+        ])
+        let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
+        )
+
+        // -- Act --
+        await #expect(throws: CancellationError.self) {
+            try await client.searchTypes(query: "View", technology: "SwiftUI")
+        }
+
+        // -- Assert --
+        #expect(await transport.requestedURLs == [rootURL, controlsURL])
+    }
+
+    private func searchURL(_ path: String) throws -> URL {
+        try #require(URL(string: "https://developer.apple.com/tutorials/data/documentation/\(path).json"))
+    }
+
     @Test("searches symbols across nested collection groups")
     func searchesCollectionGroups() async throws {
         // -- Arrange --
-        let rootURL = try #require(
-            URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftui.json")
-        )
-        let controlsURL = try #require(
-            URL(
-                string:
-                    "https://developer.apple.com/tutorials/data/documentation/swiftui/controls.json"
-            )
-        )
-        let stylesURL = try #require(
-            URL(
-                string:
-                    "https://developer.apple.com/tutorials/data/documentation/swiftui/styles.json"
-            )
-        )
+        let rootURL = try searchURL("swiftui")
+        let controlsURL = try searchURL("swiftui/controls")
+        let stylesURL = try searchURL("swiftui/styles")
         let client = DefaultAppleDocumentationClient(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(responses: [
@@ -36,8 +95,8 @@ struct AppleDocumentationClientSearchTests {
         let types = try await client.searchTypes(query: "button", technology: "SwiftUI")
 
         // -- Assert --
-        #expect(types.map(\.name) == ["Button", "ButtonStyle"])
-        #expect(types.map(\.path) == ["button", "buttonstyle"])
+        #expect(types.types.map(\.name) == ["Button", "ButtonStyle"])
+        #expect(types.types.map(\.path) == ["button", "buttonstyle"])
     }
 
     @Test("deduplicates root symbols with the same path")
@@ -57,8 +116,8 @@ struct AppleDocumentationClientSearchTests {
         let types = try await client.searchTypes(query: "button", technology: "SwiftUI")
 
         // -- Assert --
-        #expect(types.map(\.name) == ["Button"])
-        #expect(types.map(\.path) == ["button"])
+        #expect(types.types.map(\.name) == ["Button"])
+        #expect(types.types.map(\.path) == ["button"])
     }
 
     @Test("continues searching when a collection group is unavailable")
@@ -94,8 +153,8 @@ struct AppleDocumentationClientSearchTests {
         let types = try await client.searchTypes(query: "buttonstyle", technology: "SwiftUI")
 
         // -- Assert --
-        #expect(types.map(\.name) == ["ButtonStyle"])
-        #expect(types.map(\.path) == ["buttonstyle"])
+        #expect(types.types.map(\.name) == ["ButtonStyle"])
+        #expect(types.types.map(\.path) == ["buttonstyle"])
     }
 
     @Test("maps technology display names to DocC slugs")
@@ -131,53 +190,30 @@ struct AppleDocumentationClientSearchTests {
         let types = try await client.searchTypes(query: "AES", technology: "Apple CryptoKit")
 
         // -- Assert --
-        #expect(types.map(\.name) == ["AES"])
-        #expect(types.map(\.path) == ["aes"])
+        #expect(types.types.map(\.name) == ["AES"])
+        #expect(types.types.map(\.path) == ["aes"])
     }
 
-    @Test("maps an empty search to discovery guidance")
-    func mapsEmptySearchToDiscoveryGuidance() async throws {
+    @Test("returns an empty result after searching all collections")
+    func returnsEmptySearchAfterTraversal() async throws {
         // -- Arrange --
-        let rootURL = try #require(
-            URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftui.json")
-        )
-        let controlsURL = try #require(
-            URL(
-                string:
-                    "https://developer.apple.com/tutorials/data/documentation/swiftui/controls.json"
-            )
-        )
-        let stylesURL = try #require(
-            URL(
-                string:
-                    "https://developer.apple.com/tutorials/data/documentation/swiftui/styles.json"
-            )
-        )
+        let transport = HTTPTestTransport(responses: [
+            try searchURL("swiftui"): .http(data: rootSearchPage),
+            try searchURL("swiftui/controls"): .http(data: controlsSearchPage),
+            try searchURL("swiftui/styles"): .http(data: stylesSearchPage),
+        ])
         let client = DefaultAppleDocumentationClient(
-            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
-            dependencies: HTTPTestTransport(responses: [
-                rootURL: .http(data: rootSearchPage), controlsURL: .http(data: controlsSearchPage),
-                stylesURL: .http(data: stylesSearchPage),
-            ])
-        )
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport)
 
         // -- Act --
-        do {
-            _ = try await client.searchTypes(query: "Picker", technology: "SwiftUI")
-            Issue.record("Expected the search to fail")
-        } catch {
-            // -- Assert --
-            #expect(
-                error.localizedDescription == """
-                    No types matching 'Picker' found in SwiftUI.
+        let result = try await client.searchTypes(query: "Picker", technology: "SwiftUI")
 
-                    Browse available types:
-                      apple-docs types list --technology "SwiftUI"
-                      https://developer.apple.com/documentation/swiftui
-                    """
-            )
-        }
+        // -- Assert --
+        #expect(result.types.isEmpty)
+        #expect(result.unavailableCollectionPaths.isEmpty)
+        #expect(await transport.requestedURLs.count == 3)
     }
+
 }
 
 private let rootSearchPage = Data(

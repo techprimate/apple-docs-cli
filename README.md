@@ -105,6 +105,8 @@ apple-docs types search Button --technology SwiftUI
 
 Search deliberately does not crawl individual symbol pages, which keeps requests bounded. Collection pages can directly reference some nested members, so those may appear, but search is not an exhaustive nested-member index. A missing search result does not necessarily mean the API is undocumented. If you know the exact type or DocC path, try `types view` directly.
 
+No matches is a successful empty result, rendered as an empty array in JSON. If some collection pages cannot be fetched, available matches are still returned and an incomplete-coverage warning is written to stderr. Cancellation stops the search instead of returning partial results.
+
 ### Type documentation
 
 Pass the exact type and technology names:

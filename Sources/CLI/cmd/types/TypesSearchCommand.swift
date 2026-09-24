@@ -1,4 +1,5 @@
 import ArgumentParser
+import Foundation
 
 struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
     @OptionGroup var global: GlobalOptions
@@ -33,6 +34,12 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
             renderer: Dependencies.documentationTypeListRenderer(json: json)
         ).run(query: query, technology: technology)
         telemetry.record(.typeSearch(matches: result.matchCount), context: context)
+        if result.unavailableCollectionCount > 0 {
+            let warning =
+                "Warning: search results are incomplete. "
+                + "\(result.unavailableCollectionCount) collections were unavailable.\n"
+            FileHandle.standardError.write(Data(warning.utf8))
+        }
         print(result.output)
     }
 }
