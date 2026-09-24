@@ -35,7 +35,8 @@ struct TextTypeDocumentationRendererTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        let page = try DocumentationPageDecoder().decode(
+            data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
@@ -55,6 +56,10 @@ struct TextTypeDocumentationRendererTests {
                   ╭─ Swift ────────────────╮
                   │ class MXHangDiagnostic │
                   ╰────────────────────────╯
+
+                Documentation
+                ─────────────
+                  https://developer.apple.com/documentation/metrickit/mxhangdiagnostic
                 """
         )
     }
@@ -98,7 +103,8 @@ struct TextTypeDocumentationRendererTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        let page = try DocumentationPageDecoder().decode(
+            data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
@@ -129,7 +135,8 @@ struct TextTypeDocumentationRendererTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        let page = try DocumentationPageDecoder().decode(
+            data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
@@ -207,7 +214,8 @@ struct TextTypeDocumentationRendererTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        let page = try DocumentationPageDecoder().decode(
+            data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
@@ -237,11 +245,8 @@ struct TextTypeDocumentationRendererTests {
             {
               "abstract": [],
               "metadata": {
-                "modules": [{"name": "Swift"}],
-                "platforms": [],
-                "roleHeading": "Structure",
-                "symbolKind": "struct",
-                "title": "String"
+                "modules": [{"name": "Swift"}], "platforms": [],
+                "roleHeading": "Structure", "symbolKind": "struct", "title": "String"
               },
               "primaryContentSections": [],
               "references": {
@@ -257,12 +262,27 @@ struct TextTypeDocumentationRendererTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        let page = try DocumentationPageDecoder().decode(
+            data,
+            destination: .init(
+                technology: "swift", path: "/documentation/swift/string"))
 
         // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
 
         // -- Assert --
-        #expect(output == "String\n━━━━━━\nStructure · Swift\nSymbol kind: struct")
+        #expect(
+            output
+                == """
+                String
+                ━━━━━━
+                Structure · Swift
+                Symbol kind: struct
+
+                Documentation
+                ─────────────
+                  https://developer.apple.com/documentation/swift/string
+                """
+        )
     }
 }

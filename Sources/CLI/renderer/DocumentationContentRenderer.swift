@@ -1,65 +1,75 @@
 import Foundation
 
-struct DocumentationContentRenderer: Sendable {
-    let references: [String: DocumentationReferenceDTO]
+struct DocumentationContentRenderer {
     private let layout = DocumentationTextLayout()
 
-    func inlineText(_ content: [DocumentationTextDTO]) -> String {
+    func inline(_ content: [DocumentationInline]) -> String {
         content.map { item in
-            if let text = item.text {
-                return text
+            switch item {
+            case .text(let text): return text
+            case .code(let code): return "`\(code)`"
+            case .link(let label, _): return inline(label)
             }
-            if let code = item.code {
-                return "`\(code)`"
-            }
-            if let identifier = item.identifier {
-                return references[identifier]?.title ?? identifier
-            }
-            return inlineText(item.inlineContent ?? [])
         }.joined()
     }
 
-    func render(_ blocks: [DocumentationBlockDTO], indent: String = "  ") -> String {
-        blocks.map { render($0, indent: indent) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n\n")
+    func blocks(_ content: [DocumentationBlock], indent: String = "") -> String {
+        content.map { block($0, indent: indent) }.filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
 
-    private func render(_ block: DocumentationBlockDTO, indent: String) -> String {
-        switch block {
-        case .paragraph(let content):
-            return layout.paragraph(inlineText(content), indent: indent)
-        case .heading(let text):
-            return text.isEmpty ? "" : layout.heading(text)
-        case .codeListing(let code, let syntax):
-            return layout.codeBlock(code, language: syntax, indent: indent)
-        case .orderedList(let items, let startIndex):
-            return renderList(items, startIndex: startIndex, indent: indent)
-        case .unorderedList(let items):
-            return renderList(items, indent: indent)
-        case .aside(let content, let style, let name):
-            let body = render(content, indent: indent + "│ ")
-            guard !body.isEmpty else { return "" }
-            return indent + (name ?? style.capitalized) + "\n" + body
-        case .unsupported:
-            return ""
+    func code(_ lines: [String], language: String?, indent: String = "") -> String {
+        layout.codeBlock(lines, language: language, indent: indent)
+    }
+
+    func url(for target: DocumentationLinkTarget) -> String? {
+        switch target {
+        case .documentation(let destination): return destination.url.absoluteString
+        case .external(let url): return url.absoluteString
+        case .unavailable: return nil
         }
     }
 
-    private func renderList(
-        _ items: [DocumentationListItemDTO],
-        startIndex: Int? = nil,
-        indent: String
-    ) -> String {
-        items.enumerated().compactMap { index, item -> String? in
-            let marker = startIndex.map { "\($0 + index). " } ?? "• "
+    func availability(_ platform: DocumentationAvailability) -> String {
+        var parts: [String] = []
+        switch (platform.introducedAt, platform.deprecatedAt) {
+        case (let introduced?, let deprecated?): parts.append("\(introduced)–\(deprecated)")
+        case (let introduced?, nil): parts.append("\(introduced)+")
+        case (nil, let deprecated?): parts.append("Until \(deprecated)")
+        case (nil, nil): break
+        }
+        if let version = platform.obsoletedAt { parts.append("obsoleted \(version)") }
+        if platform.isBeta { parts.append("beta") }
+        if platform.isUnavailable { parts.append("unavailable") }
+        return parts.isEmpty ? "Available" : parts.joined(separator: ", ")
+    }
+
+    private func block(_ block: DocumentationBlock, indent: String) -> String {
+        switch block {
+        case .paragraph(let content): return layout.paragraph(inline(content), indent: indent)
+        case .heading(let text): return layout.heading(text)
+        case .codeListing(let lines, let language): return code(lines, language: language, indent: indent)
+        case .orderedList(let items, let start): return list(items, start: start, indent: indent)
+        case .unorderedList(let items): return list(items, start: nil, indent: indent)
+        case .aside(let content, let style, let name):
+            return indent + (name ?? style.capitalized) + "\n" + blocks(content, indent: indent + "│ ")
+        }
+    }
+
+    private func list(_ items: [[DocumentationBlock]], start: Int?, indent: String) -> String {
+        items.enumerated().map { index, content in
+            let marker = start.map { "\($0 + index). " } ?? "• "
             let continuation = indent + String(repeating: " ", count: marker.count)
-            let body = render(item.content, indent: continuation)
-            guard !body.isEmpty else { return nil }
-            if body.hasPrefix(continuation) {
-                return indent + marker + body.dropFirst(continuation.count)
-            }
+            let body = blocks(content, indent: continuation)
+            if body.hasPrefix(continuation) { return indent + marker + body.dropFirst(continuation.count) }
             return indent + marker + "\n" + body
         }.joined(separator: "\n")
     }
+}
+
+func terminalSafeText(_ text: String) -> String {
+    String(
+        String.UnicodeScalarView(
+            text.unicodeScalars.filter {
+                $0 == "\n" || $0 == "\t" || !CharacterSet.controlCharacters.contains($0)
+            }))
 }

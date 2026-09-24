@@ -117,11 +117,13 @@ apple-docs types view MXHangDiagnostic --technology MetricKit
 
 The terminal output includes available information such as:
 
-- Summary and declaration
-- Platform availability and deprecation
+- Summary and declarations in the languages supplied by Apple
+- Platform availability, deprecation, obsoleted versions, beta status, and unavailability
 - Inheritance and protocol conformances
 - Documented members and related APIs
 - Canonical Apple Developer URL
+
+Text rendering also supports sparse article and collection pages, resolves reference links, and strips remote terminal control characters. It uses normalized documentation content, which does not cover every upstream DocC field. Use `--json` when you need the original document.
 
 Every `types` command requires `--technology`. The CLI does not persist a selected framework. Nested symbols accept either dotted Swift spelling or slash-separated DocC paths:
 
