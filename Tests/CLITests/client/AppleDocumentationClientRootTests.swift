@@ -109,7 +109,7 @@ struct AppleDocumentationClientRootTests {
         // -- Act --
         let types =
             try await search
-            ? client.searchTypes(query: "AES", technology: "Apple CryptoKit")
+            ? client.searchTypes(query: "AES", technology: "Apple CryptoKit").types
             : client.fetchTypes(technology: "Apple CryptoKit")
 
         // -- Assert --

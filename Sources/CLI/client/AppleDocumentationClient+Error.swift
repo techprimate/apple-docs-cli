@@ -11,16 +11,11 @@ extension DefaultAppleDocumentationClient {
             suggestion: DocumentationType?,
             technologyURL: String
         )
-        case typeSearchNoResults(
-            query: String,
-            technology: String,
-            technologyURL: String
-        )
         case unsupportedTechnology(name: String, url: String)
 
         var isExpected: Bool {
             switch self {
-            case .technologyNotFound, .typeNotFound, .typeSearchNoResults, .unsupportedTechnology:
+            case .technologyNotFound, .typeNotFound, .unsupportedTechnology:
                 return true
             case .httpStatus, .invalidResponse:
                 return false
@@ -59,14 +54,6 @@ extension DefaultAppleDocumentationClient {
                     """
                 )
                 return sections.joined(separator: "\n\n")
-            case .typeSearchNoResults(let query, let technology, let technologyURL):
-                return """
-                    No types matching '\(query)' found in \(technology).
-
-                    Browse available types:
-                      apple-docs types list --technology "\(technology)"
-                      \(technologyURL)
-                    """
             case .unsupportedTechnology(let name, let url):
                 return """
                     Type retrieval is unavailable for \(name).

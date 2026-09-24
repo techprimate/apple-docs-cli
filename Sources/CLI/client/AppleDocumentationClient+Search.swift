@@ -1,26 +1,17 @@
 import Foundation
 
 extension DefaultAppleDocumentationClient {
-    func searchTypes(query: String, technology: String) async throws -> [DocumentationType] {
-        logger.debug(
-            "Searching documentation types",
-            metadata: [
-                "query": .string(query), "apple_docs.technology": .string(technology),
-            ])
+    func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult {
         let root = try await fetchDocumentationRoot(technology: technology)
-        let matches = try await searchTypes(query: query, root: root)
-        logger.info(
-            "Documentation search completed",
-            metadata: [
-                "apple_docs.technology": .string(root.name), "matches": .stringConvertible(matches.count),
-            ])
-        return matches
+        return try await searchDocumentation(query: query, root: root)
     }
 
-    private func searchTypes(query: String, root: DocumentationRoot) async throws -> [DocumentationType] {
+    private func searchDocumentation(query: String, root: DocumentationRoot) async throws -> DocumentationSearchResult {
+        try Task.checkCancellation()
         let rootPath = "/documentation/\(root.slug.lowercased())"
         logger.debug("Traversing documentation collection groups", metadata: ["path": .string(rootPath)])
         var typesByPath: [String: DocumentationType] = [:]
+        var unavailablePaths: [String] = []
         for type in documentationTypes(in: root.page, technology: root.slug) {
             typesByPath[type.path] = type
         }
@@ -32,6 +23,7 @@ extension DefaultAppleDocumentationClient {
         // Collection groups form a small curated graph. Batching limits pressure on Apple's service
         // while avoiding the thousands of requests required to crawl every individual symbol page.
         while !pendingPaths.isEmpty {
+            try Task.checkCancellation()
             let batch = Array(pendingPaths.prefix(6))
             pendingPaths.removeFirst(batch.count)
             logger.trace(
@@ -39,9 +31,13 @@ extension DefaultAppleDocumentationClient {
                 metadata: [
                     "batch_size": .stringConvertible(batch.count), "pending": .stringConvertible(pendingPaths.count),
                 ])
-            let pages = await fetchDocumentationPages(paths: batch)
+            let pages = try await fetchDocumentationPages(paths: batch)
 
-            for page in pages {
+            for result in pages {
+                guard case .page(let page) = result else {
+                    if case .unavailable(let path) = result { unavailablePaths.append(path) }
+                    continue
+                }
                 for type in documentationTypes(in: page, technology: root.slug) {
                     typesByPath[type.path] = type
                 }
@@ -52,58 +48,74 @@ extension DefaultAppleDocumentationClient {
             }
         }
 
+        try Task.checkCancellation()
+        return searchResult(
+            query: query, root: root, types: Array(typesByPath.values), unavailablePaths: unavailablePaths)
+    }
+
+    private func searchResult(
+        query: String, root: DocumentationRoot, types: [DocumentationType], unavailablePaths: [String]
+    ) -> DocumentationSearchResult {
+        logger.debug(
+            "Documentation search coverage",
+            metadata: [
+                "apple_docs.technology": .string(root.slug), "candidates": .stringConvertible(types.count),
+                "unavailable": .stringConvertible(unavailablePaths.count),
+            ])
         let normalizedQuery = query.lowercased()
         let matches = sortTypes(
-            typesByPath.values.filter {
+            types.filter {
                 $0.name.lowercased().contains(normalizedQuery)
                     || $0.path.lowercased().contains(normalizedQuery)
             }
         )
-        guard !matches.isEmpty else {
+        if matches.isEmpty {
             logger.notice(
                 "No matching documentation types",
                 metadata: [
                     "query": .string(query), "apple_docs.technology": .string(root.name),
-                    "candidates": .stringConvertible(typesByPath.count),
+                    "candidates": .stringConvertible(types.count),
                 ])
-            throw Error.typeSearchNoResults(
-                query: query,
-                technology: root.name,
-                technologyURL: root.url
-            )
         }
-        return matches
+        logger.info(
+            "Documentation search completed",
+            metadata: [
+                "apple_docs.technology": .string(root.name), "matches": .stringConvertible(matches.count),
+            ])
+        return DocumentationSearchResult(types: matches, unavailableCollectionPaths: unavailablePaths.sorted())
+    }
+
+    private enum CollectionResult: Sendable {
+        case page(TechnologyDocumentationPageDTO)
+        case unavailable(String)
     }
 
     private func fetchDocumentationPages(
         paths: [String]
-    ) async -> [TechnologyDocumentationPageDTO] {
+    ) async throws -> [CollectionResult] {
         logger.debug("Fetching collection group batch", metadata: ["count": .stringConvertible(paths.count)])
-        return await withTaskGroup(
-            of: TechnologyDocumentationPageDTO?.self,
-            returning: [TechnologyDocumentationPageDTO].self
-        ) { group in
+        return try await withThrowingTaskGroup(of: CollectionResult.self) { group in
             for path in paths {
                 group.addTask {
                     do {
-                        return try await fetchDocumentationPage(path: path)
+                        return .page(try await fetchDocumentationPage(path: path))
                     } catch {
-                        let cancelled = error is CancellationError || (error as? URLError)?.code == .cancelled
-                        logger.log(
-                            level: cancelled ? .debug : .warning, "Skipping unavailable collection group",
+                        if error is CancellationError || (error as? URLError)?.code == .cancelled {
+                            throw CancellationError()
+                        }
+                        logger.warning(
+                            "Skipping unavailable collection group",
                             metadata: [
                                 "path": .string(path), "error_type": .string(String(reflecting: type(of: error))),
                             ])
-                        return nil
+                        return .unavailable(path)
                     }
                 }
             }
 
-            var pages: [TechnologyDocumentationPageDTO] = []
-            for await page in group {
-                if let page {
-                    pages.append(page)
-                }
+            var pages: [CollectionResult] = []
+            for try await page in group {
+                pages.append(page)
             }
             logger.debug(
                 "Fetched collection group batch",

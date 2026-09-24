@@ -26,6 +26,7 @@ struct DefaultDocumentationTypeListRenderer: Sendable {
     }
 
     private func renderTable(_ types: [DocumentationType]) -> String {
+        guard !types.isEmpty else { return "No symbols found." }
         let nameWidth = max("SYMBOL".count, types.map(\.name.count).max() ?? 0)
         let kindWidth = max("KIND".count, types.map(\.kind.count).max() ?? 0)
         let pathWidth = max("PATH".count, types.map(\.path.count).max() ?? 0)

@@ -4,6 +4,18 @@ import Testing
 
 @Suite("Default documentation type list renderer")
 struct DefaultDocumentationTypeListRendererTests {
+    @Test("explains an empty result in human output")
+    func rendersEmptyResult() throws {
+        // -- Arrange --
+        let renderer = DefaultDocumentationTypeListRenderer(output: .table)
+
+        // -- Act --
+        let output = try renderer.render([])
+
+        // -- Assert --
+        #expect(output == "No symbols found.")
+    }
+
     @Test("renders documentation types as a table")
     func rendersTable() throws {
         // -- Arrange --
