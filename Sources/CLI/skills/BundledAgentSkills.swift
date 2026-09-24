@@ -75,25 +75,25 @@ enum BundledAgentSkills {
         From a returned `/documentation/foundation/...` URL, pass only the part after `/documentation/foundation/`.
         Quote paths containing parentheses or other shell metacharacters. Do not pass a full URL as the type argument.
 
-        Text output includes available summaries, declarations, availability, relationships, topics, and links.
+        Text output includes available summaries, Swift declarations, availability, relationships, topics, and links.
         Follow Topics and See Also links to inspect member behavior, rather than extrapolating from a type.
         If a linked API belongs to another technology, change `--technology` accordingly.
 
         ## Structured evidence
 
-        Use `--agent` for complete normalized Markdown and safely quoted commands for supported destinations.
-        `--json` takes precedence and retains raw DocC. Neither flag is global or auto-detected.
+        Use `--agent` for one-shot Markdown with follow-up commands, even in a terminal. Add `--json` for structured
+        agent output. These flags are independent and apply only to documentation commands, not globally.
 
         ```bash
         apple-docs technologies list --agent
-        apple-docs types search URLSession --technology Foundation --json
-        apple-docs types view URLSession --technology Foundation --json
+        apple-docs types search URLSession --technology Foundation --agent --json
+        apple-docs types view URLSession --technology Foundation --agent --json
         ```
 
-        Technology, list, and search JSON are CLI-produced arrays. `types view --json` preserves Apple's raw DocC
-        response bytes. Inspect it when the normalized text view omits upstream detail. Useful sections
-        include `metadata`, `primaryContentSections`, `topicSections`, `references`, and `variants`. Fields vary.
-        Resolve topic identifiers through `references` to find member URLs. A missing field is not a guarantee.
+        Technology, list, and search JSON are arrays. Page JSON is a normalized semantic object, not raw DocC bytes.
+        Inspect `title`, `declarations`, `availability`, `content`, `relationships`, `topics`, and `seeAlso`.
+        Agent output adds `navigation` commands where a destination can be represented safely on the CLI.
+        Follow validated targets in grouped references. A missing field is not a guarantee.
 
         ## Availability and examples
 
@@ -150,7 +150,7 @@ enum BundledAgentSkills {
 
         ```bash
         apple-docs technologies list --agent
-        apple-docs technologies list --json
+        apple-docs technologies list --agent --json
         ```
 
         Select likely frameworks using returned names or documentation slugs. A catalog entry is not a guarantee that
@@ -162,7 +162,7 @@ enum BundledAgentSkills {
         ```bash
         apple-docs types list --technology SwiftUI --agent
         apple-docs types search Button --technology SwiftUI --agent
-        apple-docs types search Button --technology SwiftUI --json
+        apple-docs types search Button --technology SwiftUI --agent --json
         ```
 
         - Start with a concise symbol-name fragment rather than a natural-language question. Search matches names and
@@ -181,8 +181,8 @@ enum BundledAgentSkills {
         apple-docs types view URLSession.AsyncBytes --technology Foundation --agent
         ```
 
-        Prefer the exact `path` from a search result. For nested members, inspect the parent type's Topics or raw
-        `references` and copy the relevant technology-relative path, including any suffix. Quote it in shell commands.
+        Prefer the returned agent navigation command or exact `path` from a search result. For nested members,
+        inspect the parent type's Topics and copy the technology-relative path, including any suffix. Quote shell paths.
         Do not conclude that a member is missing just because `types search` did not find it.
 
         Compare relevant candidates using their documented purpose, declarations, platform availability, and caveats.
@@ -220,15 +220,15 @@ enum BundledAgentSkills {
 
         ```bash
         apple-docs types view URLSession.AsyncBytes --technology Foundation --agent
-        apple-docs types view URLSession.AsyncBytes --technology Foundation --json
+        apple-docs types view URLSession.AsyncBytes --technology Foundation --agent --json
         ```
 
         Read the availability and deprecation sections. For a method, initializer, or property, follow the containing
-        type's Topics or raw `references` to retrieve the member's path. Parent-type availability is not enough.
+        type's Topics and reference targets to retrieve the member's path. Parent-type availability is not enough.
         Use discovery if the symbol is unknown, and preserve DocC overload suffixes rather than guessing.
 
-        In raw DocC JSON, inspect `metadata.platforms` when present. Platform entries may provide `introducedAt`,
-        `deprecatedAt`, `obsoletedAt`, `unavailable`, or `beta`. Read `deprecationSummary`, declarations, and overview
+        In normalized JSON, inspect `availability`. Platform entries may provide `introducedAt`,
+        `deprecatedAt`, `obsoletedAt`, `isUnavailable`, or `isBeta`. Read `deprecation`, declarations, and overview
         content for qualifications or replacement advice. These fields are optional and differ between pages.
 
         ## Interpret conservatively

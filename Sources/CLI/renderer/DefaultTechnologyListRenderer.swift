@@ -23,11 +23,8 @@ struct DefaultTechnologyListRenderer: Sendable {
             }
             return terminalSafeText(renderTable(technologies))
         case .json:
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-            // JSONEncoder produces valid UTF-8, so preserve a non-optional rendering contract.
-            // swiftlint:disable:next optional_data_string_conversion
-            return String(decoding: try encoder.encode(technologies), as: UTF8.self)
+            let presentation = DocumentationPresenter().technologies(technologies, audience: audience)
+            return try StructuredDocumentationRenderer().render(presentation)
         }
     }
 

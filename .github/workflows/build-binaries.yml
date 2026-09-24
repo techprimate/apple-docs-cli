@@ -215,7 +215,7 @@ jobs:
           "dist/apple-docs-${{ matrix.platform }}" \
             types view String --technology Swift --json \
             > "$RUNNER_TEMP/string.json"
-          jq -e '.metadata.title == "String"' "$RUNNER_TEMP/string.json"
+          jq -e '.title == "String"' "$RUNNER_TEMP/string.json"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

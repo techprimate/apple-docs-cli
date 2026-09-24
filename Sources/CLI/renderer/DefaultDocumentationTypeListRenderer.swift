@@ -25,11 +25,8 @@ struct DefaultDocumentationTypeListRenderer: Sendable {
             }
             return terminalSafeText(renderTable(types))
         case .json:
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-            // JSONEncoder produces valid UTF-8, so preserve a non-optional rendering contract.
-            // swiftlint:disable:next optional_data_string_conversion
-            return String(decoding: try encoder.encode(types), as: UTF8.self)
+            let presentation = DocumentationPresenter().symbols(types, technology: technology, audience: audience)
+            return try StructuredDocumentationRenderer().render(presentation)
         }
     }
 

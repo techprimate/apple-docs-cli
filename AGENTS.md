@@ -22,7 +22,7 @@
 - Use a gated `Dependencies` constraint when a default implementation needs injectable collaborators.
 - Keep `TypesViewCommandRunner` focused on orchestration. HTTP access and output rendering belong behind their respective abstractions.
 - Validate HTTP status and response types at the external boundary.
-- Preserve Apple’s response bytes unchanged for `--json` output.
+- Derive `--json` output from the shared semantic presentation model. `--agent` selects the audience independently.
 
 ## Workflow
 

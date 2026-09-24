@@ -9,12 +9,12 @@ enum OutputFormat: Equatable, Sendable {
 }
 
 struct OutputOptions: ParsableArguments {
-    @Flag(help: "Print JSON. Page output preserves Apple's raw DocC document, even with --agent.")
+    @Flag(help: "Print normalized semantic JSON. Combine with --agent to include follow-up commands.")
     var json = false
 
-    @Flag(help: "Print agent-oriented Markdown with follow-up commands. --json takes precedence.")
+    @Flag(help: "Print agent-oriented Markdown with follow-up commands. Combine with --json for structured output.")
     var agent = false
 
-    var audience: OutputAudience { agent && !json ? .agent : .human }
+    var audience: OutputAudience { agent ? .agent : .human }
     var format: OutputFormat { json ? .json : .text }
 }

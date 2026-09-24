@@ -140,19 +140,36 @@ struct DefaultTypeDocumentationRendererTests {
         #expect(!output.contains("Declaration"))
     }
 
-    @Test("returns Apple's DocC JSON unchanged")
-    func rendersRawJSON() throws {
+    @Test("renders semantic JSON with optional agent navigation", arguments: [OutputAudience.human, .agent])
+    func rendersSemanticJSON(audience: OutputAudience) throws {
         // -- Arrange --
-        // This intentionally omits the fields required by the text renderer.
-        let rawJSON = "{\"newUpstreamShape\":true}"
-        let document = try makeDocument(rawJSON)
-        let renderer = DefaultTypeDocumentationRenderer(output: .json)
+        let document = try makeDocument(
+            #"{"metadata":{"title":"MXHangDiagnostic","symbolKind":"class"},"unknownField":true}"#)
+        let renderer = DefaultTypeDocumentationRenderer(output: .json, audience: audience)
 
         // -- Act --
         let output = try renderer.render(document)
+        let value = try #require(JSONSerialization.jsonObject(with: Data(output.utf8)) as? [String: Any])
 
         // -- Assert --
-        #expect(output == rawJSON)
+        #expect(value["title"] as? String == "MXHangDiagnostic")
+        #expect(value["kind"] as? String == "class")
+        #expect(value["metadata"] == nil)
+        #expect(value["unknownField"] == nil)
+        #expect((value["navigation"] != nil) == (audience == .agent))
+    }
+
+    @Test("JSON rejects documents without required semantic metadata")
+    func rejectsMalformedJSONPage() throws {
+        // -- Arrange --
+        let document = try makeDocument(#"{"unknownField":true}"#)
+        let renderer = DefaultTypeDocumentationRenderer(output: .json)
+
+        // -- Act --
+        let render = { try renderer.render(document) }
+
+        // -- Assert --
+        #expect(throws: (any Error).self) { try render() }
     }
 
     private func makeDocument(

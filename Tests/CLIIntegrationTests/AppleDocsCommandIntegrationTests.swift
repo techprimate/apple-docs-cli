@@ -20,9 +20,9 @@ struct AppleDocsCommandIntegrationTests {
         let document = try JSONDecoder().decode(TypeDocument.self, from: Data(output.utf8))
 
         // -- Assert --
-        #expect(document.metadata.title == "String")
-        #expect(document.metadata.modules.map(\.name) == ["Swift"])
-        #expect(document.metadata.symbolKind == "struct")
+        #expect(document.title == "String")
+        #expect(document.modules == ["Swift"])
+        #expect(document.kind == "struct")
     }
 
     @Test(
@@ -46,6 +46,22 @@ struct AppleDocsCommandIntegrationTests {
         #expect(!output.contains("\u{1B}"))
     }
 
+    @Test("agent JSON includes navigation without verbose diagnostics on stdout")
+    func rendersAgentJSON() throws {
+        // -- Arrange --
+        let arguments = ["types", "view", "String", "--technology", "Swift", "--agent", "--json", "--verbose"]
+
+        // -- Act --
+        let output = try runAppleDocs(arguments)
+        let value = try #require(JSONSerialization.jsonObject(with: Data(output.utf8)) as? [String: Any])
+
+        // -- Assert --
+        #expect(value["title"] as? String == "String")
+        #expect(value["navigation"] != nil)
+        #expect(value["metadata"] == nil)
+        #expect(!output.contains("\u{1B}"))
+    }
+
     @Test("returns Foundation URL documentation as JSON")
     func returnsFoundationURLJSON() throws {
         // -- Arrange --
@@ -56,9 +72,9 @@ struct AppleDocsCommandIntegrationTests {
         let document = try JSONDecoder().decode(TypeDocument.self, from: Data(output.utf8))
 
         // -- Assert --
-        #expect(document.metadata.title == "URL")
-        #expect(document.metadata.modules.map(\.name) == ["Foundation"])
-        #expect(document.metadata.symbolKind == "struct")
+        #expect(document.title == "URL")
+        #expect(document.modules == ["Foundation"])
+        #expect(document.kind == "struct")
     }
 
     @Test("renders Swift String documentation as text")
@@ -138,7 +154,7 @@ struct AppleDocsCommandIntegrationTests {
         let document = try JSONDecoder().decode(TypeDocument.self, from: Data(output.utf8))
 
         // -- Assert --
-        #expect(document.metadata.title == "URLSession.AsyncBytes")
+        #expect(document.title == "URLSession.AsyncBytes")
     }
 
     @Test("lists stable technologies as JSON", arguments: [["--json"], ["--agent", "--json"]])
@@ -171,17 +187,9 @@ struct AppleDocsCommandIntegrationTests {
 }
 
 private struct TypeDocument: Decodable {
-    let metadata: Metadata
-
-    struct Metadata: Decodable {
-        let modules: [Module]
-        let symbolKind: String
-        let title: String
-    }
-
-    struct Module: Decodable {
-        let name: String
-    }
+    let modules: [String]
+    let kind: String
+    let title: String
 }
 
 private struct ListedType: Decodable, Equatable {
