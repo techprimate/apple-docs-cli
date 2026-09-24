@@ -7,15 +7,23 @@ struct DefaultDocumentationTypeListRenderer: Sendable {
     }
 
     private let output: Output
+    private let audience: OutputAudience
+    private let technology: String
 
-    init(output: Output) {
+    init(output: Output, audience: OutputAudience = .human, technology: String = "") {
         self.output = output
+        self.audience = audience
+        self.technology = technology
     }
 
     func render(_ types: [DocumentationType]) throws -> String {
         switch output {
         case .table:
-            return renderTable(types)
+            if audience == .agent {
+                let presentation = DocumentationPresenter().symbols(types, technology: technology, audience: .agent)
+                return AgentDocumentationRenderer().render(presentation, technology: technology)
+            }
+            return terminalSafeText(renderTable(types))
         case .json:
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]

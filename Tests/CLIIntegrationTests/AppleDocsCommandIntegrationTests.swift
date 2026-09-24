@@ -10,10 +10,10 @@ private let integrationTestsEnabled =
     .serialized
 )
 struct AppleDocsCommandIntegrationTests {
-    @Test("returns Swift String documentation as JSON", arguments: ["--json", "--agent"])
-    func returnsSwiftStringJSON(flag: String) throws {
+    @Test("returns Swift String documentation as JSON", arguments: [["--json"], ["--agent", "--json"]])
+    func returnsSwiftStringJSON(flags: [String]) throws {
         // -- Arrange --
-        let arguments = ["types", "view", "String", "--technology", "Swift", flag]
+        let arguments = ["types", "view", "String", "--technology", "Swift"] + flags
 
         // -- Act --
         let output = try runAppleDocs(arguments)
@@ -23,6 +23,27 @@ struct AppleDocsCommandIntegrationTests {
         #expect(document.metadata.title == "String")
         #expect(document.metadata.modules.map(\.name) == ["Swift"])
         #expect(document.metadata.symbolKind == "struct")
+    }
+
+    @Test(
+        "agent output is Markdown with supported follow-up commands",
+        arguments: [
+            (["types", "view", "String", "--technology", "Swift"], "# String"),
+            (["types", "list", "--technology", "MetricKit"], "# Symbols"),
+            (["types", "search", "Button", "--technology", "SwiftUI"], "# Symbols"),
+            (["technologies", "list"], "# Technologies"),
+        ])
+    func rendersAgentMarkdown(arguments: [String], heading: String) throws {
+        // -- Arrange --
+        let arguments = arguments + ["--agent"]
+
+        // -- Act --
+        let output = try runAppleDocs(arguments)
+
+        // -- Assert --
+        #expect(output.hasPrefix(heading + "\n"))
+        #expect(output.contains("--agent"))
+        #expect(!output.contains("\u{1B}"))
     }
 
     @Test("returns Foundation URL documentation as JSON")
@@ -55,10 +76,10 @@ struct AppleDocsCommandIntegrationTests {
         #expect(output.contains("Overview\n────────"))
     }
 
-    @Test("lists MetricKit root types as JSON", arguments: ["--json", "--agent"])
-    func listsMetricKitTypes(flag: String) throws {
+    @Test("lists MetricKit root types as JSON", arguments: [["--json"], ["--agent", "--json"]])
+    func listsMetricKitTypes(flags: [String]) throws {
         // -- Arrange --
-        let arguments = ["types", "list", "--technology", "MetricKit", flag]
+        let arguments = ["types", "list", "--technology", "MetricKit"] + flags
 
         // -- Act --
         let output = try runAppleDocs(arguments)
@@ -77,14 +98,14 @@ struct AppleDocsCommandIntegrationTests {
         )
     }
 
-    @Test("searches SwiftUI collection groups as JSON", arguments: ["--json", "--agent"])
-    func searchesSwiftUITypes(flag: String) throws {
+    @Test("searches SwiftUI collection groups as JSON", arguments: [["--json"], ["--agent", "--json"]])
+    func searchesSwiftUITypes(flags: [String]) throws {
         // -- Arrange --
-        let arguments = [
-            "types", "search", "Button",
-            "--technology", "SwiftUI",
-            flag,
-        ]
+        let arguments =
+            [
+                "types", "search", "Button",
+                "--technology", "SwiftUI",
+            ] + flags
 
         // -- Act --
         let output = try runAppleDocs(arguments)
@@ -120,10 +141,10 @@ struct AppleDocsCommandIntegrationTests {
         #expect(document.metadata.title == "URLSession.AsyncBytes")
     }
 
-    @Test("lists stable technologies as JSON", arguments: ["--json", "--agent"])
-    func listsStableTechnologies(flag: String) throws {
+    @Test("lists stable technologies as JSON", arguments: [["--json"], ["--agent", "--json"]])
+    func listsStableTechnologies(flags: [String]) throws {
         // -- Arrange --
-        let arguments = ["technologies", "list", flag]
+        let arguments = ["technologies", "list"] + flags
 
         // -- Act --
         let output = try runAppleDocs(arguments)

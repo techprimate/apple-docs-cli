@@ -132,6 +132,20 @@ apple-docs types view URLSession.AsyncBytes --technology Foundation
 apple-docs types view URLSession/AsyncBytes --technology Foundation
 ```
 
+### Agent output
+
+Use `--agent` on documentation commands for Markdown with explicit technology, paths, links, and safely quoted follow-up commands:
+
+```bash
+apple-docs types view String --technology Swift --agent
+apple-docs types search Button --technology SwiftUI --agent
+apple-docs technologies list --agent
+```
+
+Agent output uses the same normalized documentation content as human text. Follow-up commands are included only for destinations the CLI can represent safely. All commands remain one-shot, even when run in a terminal.
+
+`--agent` no longer aliases `--json`. Existing scripts that require JSON should use `--json`, which takes precedence if both flags are supplied.
+
 ### JSON output
 
 The documentation commands accept `--json`, but their output contracts differ:

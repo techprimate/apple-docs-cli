@@ -1,14 +1,16 @@
 import Foundation
 
 struct DocumentationContentRenderer {
+    let audience: OutputAudience
     private let layout = DocumentationTextLayout()
 
     func inline(_ content: [DocumentationInline]) -> String {
         content.map { item in
             switch item {
-            case .text(let text): return text
-            case .code(let code): return "`\(code)`"
-            case .link(let label, _): return inline(label)
+            case .text(let text): return audience == .agent ? markdown(text) : text
+            case .code(let code): return audience == .agent ? inlineCode(code) : "`\(code)`"
+            case .link(let label, let target):
+                return audience == .agent ? link(inline(label), target: target) : inline(label)
             }
         }.joined()
     }
@@ -18,7 +20,17 @@ struct DocumentationContentRenderer {
     }
 
     func code(_ lines: [String], language: String?, indent: String = "") -> String {
-        layout.codeBlock(lines, language: language, indent: indent)
+        if audience == .human { return layout.codeBlock(lines, language: language, indent: indent) }
+        let text = lines.joined(separator: "\n")
+        let fence = String(repeating: "`", count: max(3, longestBacktickRun(text) + 1))
+        // A language hint is a single Markdown info-string token, not arbitrary source text.
+        let syntax = (language ?? "").filter { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "+" }
+        return "\(fence)\(syntax)\n\(text)\n\(fence)"
+    }
+
+    func link(_ label: String, target: DocumentationLinkTarget) -> String {
+        guard let url = url(for: target) else { return label }
+        return "[\(label)](<\(url)>)"
     }
 
     func url(for target: DocumentationLinkTarget) -> String? {
@@ -29,13 +41,31 @@ struct DocumentationContentRenderer {
         }
     }
 
+    func markdown(_ text: String) -> String {
+        text.reduce(into: "") { result, character in
+            if "\\`*_[]<>#".contains(character) { result.append("\\") }
+            result.append(character)
+        }
+    }
+
+    func inlineCode(_ text: String) -> String {
+        let fence = String(repeating: "`", count: longestBacktickRun(text) + 1)
+        let padding = text.hasPrefix("`") || text.hasSuffix("`") ? " " : ""
+        return fence + padding + text + padding + fence
+    }
+
     func availability(_ platform: DocumentationAvailability) -> String {
         var parts: [String] = []
-        switch (platform.introducedAt, platform.deprecatedAt) {
-        case (let introduced?, let deprecated?): parts.append("\(introduced)–\(deprecated)")
-        case (let introduced?, nil): parts.append("\(introduced)+")
-        case (nil, let deprecated?): parts.append("Until \(deprecated)")
-        case (nil, nil): break
+        if audience == .human {
+            switch (platform.introducedAt, platform.deprecatedAt) {
+            case (let introduced?, let deprecated?): parts.append("\(introduced)–\(deprecated)")
+            case (let introduced?, nil): parts.append("\(introduced)+")
+            case (nil, let deprecated?): parts.append("Until \(deprecated)")
+            case (nil, nil): break
+            }
+        } else {
+            if let version = platform.introducedAt { parts.append("introduced \(version)") }
+            if let version = platform.deprecatedAt { parts.append("deprecated \(version)") }
         }
         if let version = platform.obsoletedAt { parts.append("obsoleted \(version)") }
         if platform.isBeta { parts.append("beta") }
@@ -45,24 +75,48 @@ struct DocumentationContentRenderer {
 
     private func block(_ block: DocumentationBlock, indent: String) -> String {
         switch block {
-        case .paragraph(let content): return layout.paragraph(inline(content), indent: indent)
-        case .heading(let text): return layout.heading(text)
+        case .paragraph(let content):
+            let text = inline(content)
+            return audience == .human ? layout.paragraph(text, indent: indent) : text
+        case .heading(let text): return audience == .human ? layout.heading(text) : "### " + markdown(text)
         case .codeListing(let lines, let language): return code(lines, language: language, indent: indent)
         case .orderedList(let items, let start): return list(items, start: start, indent: indent)
         case .unorderedList(let items): return list(items, start: nil, indent: indent)
         case .aside(let content, let style, let name):
-            return indent + (name ?? style.capitalized) + "\n" + blocks(content, indent: indent + "│ ")
+            if audience == .human {
+                return indent + (name ?? style.capitalized) + "\n" + blocks(content, indent: indent + "│ ")
+            }
+            let body = ([markdown(name ?? style.capitalized)] + [blocks(content)])
+                .joined(separator: "\n").components(separatedBy: "\n")
+            return body.map { "> " + $0 }.joined(separator: "\n")
         }
     }
 
     private func list(_ items: [[DocumentationBlock]], start: Int?, indent: String) -> String {
         items.enumerated().map { index, content in
-            let marker = start.map { "\($0 + index). " } ?? "• "
+            let marker = start.map { "\($0 + index). " } ?? (audience == .human ? "• " : "- ")
             let continuation = indent + String(repeating: " ", count: marker.count)
-            let body = blocks(content, indent: continuation)
-            if body.hasPrefix(continuation) { return indent + marker + body.dropFirst(continuation.count) }
-            return indent + marker + "\n" + body
+            if audience == .human {
+                let body = blocks(content, indent: continuation)
+                if body.hasPrefix(continuation) { return indent + marker + body.dropFirst(continuation.count) }
+                return indent + marker + "\n" + body
+            }
+            let body = blocks(content).components(separatedBy: "\n")
+            return marker + (body.first ?? "")
+                + body.dropFirst().map {
+                    $0.isEmpty ? "\n" : "\n" + String(repeating: " ", count: marker.count) + $0
+                }.joined()
         }.joined(separator: "\n")
+    }
+
+    private func longestBacktickRun(_ text: String) -> Int {
+        var longest = 0
+        var current = 0
+        for character in text {
+            current = character == "`" ? current + 1 : 0
+            longest = max(longest, current)
+        }
+        return longest
     }
 }
 
