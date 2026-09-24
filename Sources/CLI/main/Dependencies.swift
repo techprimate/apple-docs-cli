@@ -61,27 +61,18 @@ enum Dependencies {
         AgentSkillInstaller(logger: Logger(label: "com.techprimate.apple-docs.skills.installer"))
     }
 
-    static func documentationRenderer(
-        json: Bool
-    ) -> DefaultTypeDocumentationRenderer {
-        DefaultTypeDocumentationRenderer(
-            output: json ? .json : .text
-        )
+    static func documentationRenderer(output: OutputOptions) -> DefaultTypeDocumentationRenderer {
+        DefaultTypeDocumentationRenderer(output: output.format, audience: output.audience)
     }
 
     static func documentationTypeListRenderer(
-        json: Bool
+        output: OutputOptions, technology: String
     ) -> DefaultDocumentationTypeListRenderer {
         DefaultDocumentationTypeListRenderer(
-            output: json ? .json : .table
-        )
+            output: output.json ? .json : .table, audience: output.audience, technology: technology)
     }
 
-    static func technologyListRenderer(
-        json: Bool
-    ) -> DefaultTechnologyListRenderer {
-        DefaultTechnologyListRenderer(
-            output: json ? .json : .table
-        )
+    static func technologyListRenderer(output: OutputOptions) -> DefaultTechnologyListRenderer {
+        DefaultTechnologyListRenderer(output: output.json ? .json : .table, audience: output.audience)
     }
 }

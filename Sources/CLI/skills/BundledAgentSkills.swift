@@ -47,7 +47,7 @@ enum BundledAgentSkills {
 
         1. Identify the framework, symbol or behavior, target OS, deployment version, and Swift language constraints.
            Use project context when available. Ask only when a missing constraint changes the answer.
-        2. If the framework is unknown, run `apple-docs technologies list`. If the symbol is unknown, use the
+        2. If the framework is unknown, run `apple-docs technologies list --agent`. If the symbol is unknown, use the
            `apple-docs-discover-api` skill or the discovery commands below.
         3. Retrieve the relevant type and, when necessary, its specific member pages. Read the declaration, overview,
            availability, and caveats before recommending code.
@@ -59,11 +59,11 @@ enum BundledAgentSkills {
         Commands are stateless. Always pass `--technology` to `types` commands, even after an earlier lookup.
 
         ```bash
-        apple-docs technologies list
-        apple-docs types list --technology Foundation
-        apple-docs types search URLSession --technology Foundation
-        apple-docs types view URLSession --technology Foundation
-        apple-docs types view URLSession.AsyncBytes --technology Foundation
+        apple-docs technologies list --agent
+        apple-docs types list --technology Foundation --agent
+        apple-docs types search URLSession --technology Foundation --agent
+        apple-docs types view URLSession --technology Foundation --agent
+        apple-docs types view URLSession.AsyncBytes --technology Foundation --agent
         ```
 
         `types list` returns symbols referenced directly by a curated technology root. `types search` matches symbol
@@ -75,14 +75,14 @@ enum BundledAgentSkills {
         From a returned `/documentation/foundation/...` URL, pass only the part after `/documentation/foundation/`.
         Quote paths containing parentheses or other shell metacharacters. Do not pass a full URL as the type argument.
 
-        Text output includes available summaries, Swift declarations, availability, relationships, topics, and links.
+        Text output includes available summaries, declarations, availability, relationships, topics, and links.
         Follow Topics and See Also links to inspect member behavior, rather than extrapolating from a type.
         If a linked API belongs to another technology, change `--technology` accordingly.
 
         ## Structured evidence
 
-        On JSON-capable commands, `--agent` currently aliases `--json`. It is not a global flag or auto-detected.
-        Agent output may evolve. Keep `types view --json` for raw upstream bytes.
+        Use `--agent` for complete normalized Markdown and safely quoted commands for supported destinations.
+        `--json` takes precedence and retains raw DocC. Neither flag is global or auto-detected.
 
         ```bash
         apple-docs technologies list --agent
@@ -91,7 +91,7 @@ enum BundledAgentSkills {
         ```
 
         Technology, list, and search JSON are CLI-produced arrays. `types view --json` preserves Apple's raw DocC
-        response bytes. Inspect it when the text view omits detail or a non-Swift declaration is needed. Useful sections
+        response bytes. Inspect it when the normalized text view omits upstream detail. Useful sections
         include `metadata`, `primaryContentSections`, `topicSections`, `references`, and `variants`. Fields vary.
         Resolve topic identifiers through `references` to find member URLs. A missing field is not a guarantee.
 
@@ -149,7 +149,7 @@ enum BundledAgentSkills {
         ## Discover the technology
 
         ```bash
-        apple-docs technologies list
+        apple-docs technologies list --agent
         apple-docs technologies list --json
         ```
 
@@ -160,8 +160,8 @@ enum BundledAgentSkills {
         ## Find candidate symbols
 
         ```bash
-        apple-docs types list --technology SwiftUI
-        apple-docs types search Button --technology SwiftUI
+        apple-docs types list --technology SwiftUI --agent
+        apple-docs types search Button --technology SwiftUI --agent
         apple-docs types search Button --technology SwiftUI --json
         ```
 
@@ -177,8 +177,8 @@ enum BundledAgentSkills {
         ## Inspect candidates before choosing
 
         ```bash
-        apple-docs types view Button --technology SwiftUI
-        apple-docs types view URLSession.AsyncBytes --technology Foundation
+        apple-docs types view Button --technology SwiftUI --agent
+        apple-docs types view URLSession.AsyncBytes --technology Foundation --agent
         ```
 
         Prefer the exact `path` from a search result. For nested members, inspect the parent type's Topics or raw
@@ -219,7 +219,7 @@ enum BundledAgentSkills {
         ## Retrieve the exact API
 
         ```bash
-        apple-docs types view URLSession.AsyncBytes --technology Foundation
+        apple-docs types view URLSession.AsyncBytes --technology Foundation --agent
         apple-docs types view URLSession.AsyncBytes --technology Foundation --json
         ```
 

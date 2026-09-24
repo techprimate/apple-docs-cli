@@ -111,7 +111,8 @@ struct CLITests {
 
         // -- Assert --
         let listCommand = try #require(command as? TechnologiesListCommand)
-        #expect(listCommand.json)
+        #expect(listCommand.output.json == flags.contains("--json"))
+        #expect(listCommand.output.agent == flags.contains("--agent"))
     }
 
     @Test("reports complete build metadata")

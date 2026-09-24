@@ -1,22 +1,17 @@
 struct DefaultTypeDocumentationRenderer: Sendable {
-    enum Output: Sendable {
-        case text
-        case json
-    }
+    typealias Output = OutputFormat
 
-    private let output: Output
-
-    init(output: Output) {
-        self.output = output
-    }
+    let output: Output
+    var audience: OutputAudience = .human
 
     func render(_ document: TypeDocumentationDocument) throws -> String {
-        switch output {
-        case .text:
-            let page = try DocumentationPageDecoder().decode(document.data, destination: document.destination)
-            return TextTypeDocumentationRenderer().render(page)
-        case .json:
+        if output == .json {
             return RawJSONTypeDocumentationRenderer().render(document)
         }
+        let page = try DocumentationPageDecoder().decode(document.data, destination: document.destination)
+        let presentation = DocumentationPresenter().page(page, audience: audience)
+        return audience == .agent
+            ? AgentDocumentationRenderer().render(presentation)
+            : TextTypeDocumentationRenderer().render(page)
     }
 }

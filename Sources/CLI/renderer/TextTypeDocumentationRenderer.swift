@@ -2,7 +2,7 @@ import Foundation
 
 struct TextTypeDocumentationRenderer: Sendable {
     private let layout = DocumentationTextLayout()
-    private let content = DocumentationContentRenderer()
+    private let content = DocumentationContentRenderer(audience: .human)
 
     func render(_ page: DocumentationPage) -> String {
         let metadata = ([page.roleHeading ?? page.kind.capitalized] + page.modules)

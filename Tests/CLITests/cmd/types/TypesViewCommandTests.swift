@@ -23,7 +23,8 @@ struct TypesViewCommandTests {
         // -- Assert --
         let listCommand = try #require(command as? TypesListCommand)
         #expect(listCommand.technology == "MetricKit")
-        #expect(listCommand.json)
+        #expect(listCommand.output.json == flags.contains("--json"))
+        #expect(listCommand.output.agent == flags.contains("--agent"))
     }
 
     @Test(
@@ -46,7 +47,8 @@ struct TypesViewCommandTests {
         let searchCommand = try #require(command as? TypesSearchCommand)
         #expect(searchCommand.query == "Button")
         #expect(searchCommand.technology == "SwiftUI")
-        #expect(searchCommand.json)
+        #expect(searchCommand.output.json == flags.contains("--json"))
+        #expect(searchCommand.output.agent == flags.contains("--agent"))
     }
 
     @Test("accepts a type name and required technology option")
@@ -64,7 +66,7 @@ struct TypesViewCommandTests {
         let viewCommand = try #require(command as? TypesViewCommand)
         #expect(viewCommand.name == "MXHangDiagnostic")
         #expect(viewCommand.technology == "MetricKit")
-        #expect(viewCommand.json == false)
+        #expect(viewCommand.output.json == false)
     }
 
     @Test(
@@ -85,6 +87,7 @@ struct TypesViewCommandTests {
 
         // -- Assert --
         let viewCommand = try #require(command as? TypesViewCommand)
-        #expect(viewCommand.json)
+        #expect(viewCommand.output.json == flags.contains("--json"))
+        #expect(viewCommand.output.agent == flags.contains("--agent"))
     }
 }
