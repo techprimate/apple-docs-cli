@@ -28,7 +28,8 @@ struct TextTypeDocumentationRendererReferenceTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        let page = try DocumentationPageDecoder().decode(
+            data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)
@@ -77,7 +78,10 @@ struct TextTypeDocumentationRendererReferenceTests {
             }
             """.utf8
         )
-        let page = try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        let page = try DocumentationPageDecoder().decode(
+            data,
+            destination: .init(
+                technology: "swiftui", path: "/documentation/swiftui/button"))
 
         // -- Act --
         let output = TextTypeDocumentationRenderer().render(page)

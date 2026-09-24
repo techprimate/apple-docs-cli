@@ -129,7 +129,19 @@ struct TextTypeDocumentationRendererContentTests {
         let output = TextTypeDocumentationRenderer().render(page)
 
         // -- Assert --
-        #expect(output == "View\n━━━━\nProtocol · SwiftUI\nSymbol kind: protocol")
+        #expect(
+            output
+                == """
+                View
+                ━━━━
+                Protocol · SwiftUI
+                Symbol kind: protocol
+
+                Documentation
+                ─────────────
+                  https://developer.apple.com/documentation/swiftui/view
+                """
+        )
     }
 
     @Test(
@@ -154,7 +166,7 @@ struct TextTypeDocumentationRendererContentTests {
         #expect(throws: DecodingError.self) { try decode() }
     }
 
-    private func makePage(abstract: String = "", content: String = "") throws -> TypeDocumentationPageDTO {
+    private func makePage(abstract: String = "", content: String = "") throws -> DocumentationPage {
         let data = Data(
             """
             {
@@ -169,6 +181,9 @@ struct TextTypeDocumentationRendererContentTests {
             }
             """.utf8
         )
-        return try JSONDecoder().decode(TypeDocumentationPageDTO.self, from: data)
+        return try DocumentationPageDecoder().decode(
+            data,
+            destination: .init(
+                technology: "swiftui", path: "/documentation/swiftui/view"))
     }
 }

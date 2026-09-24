@@ -24,7 +24,8 @@ struct TypesViewCommandRunnerTests {
             }
             """.utf8
         )
-        let document = TypeDocumentationDocument(data: data)
+        let document = TypeDocumentationDocument(
+            data: data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
         let client = RequestedTypeClient(
             expectedName: "MXHangDiagnostic",
             expectedTechnology: "MetricKit",

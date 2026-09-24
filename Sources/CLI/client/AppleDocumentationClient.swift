@@ -46,9 +46,7 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
         ]
         logger.debug("Fetching type documentation", metadata: metadata)
         do {
-            let document = TypeDocumentationDocument(
-                data: try await fetchData(from: typeURL(name: name, technology: technology))
-            )
+            let document = try await fetchDocument(at: typeDestination(name: name, technology: technology))
             logger.info("Fetched type documentation", metadata: metadata)
             return document
         } catch Error.httpStatus(404) {
@@ -63,9 +61,7 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
             if slug.caseInsensitiveCompare(technology) != .orderedSame {
                 logger.debug("Retrying type with canonical technology", metadata: ["slug": .string(slug)])
                 do {
-                    let document = TypeDocumentationDocument(
-                        data: try await fetchData(from: typeURL(name: name, technology: slug))
-                    )
+                    let document = try await fetchDocument(at: typeDestination(name: name, technology: slug))
                     logger.info("Fetched type documentation", metadata: metadata)
                     return document
                 } catch Error.httpStatus(404) {
@@ -130,21 +126,38 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
         return types
     }
 
-    func fetchDocumentationPage(path: String) async throws -> TechnologyDocumentationPageDTO {
+    func fetchDocument(at destination: DocumentationDestination) async throws -> TypeDocumentationDocument {
+        TypeDocumentationDocument(
+            data: try await fetchDocumentationData(path: destination.path), destination: destination
+        )
+    }
+
+    func fetchRootDocument(technology: String) async throws -> TypeDocumentationDocument {
+        try await fetchDocumentationRoot(technology: technology).document
+    }
+
+    private func fetchDocumentationData(path: String) async throws -> Data {
         logger.debug("Fetching documentation page", metadata: ["path": .string(path)])
         var url = baseURL
         for component in path.split(separator: "/") {
             url.append(component: component)
         }
         url.appendPathExtension("json")
-        let data = try await fetchData(from: url)
+        return try await fetchData(from: url)
+    }
+
+    func fetchDocumentationPage(path: String) async throws -> TechnologyDocumentationPageDTO {
+        try decodeDiscoveryPage(try await fetchDocumentationData(path: path), path: path)
+    }
+
+    private func decodeDiscoveryPage(_ data: Data, path: String) throws -> TechnologyDocumentationPageDTO {
         do {
             let page = try JSONDecoder().decode(TechnologyDocumentationPageDTO.self, from: data)
             logger.trace(
                 "Decoded documentation page", metadata: ["references": .stringConvertible(page.references.count)])
             return page
         } catch {
-            logger.error("Failed to decode documentation page", metadata: ["path": .string(url.path)])
+            logger.error("Failed to decode documentation page", metadata: ["path": .string(path)])
             throw error
         }
     }
@@ -199,6 +212,7 @@ struct DefaultAppleDocumentationClient<Dependencies: DefaultAppleDocumentationCl
 extension DefaultAppleDocumentationClient {
     struct DocumentationRoot: Sendable {
         let page: TechnologyDocumentationPageDTO
+        let document: TypeDocumentationDocument
         let slug: String
         let name: String
         let url: String
@@ -206,10 +220,8 @@ extension DefaultAppleDocumentationClient {
 
     func fetchDocumentationRoot(technology: String) async throws -> DocumentationRoot {
         do {
-            return DocumentationRoot(
-                page: try await fetchDocumentationPage(path: "/documentation/\(technology.lowercased())"),
-                slug: technology,
-                name: technology,
+            return try await loadRoot(
+                slug: technology, name: technology,
                 url: "https://developer.apple.com/documentation/\(technology.lowercased())"
             )
         } catch Error.httpStatus(404) {
@@ -226,17 +238,23 @@ extension DefaultAppleDocumentationClient {
             }
             logger.debug("Retrying documentation root with canonical technology", metadata: ["slug": .string(slug)])
             do {
-                return DocumentationRoot(
-                    page: try await fetchDocumentationPage(path: "/documentation/\(slug.lowercased())"),
-                    slug: slug,
-                    name: resolved.name,
-                    url: resolved.url
-                )
+                return try await loadRoot(slug: slug, name: resolved.name, url: resolved.url)
             } catch Error.httpStatus(404) {
                 logger.notice("Canonical documentation root unavailable", metadata: ["slug": .string(slug)])
                 throw Error.unsupportedTechnology(name: resolved.name, url: resolved.url)
             }
         }
+    }
+
+    private func loadRoot(slug: String, name: String, url: String) async throws -> DocumentationRoot {
+        let destination = DocumentationDestination(
+            technology: slug.lowercased(), path: "/documentation/\(slug.lowercased())"
+        )
+        let document = try await fetchDocument(at: destination)
+        return DocumentationRoot(
+            page: try decodeDiscoveryPage(document.data, path: destination.path), document: document,
+            slug: slug, name: name, url: url
+        )
     }
 
     private func fetchData(from url: URL) async throws -> Data {
@@ -282,16 +300,11 @@ extension DefaultAppleDocumentationClient {
         return data
     }
 
-    private func typeURL(name: String, technology: String) -> URL {
-        var url = baseURL.appending(component: "documentation")
-            .appending(component: technology.lowercased())
-        // DocC uses path components for nested symbols while Swift spelling uses dots.
-        for component in name.replacingOccurrences(of: ".", with: "/").split(separator: "/") {
-            url.append(component: component.lowercased())
-        }
-        url.appendPathExtension("json")
-        logger.trace("Resolved type documentation path", metadata: ["path": .string(url.path)])
-        return url
+    private func typeDestination(name: String, technology: String) -> DocumentationDestination {
+        // Only CLI Swift names use dots as hierarchy separators. Resolved links retain their exact paths.
+        let components = name.replacingOccurrences(of: ".", with: "/").split(separator: "/")
+        let path = "/documentation/\(technology.lowercased())/" + components.joined(separator: "/").lowercased()
+        return DocumentationDestination(technology: technology.lowercased(), path: path)
     }
 
     func resolveTechnology(named requestedName: String) async throws -> ResolvedTechnology {

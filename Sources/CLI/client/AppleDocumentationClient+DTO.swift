@@ -8,6 +8,32 @@ struct TypeDocumentationPageDTO: Decodable, Sendable {
     let seeAlsoSections: [DocumentationReferenceSectionDTO]?
     let topicSections: [DocumentationReferenceSectionDTO]?
     let variants: [DocumentationVariantDTO]?
+    let kind: String?
+
+    private enum CodingKeys: CodingKey {
+        case abstract, deprecationSummary, metadata, primaryContentSections, references
+        case relationshipsSections, seeAlsoSections, topicSections, variants, kind
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        metadata = try container.decode(DocumentationMetadataDTO.self, forKey: .metadata)
+        abstract = try container.decodeIfPresent([DocumentationTextDTO].self, forKey: .abstract) ?? []
+        deprecationSummary = try container.decodeIfPresent([DocumentationBlockDTO].self, forKey: .deprecationSummary)
+        primaryContentSections =
+            try container.decodeIfPresent(
+                [DocumentationContentSectionDTO].self, forKey: .primaryContentSections
+            ) ?? []
+        references = try container.decodeIfPresent([String: DocumentationReferenceDTO].self, forKey: .references) ?? [:]
+        relationshipsSections = try container.decodeIfPresent(
+            [DocumentationReferenceSectionDTO].self, forKey: .relationshipsSections
+        )
+        seeAlsoSections = try container.decodeIfPresent(
+            [DocumentationReferenceSectionDTO].self, forKey: .seeAlsoSections)
+        topicSections = try container.decodeIfPresent([DocumentationReferenceSectionDTO].self, forKey: .topicSections)
+        variants = try container.decodeIfPresent([DocumentationVariantDTO].self, forKey: .variants)
+        kind = try container.decodeIfPresent(String.self, forKey: .kind)
+    }
 }
 
 struct DocumentationVariantDTO: Decodable, Sendable {
@@ -18,6 +44,7 @@ struct DocumentationTextDTO: Decodable, Sendable {
     let code: String?
     let identifier: String?
     let inlineContent: [DocumentationTextDTO]?
+    let overridingTitle: String?
     let text: String?
 }
 
@@ -111,6 +138,7 @@ struct DocumentationMetadataDTO: Decodable, Sendable {
     let modules: [DocumentationModule]
     let platforms: [DocumentationPlatform]
     let roleHeading: String
+    let role: String?
     let symbolKind: String?
     let title: String
 
@@ -118,6 +146,7 @@ struct DocumentationMetadataDTO: Decodable, Sendable {
         case modules
         case platforms
         case roleHeading
+        case role
         case symbolKind
         case title
     }
@@ -126,7 +155,8 @@ struct DocumentationMetadataDTO: Decodable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         modules = try container.decodeIfPresent([DocumentationModule].self, forKey: .modules) ?? []
         platforms = try container.decodeIfPresent([DocumentationPlatform].self, forKey: .platforms) ?? []
-        roleHeading = try container.decode(String.self, forKey: .roleHeading)
+        role = try container.decodeIfPresent(String.self, forKey: .role)
+        roleHeading = try container.decodeIfPresent(String.self, forKey: .roleHeading) ?? ""
         symbolKind = try container.decodeIfPresent(String.self, forKey: .symbolKind)
         title = try container.decode(String.self, forKey: .title)
     }
@@ -140,4 +170,7 @@ struct DocumentationPlatform: Decodable, Sendable {
     let deprecatedAt: String?
     let introducedAt: String?
     let name: String
+    let obsoletedAt: String?
+    let beta: Bool?
+    let unavailable: Bool?
 }

@@ -5,6 +5,22 @@ import Testing
 
 @Suite("Default type documentation renderer")
 struct DefaultTypeDocumentationRendererTests {
+    @Test("renders sparse collection pages")
+    func rendersSparseCollection() throws {
+        // -- Arrange --
+        let document = TypeDocumentationDocument(
+            data: Data(#"{"kind":"article","metadata":{"title":"SwiftUI","role":"collection"}}"#.utf8),
+            destination: .init(technology: "swiftui", path: "/documentation/swiftui"))
+        let renderer = DefaultTypeDocumentationRenderer(output: .text)
+
+        // -- Act --
+        let output = try renderer.render(document)
+
+        // -- Assert --
+        #expect(output.hasPrefix("SwiftUI\n"))
+        #expect(output.contains("Collection"))
+    }
+
     @Test("renders text output")
     func rendersText() throws {
         // -- Arrange --
@@ -37,6 +53,10 @@ struct DefaultTypeDocumentationRendererTests {
                 Symbol kind: class
 
                   A diagnostic report.
+
+                Documentation
+                ─────────────
+                  https://developer.apple.com/documentation/metrickit/mxhangdiagnostic
                 """
         )
     }
@@ -57,7 +77,7 @@ struct DefaultTypeDocumentationRendererTests {
               "references": {}
             }
             """
-        let document = try makeDocument(rawJSON)
+        let document = try makeDocument(rawJSON, technology: "packagedescription", path: "package")
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
         // -- Act --
@@ -72,6 +92,10 @@ struct DefaultTypeDocumentationRendererTests {
                 Symbol kind: struct
 
                   The Swift package manifest representation.
+
+                Documentation
+                ─────────────
+                  https://developer.apple.com/documentation/packagedescription/package
                 """
         )
     }
@@ -131,7 +155,11 @@ struct DefaultTypeDocumentationRendererTests {
         #expect(output == rawJSON)
     }
 
-    private func makeDocument(_ rawJSON: String) throws -> TypeDocumentationDocument {
-        TypeDocumentationDocument(data: Data(rawJSON.utf8))
+    private func makeDocument(
+        _ rawJSON: String, technology: String = "metrickit", path: String = "mxhangdiagnostic"
+    ) throws -> TypeDocumentationDocument {
+        TypeDocumentationDocument(
+            data: Data(rawJSON.utf8),
+            destination: .init(technology: technology, path: "/documentation/\(technology)/\(path)"))
     }
 }
