@@ -33,6 +33,41 @@ struct DefaultTechnologyListRendererTests {
         )
     }
 
+    @Test("aligns table columns after removing remote control characters")
+    func alignsSanitizedTable() throws {
+        // -- Arrange --
+        let technologies = [
+            Technology(
+                name: "MetricKit\u{0007}", identifier: "doc://com.apple.documentation/documentation/MetricKit\u{0007}"),
+            Technology(name: "Swift", identifier: "doc://com.apple.documentation/documentation/Swift"),
+        ]
+        let renderer = DefaultTechnologyListRenderer(output: .table)
+
+        // -- Act --
+        let output = try renderer.render(technologies)
+
+        // -- Assert --
+        #expect(
+            output == """
+                TECHNOLOGY  IDENTIFIER
+                MetricKit   doc://com.apple.documentation/documentation/MetricKit
+                Swift       doc://com.apple.documentation/documentation/Swift
+                """
+        )
+    }
+
+    @Test("renders table headers for an empty catalog")
+    func rendersEmptyTable() throws {
+        // -- Arrange --
+        let renderer = DefaultTechnologyListRenderer(output: .table)
+
+        // -- Act --
+        let output = try renderer.render([])
+
+        // -- Assert --
+        #expect(output == "TECHNOLOGY  IDENTIFIER")
+    }
+
     @Test("renders a JSON array of technology objects")
     func rendersJSON() throws {
         // -- Arrange --

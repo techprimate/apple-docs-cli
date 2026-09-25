@@ -3,8 +3,8 @@ import Testing
 
 @testable import CLI
 
-@Suite("Text type documentation renderer")
-struct TextTypeDocumentationRendererTests {
+@Suite("Human documentation renderer")
+struct HumanDocumentationRendererTests {
     @Test("renders the type summary and declaration")
     func rendersSummaryAndDeclaration() throws {
         // -- Arrange --
@@ -39,7 +39,7 @@ struct TextTypeDocumentationRendererTests {
             data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(
@@ -107,7 +107,7 @@ struct TextTypeDocumentationRendererTests {
             data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("Deprecated\n──────────\n  Use HangDiagnostic instead."))
@@ -139,7 +139,7 @@ struct TextTypeDocumentationRendererTests {
             data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(
@@ -218,7 +218,7 @@ struct TextTypeDocumentationRendererTests {
             data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("Inherits From\n─────────────\n  • MXDiagnostic"))
@@ -268,7 +268,7 @@ struct TextTypeDocumentationRendererTests {
                 technology: "swift", path: "/documentation/swift/string"))
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(

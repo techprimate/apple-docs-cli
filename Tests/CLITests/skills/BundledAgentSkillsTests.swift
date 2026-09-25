@@ -29,6 +29,23 @@ struct BundledAgentSkillsTests {
         #expect(content.hasPrefix("---\nname: apple-docs\n"))
     }
 
+    @Test("research examples select the agent audience and structured evidence uses both flags")
+    func researchExamplesUseAgentMode() {
+        // -- Arrange --
+        let skills = BundledAgentSkills.all
+
+        // -- Act --
+        let examples = skills.flatMap { $0.content.split(separator: "\n") }.filter {
+            $0.hasPrefix("apple-docs types ") || $0.hasPrefix("apple-docs technologies ")
+        }
+
+        // -- Assert --
+        #expect(!examples.isEmpty)
+        #expect(examples.allSatisfy { $0.contains("--agent") })
+        #expect(examples.contains { $0.contains("--agent --json") })
+        #expect(skills.allSatisfy { !$0.content.contains("aliases `--json`") })
+    }
+
     @Test("returns no skill for an unknown name")
     func rejectsUnknownSkill() {
         // -- Arrange --
