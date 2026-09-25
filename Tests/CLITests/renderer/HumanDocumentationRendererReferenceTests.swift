@@ -3,8 +3,8 @@ import Testing
 
 @testable import CLI
 
-@Suite("Text type documentation reference rendering")
-struct TextTypeDocumentationRendererReferenceTests {
+@Suite("Human documentation reference rendering")
+struct HumanDocumentationRendererReferenceTests {
     @Test("renders the canonical documentation URL")
     func rendersCanonicalURL() throws {
         // -- Arrange --
@@ -32,7 +32,7 @@ struct TextTypeDocumentationRendererReferenceTests {
             data, destination: .init(technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic"))
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(
@@ -84,7 +84,7 @@ struct TextTypeDocumentationRendererReferenceTests {
                 technology: "swiftui", path: "/documentation/swiftui/button"))
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("  • init(intent:label:)\n    Creates a button that performs an `AppIntent`."))

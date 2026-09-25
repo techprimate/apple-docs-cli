@@ -3,8 +3,8 @@ import Testing
 
 @testable import CLI
 
-@Suite("Text type documentation content rendering")
-struct TextTypeDocumentationRendererContentTests {
+@Suite("Human documentation content rendering")
+struct HumanDocumentationRendererContentTests {
     @Test("renders overview prose, inline symbols, and indented code examples")
     func rendersOverview() throws {
         // -- Arrange --
@@ -25,7 +25,7 @@ struct TextTypeDocumentationRendererContentTests {
         )
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("Overview\n────────\n\n  Implement body using `Text`."))
@@ -56,7 +56,7 @@ struct TextTypeDocumentationRendererContentTests {
         )
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(
@@ -90,7 +90,7 @@ struct TextTypeDocumentationRendererContentTests {
         )
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("  3. Create a view.\n\n     • Add a body.\n  4. Preview it."))
@@ -110,7 +110,7 @@ struct TextTypeDocumentationRendererContentTests {
         )
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("  A `View` with body and style."))
@@ -126,7 +126,7 @@ struct TextTypeDocumentationRendererContentTests {
                 """)
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(

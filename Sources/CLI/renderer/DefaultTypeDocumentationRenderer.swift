@@ -13,7 +13,7 @@ struct DefaultTypeDocumentationRenderer: Sendable {
         case .text:
             return audience == .agent
                 ? AgentDocumentationRenderer().render(presentation)
-                : TextTypeDocumentationRenderer().render(page)
+                : HumanDocumentationRenderer().render(presentation)
         }
     }
 }

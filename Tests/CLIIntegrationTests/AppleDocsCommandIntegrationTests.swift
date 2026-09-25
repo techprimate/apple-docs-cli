@@ -50,9 +50,10 @@ struct AppleDocsCommandIntegrationTests {
     func rendersAgentJSON() throws {
         // -- Arrange --
         let arguments = ["types", "view", "String", "--technology", "Swift", "--agent", "--json", "--verbose"]
+        var diagnostics = ""
 
         // -- Act --
-        let output = try runAppleDocs(arguments)
+        let output = try runAppleDocs(arguments, captureStandardError: { diagnostics = $0 })
         let value = try #require(JSONSerialization.jsonObject(with: Data(output.utf8)) as? [String: Any])
 
         // -- Assert --
@@ -60,6 +61,7 @@ struct AppleDocsCommandIntegrationTests {
         #expect(value["navigation"] != nil)
         #expect(value["metadata"] == nil)
         #expect(!output.contains("\u{1B}"))
+        #expect(diagnostics.contains("debug"))
     }
 
     @Test("returns Foundation URL documentation as JSON")

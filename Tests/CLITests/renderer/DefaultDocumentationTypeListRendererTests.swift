@@ -41,6 +41,29 @@ struct DefaultDocumentationTypeListRendererTests {
         )
     }
 
+    @Test("aligns table columns after removing remote control characters")
+    func alignsSanitizedTable() throws {
+        // -- Arrange --
+        let types = [
+            DocumentationType(
+                name: "Model()\u{0007}", kind: "macro\u{0007}", path: "model()\u{0007}",
+                url: "https://developer.apple.com/documentation/swiftdata/model()\u{0007}"
+            )
+        ]
+        let renderer = DefaultDocumentationTypeListRenderer(output: .table)
+
+        // -- Act --
+        let output = try renderer.render(types)
+
+        // -- Assert --
+        #expect(
+            output == """
+                SYMBOL   KIND   PATH     URL
+                Model()  macro  model()  https://developer.apple.com/documentation/swiftdata/model()
+                """
+        )
+    }
+
     @Test("renders documentation types as JSON")
     func rendersJSON() throws {
         // -- Arrange --

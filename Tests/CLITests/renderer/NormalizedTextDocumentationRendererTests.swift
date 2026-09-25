@@ -12,10 +12,10 @@ struct NormalizedTextDocumentationRendererTests {
             technology: "metrickit", path: "/documentation/metrickit/mxhangdiagnostic/member(_:)"
         )
         let page = try DocumentationPageDecoder().decode(DocumentationFixtures.member, destination: destination)
-        let presentation = page
+        let presentation = DocumentationPresenter().page(page, audience: .human)
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(presentation)
+        let output = HumanDocumentationRenderer().render(presentation)
 
         // -- Assert --
         #expect(output.hasPrefix("member(_:)\n━━━━━━━━━━\nMethod · MetricKit\nSymbol kind: method"))
@@ -45,7 +45,7 @@ struct NormalizedTextDocumentationRendererTests {
         let page = try DocumentationPageDecoder().decode(data, destination: destination)
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("Instance Property\nSymbol kind: property"))
@@ -61,7 +61,7 @@ struct NormalizedTextDocumentationRendererTests {
         )
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("15.0–26.0"))
@@ -76,7 +76,7 @@ struct NormalizedTextDocumentationRendererTests {
         )
 
         // -- Act --
-        let output = TextTypeDocumentationRenderer().render(page)
+        let output = HumanDocumentationRenderer().render(DocumentationPresenter().page(page, audience: .human))
 
         // -- Assert --
         #expect(output.contains("string."))
