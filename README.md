@@ -172,6 +172,8 @@ apple-docs types view String --technology Swift --json | jq -r '.title'
 
 This is a breaking change: page JSON is normalized rather than raw DocC, and title extraction uses `.title` instead of `.metadata.title`. There is no raw-DocC export flag. Normalization does not preserve every upstream field, so missing normalized content is not evidence that Apple supplies no such information. JSON stdout contains only the result, with warnings and verbose diagnostics sent to stderr.
 
+See [Output formats and JSON](docs/OUTPUT.md) for the complete normalized JSON shapes, link targets, and follow-up-command limitations.
+
 ### Cache
 
 Stateless command selection does not mean responses are never cached. To clear cached Apple documentation responses:
