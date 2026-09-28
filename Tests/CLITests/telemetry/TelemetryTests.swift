@@ -66,7 +66,7 @@ struct TelemetryTests {
 
         // -- Act --
         #expect(throws: ValidationError.self) {
-            try command.run(telemetry: telemetry)
+            try command.run(deps: CommandDeps(telemetry: telemetry))
         }
 
         // -- Assert --
@@ -74,6 +74,10 @@ struct TelemetryTests {
         #expect(telemetry.contexts.first?.typeName == nil)
         #expect(telemetry.contexts.first?.technology == nil)
     }
+}
+
+private struct CommandDeps: TelemetryProvider {
+    let telemetry: CommandTelemetryRecorder
 }
 
 private final class CommandTelemetryRecorder: Telemetry, @unchecked Sendable {

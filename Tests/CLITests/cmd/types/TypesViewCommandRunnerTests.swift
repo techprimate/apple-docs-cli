@@ -40,7 +40,8 @@ struct TypesViewCommandRunnerTests {
         // -- Act --
         let result = try await runner.run(
             name: "MXHangDiagnostic",
-            technology: "MetricKit"
+            technology: "MetricKit",
+            mode: .oneShot(audience: .human, format: .text)
         )
 
         // -- Assert --

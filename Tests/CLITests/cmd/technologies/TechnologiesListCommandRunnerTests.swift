@@ -21,7 +21,7 @@ struct TechnologiesListCommandRunnerTests {
         )
 
         // -- Act --
-        let result = try await runner.run()
+        let result = try await runner.run(mode: .oneShot(audience: .human, format: .json))
 
         // -- Assert --
         let technologies = try JSONDecoder().decode(

@@ -17,7 +17,7 @@ struct TechnologiesListCommandRunner: Sendable {
         self.renderer = renderer
     }
 
-    func run() async throws -> Result {
+    func run(mode: OutputMode) async throws -> Result {
         let technologies = try await client.fetchTechnologies().sorted {
             $0.name.compare($1.name, options: .caseInsensitive) == .orderedAscending
         }

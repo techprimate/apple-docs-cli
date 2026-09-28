@@ -2,6 +2,15 @@ import ArgumentParser
 import Foundation
 
 struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
+    #if DEBUG
+        typealias Deps = any (
+            TelemetryProvider & TerminalCapabilitiesProvider & DocumentationTypeSearchClientProvider
+                & DocumentationTypeListRendererProvider
+        )
+    #else
+        typealias Deps = Dependencies
+    #endif
+
     @OptionGroup var global: GlobalOptions
     @OptionGroup var output: OutputOptions
 
@@ -17,18 +26,19 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
     var technology: String
 
     mutating func run() async throws {
-        try await run(telemetry: Dependencies.telemetry)
+        try await run(deps: Dependencies.shared)
     }
 
-    func run(telemetry: Telemetry) async throws {
+    func run(deps: Deps) async throws {
         // Search text can be user-authored, so it is deliberately excluded from telemetry context.
         let context = TelemetryCommandContext.typesSearch(technology: technology, json: output.json)
-        telemetry.startCommand(context)
-        let result = try await TypesSearchCommandRunner(
-            client: Dependencies.documentationClient,
-            renderer: Dependencies.documentationTypeListRenderer(output: output, technology: technology)
-        ).run(query: query, technology: technology)
-        telemetry.record(.typeSearch(matches: result.matchCount), context: context)
+        deps.telemetry.startCommand(context)
+        let runner = TypesSearchCommandRunner(
+            client: deps.documentationClient,
+            renderer: deps.documentationTypeListRenderer(output: output, technology: technology)
+        )
+        let result = try await runner.run(query: query, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
+        deps.telemetry.record(.typeSearch(matches: result.matchCount), context: context)
         if result.unavailableCollectionCount > 0 {
             let warning =
                 "Warning: search results are incomplete. "

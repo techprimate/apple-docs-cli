@@ -21,7 +21,7 @@ struct TypesListCommandRunnerTests {
         )
 
         // -- Act --
-        let result = try await runner.run(technology: "SwiftData")
+        let result = try await runner.run(technology: "SwiftData", mode: .oneShot(audience: .human, format: .text))
 
         // -- Assert --
         #expect(result.output == "rendered types")

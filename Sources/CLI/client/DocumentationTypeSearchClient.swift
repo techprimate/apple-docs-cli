@@ -15,6 +15,13 @@ struct DocumentationSearchResult: Equatable, Sendable {
     }
 
     extension DefaultAppleDocumentationClient: DocumentationTypeSearchClient {}
+
+    protocol DocumentationTypeSearchClientProvider {
+        associatedtype Client: DocumentationTypeSearchClient
+        var documentationClient: Client { get }
+    }
+
+    extension Dependencies: DocumentationTypeSearchClientProvider {}
 #else
     typealias DocumentationTypeSearchClient = DefaultAppleDocumentationClient<URLSession>
 #endif

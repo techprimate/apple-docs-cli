@@ -15,7 +15,7 @@ struct TypesViewCommandRunner: Sendable {
         self.renderer = renderer
     }
 
-    func run(name: String, technology: String) async throws -> Result {
+    func run(name: String, technology: String, mode: OutputMode) async throws -> Result {
         let document = try await client.fetchType(
             named: name,
             technology: technology

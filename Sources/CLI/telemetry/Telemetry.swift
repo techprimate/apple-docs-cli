@@ -13,6 +13,13 @@ import Logging
     #if canImport(SentrySwift)
         extension SentryTelemetry: Telemetry {}
     #endif
+
+    protocol TelemetryProvider {
+        associatedtype TelemetryType: Telemetry
+        var telemetry: TelemetryType { get }
+    }
+
+    extension Dependencies: TelemetryProvider {}
 #else
     typealias Telemetry = DefaultTelemetry
 #endif
@@ -22,10 +29,3 @@ import Logging
 #else
     typealias DefaultTelemetry = NoOpTelemetry
 #endif
-
-enum TelemetryMetric: Sendable {
-    case technologyCatalog(count: Int)
-    case typeCatalog(count: Int)
-    case typeSearch(matches: Int)
-    case typeView(responseBytes: Int)
-}
