@@ -37,7 +37,8 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
             client: deps.documentationClient,
             renderer: deps.documentationTypeListRenderer(output: output, technology: technology)
         )
-        let result = try await runner.run(query: query, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
+        let result = try await runner.run(
+            query: query, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
         deps.telemetry.record(.typeSearch(matches: result.matchCount), context: context)
         if result.unavailableCollectionCount > 0 {
             let warning =

@@ -35,7 +35,8 @@ struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
             client: deps.documentationClient,
             renderer: deps.documentationRenderer(output: output)
         )
-        let result = try await runner.run(name: name, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
+        let result = try await runner.run(
+            name: name, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
         deps.telemetry.record(.typeView(responseBytes: result.responseByteCount), context: context)
         print(result.output)
     }
