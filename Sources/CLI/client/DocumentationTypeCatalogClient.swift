@@ -10,6 +10,13 @@ import Foundation
     }
 
     extension DefaultAppleDocumentationClient: DocumentationTypeCatalogClient {}
+
+    protocol DocumentationTypeCatalogClientProvider {
+        associatedtype Client: DocumentationTypeCatalogClient
+        var documentationClient: Client { get }
+    }
+
+    extension Dependencies: DocumentationTypeCatalogClientProvider {}
 #else
     typealias DocumentationTypeCatalogClient = DefaultAppleDocumentationClient<URLSession>
 #endif

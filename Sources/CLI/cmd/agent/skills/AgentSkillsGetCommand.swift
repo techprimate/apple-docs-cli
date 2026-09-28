@@ -1,6 +1,12 @@
 import ArgumentParser
 
 struct AgentSkillsGetCommand: ParsableCommand, GlobalOptionsProviding {
+    #if DEBUG
+        typealias Deps = any TelemetryProvider
+    #else
+        typealias Deps = Dependencies
+    #endif
+
     @OptionGroup var global: GlobalOptions
 
     static let configuration = CommandConfiguration(
@@ -12,11 +18,11 @@ struct AgentSkillsGetCommand: ParsableCommand, GlobalOptionsProviding {
     var name: String
 
     mutating func run() throws {
-        try run(telemetry: Dependencies.telemetry)
+        try run(deps: Dependencies.shared)
     }
 
-    func run(telemetry: Telemetry) throws {
-        telemetry.startCommand(.agentSkillsGet)
+    func run(deps: Deps) throws {
+        deps.telemetry.startCommand(.agentSkillsGet)
         guard let skill = BundledAgentSkills.skill(named: name) else {
             throw ValidationError("Unknown bundled Agent Skill '\(name)'.")
         }

@@ -7,7 +7,7 @@ enum AppleDocs {
 
     @MainActor
     static func main() async {
-        let telemetry = Dependencies.telemetry
+        let telemetry = Dependencies.shared.telemetry
         telemetry.start()
         var loggingConfigured = false
 

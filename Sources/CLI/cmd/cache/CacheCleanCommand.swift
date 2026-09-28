@@ -1,6 +1,12 @@
 import ArgumentParser
 
 struct CacheCleanCommand: ParsableCommand, GlobalOptionsProviding {
+    #if DEBUG
+        typealias Deps = any (TelemetryProvider & DocumentationCacheProvider)
+    #else
+        typealias Deps = Dependencies
+    #endif
+
     @OptionGroup var global: GlobalOptions
 
     static let configuration = CommandConfiguration(
@@ -9,14 +15,15 @@ struct CacheCleanCommand: ParsableCommand, GlobalOptionsProviding {
     )
 
     mutating func run() throws {
-        run(telemetry: Dependencies.telemetry)
+        run(deps: Dependencies.shared)
     }
 
-    func run(telemetry: Telemetry) {
-        telemetry.startCommand(.cacheClean)
-        let result = CacheCleanCommandRunner(
-            cache: Dependencies.documentationCache
-        ).run()
+    func run(deps: Deps) {
+        deps.telemetry.startCommand(.cacheClean)
+        let runner = CacheCleanCommandRunner(
+            cache: deps.documentationCache
+        )
+        let result = runner.run()
         print(result.output)
     }
 }

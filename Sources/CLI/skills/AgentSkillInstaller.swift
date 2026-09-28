@@ -219,3 +219,19 @@ struct AgentSkillInstaller {
         }
     }
 }
+
+#if DEBUG
+    protocol AgentSkillInstalling {
+        func install(_ skills: [BundledAgentSkill], root: String, dryRun: Bool, force: Bool) throws -> String
+        func uninstall(_ skills: [BundledAgentSkill], root: String, dryRun: Bool) throws -> String
+    }
+
+    extension AgentSkillInstaller: AgentSkillInstalling {}
+
+    protocol AgentSkillInstallerProvider {
+        associatedtype Installer: AgentSkillInstalling
+        func agentSkillInstaller() -> Installer
+    }
+
+    extension Dependencies: AgentSkillInstallerProvider {}
+#endif

@@ -1,6 +1,15 @@
 import ArgumentParser
 
 struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
+    #if DEBUG
+        typealias Deps = any (
+            TelemetryProvider & TerminalCapabilitiesProvider & AppleDocumentationClientProvider
+                & TypeDocumentationRendererProvider
+        )
+    #else
+        typealias Deps = Dependencies
+    #endif
+
     @OptionGroup var global: GlobalOptions
     @OptionGroup var output: OutputOptions
 
@@ -16,17 +25,19 @@ struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
     var technology: String
 
     mutating func run() async throws {
-        try await run(telemetry: Dependencies.telemetry)
+        try await run(deps: Dependencies.shared)
     }
 
-    func run(telemetry: Telemetry) async throws {
+    func run(deps: Deps) async throws {
         let context = TelemetryCommandContext.typesView(name: name, technology: technology, json: output.json)
-        telemetry.startCommand(context)
-        let result = try await TypesViewCommandRunner(
-            client: Dependencies.documentationClient,
-            renderer: Dependencies.documentationRenderer(output: output)
-        ).run(name: name, technology: technology)
-        telemetry.record(.typeView(responseBytes: result.responseByteCount), context: context)
+        deps.telemetry.startCommand(context)
+        let runner = TypesViewCommandRunner(
+            client: deps.documentationClient,
+            renderer: deps.documentationRenderer(output: output)
+        )
+        let result = try await runner.run(
+            name: name, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
+        deps.telemetry.record(.typeView(responseBytes: result.responseByteCount), context: context)
         print(result.output)
     }
 }

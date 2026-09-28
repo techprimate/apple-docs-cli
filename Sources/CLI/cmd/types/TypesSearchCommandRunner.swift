@@ -16,7 +16,7 @@ struct TypesSearchCommandRunner: Sendable {
         self.renderer = renderer
     }
 
-    func run(query: String, technology: String) async throws -> Result {
+    func run(query: String, technology: String, mode: OutputMode) async throws -> Result {
         let result = try await client.searchTypes(query: query, technology: technology)
         return Result(
             output: try renderer.render(result.types),

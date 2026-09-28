@@ -12,6 +12,13 @@ import Foundation
     }
 
     extension URLCache: DocumentationCache {}
+
+    protocol DocumentationCacheProvider {
+        associatedtype Cache: DocumentationCache
+        var documentationCache: Cache? { get }
+    }
+
+    extension Dependencies: DocumentationCacheProvider {}
 #else
     typealias DocumentationCache = URLCache
 #endif

@@ -21,7 +21,8 @@ struct TypesSearchCommandRunnerTests {
         )
 
         // -- Act --
-        let result = try await runner.run(query: "Button", technology: "SwiftUI")
+        let result = try await runner.run(
+            query: "Button", technology: "SwiftUI", mode: .oneShot(audience: .human, format: .text))
 
         // -- Assert --
         #expect(result.output == "rendered matches")
@@ -37,7 +38,8 @@ struct TypesSearchCommandRunnerTests {
             renderer: DefaultDocumentationTypeListRenderer(output: .json))
 
         // -- Act --
-        let result = try await runner.run(query: "Button", technology: "SwiftUI")
+        let result = try await runner.run(
+            query: "Button", technology: "SwiftUI", mode: .oneShot(audience: .human, format: .json))
 
         // -- Assert --
         #expect(result.output == "[\n\n]")

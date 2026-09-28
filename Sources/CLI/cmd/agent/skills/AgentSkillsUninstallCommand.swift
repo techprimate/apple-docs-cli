@@ -1,6 +1,12 @@
 import ArgumentParser
 
 struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
+    #if DEBUG
+        typealias Deps = any AgentSkillInstallerProvider
+    #else
+        typealias Deps = Dependencies
+    #endif
+
     @OptionGroup var global: GlobalOptions
 
     static let configuration = CommandConfiguration(
@@ -31,7 +37,11 @@ struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
     }
 
     mutating func run() throws {
-        let output = try Dependencies.agentSkillInstaller().uninstall(
+        try run(deps: Dependencies.shared)
+    }
+
+    func run(deps: Deps) throws {
+        let output = try deps.agentSkillInstaller().uninstall(
             selection.selectedSkills(), root: selection.dir, dryRun: selection.dryRun
         )
         print(output)

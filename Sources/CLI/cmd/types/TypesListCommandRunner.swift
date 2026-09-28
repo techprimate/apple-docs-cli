@@ -15,7 +15,7 @@ struct TypesListCommandRunner: Sendable {
         self.renderer = renderer
     }
 
-    func run(technology: String) async throws -> Result {
+    func run(technology: String, mode: OutputMode) async throws -> Result {
         let types = try await client.fetchTypes(technology: technology)
         return Result(
             output: try renderer.render(types),

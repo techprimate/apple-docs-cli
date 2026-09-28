@@ -4,6 +4,13 @@
     }
 
     extension DefaultTypeDocumentationRenderer: TypeDocumentationRenderer {}
+
+    protocol TypeDocumentationRendererProvider {
+        associatedtype TypeRenderer: TypeDocumentationRenderer
+        func documentationRenderer(output: OutputOptions) -> TypeRenderer
+    }
+
+    extension Dependencies: TypeDocumentationRendererProvider {}
 #else
     typealias TypeDocumentationRenderer = DefaultTypeDocumentationRenderer
 #endif

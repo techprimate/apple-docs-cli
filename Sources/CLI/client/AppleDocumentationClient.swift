@@ -10,6 +10,13 @@ import Logging
         func fetchType(named name: String, technology: String) async throws -> TypeDocumentationDocument
     }
     extension DefaultAppleDocumentationClient: AppleDocumentationClient {}
+
+    protocol AppleDocumentationClientProvider {
+        associatedtype Client: AppleDocumentationClient
+        var documentationClient: Client { get }
+    }
+
+    extension Dependencies: AppleDocumentationClientProvider {}
 #else
     typealias AppleDocumentationClient = DefaultAppleDocumentationClient<URLSession>
 #endif
