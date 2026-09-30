@@ -1,6 +1,14 @@
 import ArgumentParser
 import Logging
 
+#if canImport(Darwin)
+    import Darwin
+#elseif canImport(Glibc)
+    import Glibc
+#elseif canImport(Musl)
+    import Musl
+#endif
+
 @main
 enum AppleDocs {
     private static let logger = Logger(label: "com.techprimate.apple-docs")
@@ -9,6 +17,11 @@ enum AppleDocs {
     static func main() async {
         let telemetry = Dependencies.shared.telemetry
         telemetry.start()
+        // Ignore SIGPIPE so writing to a closed pipe (e.g. `apple-docs ... | head`)
+        // fails with EPIPE instead of terminating the process.
+        // Must stay after `telemetry.start()`: the crash handler installs its own
+        // SIGPIPE handler during start, which would otherwise replace SIG_IGN.
+        signal(SIGPIPE, SIG_IGN)
         var loggingConfigured = false
 
         do {
