@@ -1,6 +1,13 @@
 import ArgumentParser
+import Twill
 
 struct CLI: AsyncParsableCommand, GlobalOptionsProviding {
+    #if DEBUG
+        typealias Deps = any TechnologyCatalogClientProvider
+    #else
+        typealias Deps = Dependencies
+    #endif
+
     @OptionGroup var global: GlobalOptions
 
     static let configuration = CommandConfiguration(
@@ -17,4 +24,15 @@ struct CLI: AsyncParsableCommand, GlobalOptionsProviding {
             AgentCommand.self,
         ]
     )
+
+    mutating func run() async throws {
+        try await run(deps: Dependencies.shared)
+    }
+
+    @MainActor
+    func run(deps: Deps) async throws {
+        let rootView = BrowserView(client: deps.documentationClient)
+        let application = Application(rootView: rootView)
+        try await application.run()
+    }
 }
