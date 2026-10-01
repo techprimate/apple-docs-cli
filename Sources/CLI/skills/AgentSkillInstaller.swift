@@ -231,6 +231,7 @@ struct AgentSkillInstaller {
     protocol AgentSkillInstallerProvider {
         associatedtype Installer: AgentSkillInstalling
         func agentSkillInstaller() -> Installer
+        func agentSkillFileManager() -> FileManager
     }
 
     extension Dependencies: AgentSkillInstallerProvider {}

@@ -45,6 +45,10 @@ struct Dependencies: Sendable {
         httpDataTransport.configuration.urlCache
     }
 
+    func agentSkillFileManager() -> FileManager {
+        .default
+    }
+
     func agentSkillInstaller() -> AgentSkillInstaller {
         AgentSkillInstaller(logger: Logger(label: "com.techprimate.apple-docs.skills.installer"))
     }

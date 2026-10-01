@@ -14,13 +14,14 @@ struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
         abstract: "Remove skills managed by apple-docs from a .agents directory.",
         discussion: """
             Removes only unchanged managed files. Local edits, unrelated files, and other skills are preserved.
-            Bulk removal requires --yes unless --dry-run is set. No interactive prompt is used.
+            Use --project for the Git root (or current directory outside Git). Bulk removal requires --yes
+            unless --dry-run is set. No interactive prompt is used.
 
             Examples:
               apple-docs agent skills uninstall apple-docs
               apple-docs agent skills uninstall --all --dry-run
               apple-docs agent skills uninstall --all --yes
-              apple-docs agent skills uninstall --all --yes --dir .agents
+              apple-docs agent skills uninstall --all --yes --project
             """
     )
 
@@ -42,7 +43,8 @@ struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
 
     func run(deps: Deps) throws {
         let output = try deps.agentSkillInstaller().uninstall(
-            selection.selectedSkills(), root: selection.dir, dryRun: selection.dryRun
+            selection.selectedSkills(), root: selection.installationRoot(fileManager: deps.agentSkillFileManager()),
+            dryRun: selection.dryRun
         )
         print(output)
     }

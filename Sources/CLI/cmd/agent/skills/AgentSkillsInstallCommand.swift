@@ -13,13 +13,14 @@ struct AgentSkillsInstallCommand: ParsableCommand, GlobalOptionsProviding {
         commandName: "install",
         abstract: "Install bundled Agent Skills into a .agents directory.",
         discussion: """
-            Installs into ~/.agents/skills by default. Use --dir .agents for a project-local installation.
+            Installs into ~/.agents/skills by default. Use --project for a project-local installation.
+            This selects the Git root, or the current directory outside Git. Use --dir for another root.
             Existing unmanaged files and symlinks are never overwritten, even with --force.
 
             Examples:
               apple-docs agent skills install apple-docs
               apple-docs agent skills install --all --dry-run
-              apple-docs agent skills install --all --dir .agents
+              apple-docs agent skills install --all --project
               apple-docs agent skills install apple-docs --force
             """
     )
@@ -39,7 +40,8 @@ struct AgentSkillsInstallCommand: ParsableCommand, GlobalOptionsProviding {
 
     func run(deps: Deps) throws {
         let output = try deps.agentSkillInstaller().install(
-            selection.selectedSkills(), root: selection.dir, dryRun: selection.dryRun, force: force
+            selection.selectedSkills(), root: selection.installationRoot(fileManager: deps.agentSkillFileManager()),
+            dryRun: selection.dryRun, force: force
         )
         print(output)
     }
