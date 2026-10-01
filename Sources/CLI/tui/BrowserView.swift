@@ -1,11 +1,18 @@
 import Twill
 
 struct BrowserView: View {
-    private let client: any TechnologyCatalogClient
+    #if DEBUG
+        typealias Client = any TechnologyCatalogClient
+    #else
+        typealias Client = TechnologyCatalogClient
+    #endif
+
+    private let client: Client
 
     @State private var technologies: [Technology] = []
+    @State private var errorMessage: String?
 
-    init(client: any TechnologyCatalogClient) {
+    init(client: Client) {
         self.client = client
     }
 
@@ -13,14 +20,21 @@ struct BrowserView: View {
         VStack {
             Text("Apple Docs CLI")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
-                ForEach(technologies, id: \.name) { technology in
+                ForEach(technologies) { technology in
                     Text(technology.name)
                 }
             }
             .border(.single, color: Color.white)
+            if let errorMessage {
+                Text(errorMessage)
+            }
         }
         .task {
-            technologies = await client.fetchTechnologies()
+            do {
+                technologies = try await client.fetchTechnologies()
+            } catch {
+                errorMessage = String(describing: error)
+            }
         }
     }
 }
