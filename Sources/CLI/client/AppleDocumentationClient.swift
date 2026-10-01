@@ -308,8 +308,9 @@ extension DefaultAppleDocumentationClient {
     }
 
     private func typeDestination(name: String, technology: String) -> DocumentationDestination {
-        // Only CLI Swift names use dots as hierarchy separators. Resolved links retain their exact paths.
-        let components = name.replacingOccurrences(of: ".", with: "/").split(separator: "/")
+        // Slash-separated DocC paths may contain dots in disambiguation suffixes.
+        let pathName = name.contains("/") ? name : name.replacingOccurrences(of: ".", with: "/")
+        let components = pathName.split(separator: "/")
         let path = "/documentation/\(technology.lowercased())/" + components.joined(separator: "/").lowercased()
         return DocumentationDestination(technology: technology.lowercased(), path: path)
     }

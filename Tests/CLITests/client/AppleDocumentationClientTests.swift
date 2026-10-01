@@ -85,6 +85,29 @@ struct AppleDocumentationClientTests {
         #expect(await transport.requestedURLs == [expectedURL])
     }
 
+    @Test("preserves disambiguation suffixes in DocC paths")
+    func preservesDocCPathSuffix() async throws {
+        // -- Arrange --
+        let expectedURL = try #require(
+            URL(
+                string: "https://developer.apple.com/tutorials/data/documentation/swiftui/griditem/size-swift.enum.json"
+            )
+        )
+        let data = Data("{}".utf8)
+        let transport = HTTPTestTransport(responses: [expectedURL: .http(data: data)])
+        let client = DefaultAppleDocumentationClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
+            dependencies: transport
+        )
+
+        // -- Act --
+        let document = try await client.fetchType(named: "griditem/size-swift.enum", technology: "swiftui")
+
+        // -- Assert --
+        #expect(document.data == data)
+        #expect(await transport.requestedURLs == [expectedURL])
+    }
+
     @Test("reports unsuccessful documentation responses")
     func reportsHTTPError() async throws {
         // -- Arrange --
