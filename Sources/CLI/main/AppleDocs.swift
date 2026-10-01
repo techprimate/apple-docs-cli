@@ -17,7 +17,8 @@ enum AppleDocs {
             var command = try await CLI.asyncParseAsRoot()
             LoggingConfiguration.bootstrap(
                 verbose: verboseLoggingEnabled(for: command),
-                telemetry: telemetry
+                telemetry: telemetry,
+                buffer: command is CLI ? Dependencies.shared.logBuffer : nil
             )
             loggingConfigured = true
             Self.logger.debug("CLI command parsed")

@@ -11,6 +11,7 @@ struct Dependencies: Sendable {
     let terminalCapabilities = DefaultTerminalCapabilities()
     let commandOutputWriter = DefaultCommandOutputWriter()
     let terminalSetup = TerminalSetup()
+    let logBuffer = LogBuffer()
     let telemetry = DefaultTelemetry(
         // Telemetry starts before SwiftLog is bootstrapped. Resolve its logger only when logging an event.
         logger: { Logger(label: "com.techprimate.apple-docs.telemetry") },
@@ -18,7 +19,10 @@ struct Dependencies: Sendable {
     )
     let httpCache: URLCache?
     let httpDataTransport: URLSession
-    let documentationClient: DefaultAppleDocumentationClient<URLSession>
+    var documentationClient: DefaultAppleDocumentationClient<URLSession> {
+        DefaultAppleDocumentationClient(
+            logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport)
+    }
 
     init() {
         if let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
@@ -39,8 +43,6 @@ struct Dependencies: Sendable {
             configuration.urlCache = httpCache
         }
         httpDataTransport = URLSession(configuration: configuration)
-        documentationClient = DefaultAppleDocumentationClient(
-            logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport)
     }
 
     var documentationCache: URLCache? {
