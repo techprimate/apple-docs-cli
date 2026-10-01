@@ -1,14 +1,6 @@
 import ArgumentParser
 import Logging
 
-#if canImport(Darwin)
-    import Darwin
-#elseif canImport(Glibc)
-    import Glibc
-#elseif canImport(Musl)
-    import Musl
-#endif
-
 @main
 enum AppleDocs {
     private static let logger = Logger(label: "com.techprimate.apple-docs")
@@ -17,11 +9,8 @@ enum AppleDocs {
     static func main() async {
         let telemetry = Dependencies.shared.telemetry
         telemetry.start()
-        // Ignore SIGPIPE so writing to a closed pipe (e.g. `apple-docs ... | head`)
-        // fails with EPIPE instead of terminating the process.
-        // Must stay after `telemetry.start()`: the crash handler installs its own
-        // SIGPIPE handler during start, which would otherwise replace SIG_IGN.
-        signal(SIGPIPE, SIG_IGN)
+        // Telemetry installs a SIGPIPE handler during start, so configure the terminal afterward.
+        Dependencies.shared.terminalSetup.configure()
         var loggingConfigured = false
 
         do {
@@ -49,6 +38,9 @@ enum AppleDocs {
     }
 
     private static func verboseLoggingEnabled(for command: any ParsableCommand) -> Bool {
-        (command as? any GlobalOptionsProviding)?.global.verbose ?? false
+        guard let optionsProvider = command as? any GlobalOptionsProviding else {
+            return false
+        }
+        return optionsProvider.global.verbose
     }
 }

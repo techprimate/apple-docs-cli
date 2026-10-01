@@ -9,6 +9,7 @@ struct Dependencies: Sendable {
     static let shared = Dependencies()
 
     let terminalCapabilities = DefaultTerminalCapabilities()
+    let terminalSetup = TerminalSetup()
     let telemetry = DefaultTelemetry(
         // Telemetry starts before SwiftLog is bootstrapped. Resolve its logger only when logging an event.
         logger: { Logger(label: "com.techprimate.apple-docs.telemetry") },
