@@ -4,7 +4,7 @@ struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
     #if DEBUG
         typealias Deps = any (
             TelemetryProvider & TerminalCapabilitiesProvider & AppleDocumentationClientProvider
-                & TypeDocumentationRendererProvider
+                & TypeDocumentationRendererProvider & CommandOutputWriterProvider
         )
     #else
         typealias Deps = Dependencies
@@ -38,6 +38,6 @@ struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
         let result = try await runner.run(
             name: name, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
         deps.telemetry.record(.typeView(responseBytes: result.responseByteCount), context: context)
-        print(result.output)
+        deps.commandOutputWriter.write(result.output)
     }
 }

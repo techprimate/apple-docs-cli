@@ -36,7 +36,7 @@ struct AgentSkillsSelectionOptions: ParsableArguments {
         }
     }
 
-    func installationRoot(fileManager: FileManager) -> String {
+    func installationRoot(fileManager: AgentSkillFileSystem) -> String {
         if project {
             let currentDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath).standardizedFileURL
             var directory = currentDirectory

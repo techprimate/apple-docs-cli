@@ -2,7 +2,7 @@ import ArgumentParser
 
 struct AgentSkillsListCommand: ParsableCommand, GlobalOptionsProviding {
     #if DEBUG
-        typealias Deps = any TelemetryProvider
+        typealias Deps = any (TelemetryProvider & CommandOutputWriterProvider)
     #else
         typealias Deps = Dependencies
     #endif
@@ -21,7 +21,7 @@ struct AgentSkillsListCommand: ParsableCommand, GlobalOptionsProviding {
     func run(deps: Deps) {
         deps.telemetry.startCommand(.agentSkillsList)
         for skill in BundledAgentSkills.all {
-            print("\(skill.name)\t\(skill.shortDescription)")
+            deps.commandOutputWriter.write("\(skill.name)\t\(skill.shortDescription)")
         }
     }
 }

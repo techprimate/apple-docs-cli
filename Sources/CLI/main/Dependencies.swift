@@ -9,6 +9,7 @@ struct Dependencies: Sendable {
     static let shared = Dependencies()
 
     let terminalCapabilities = DefaultTerminalCapabilities()
+    let commandOutputWriter = DefaultCommandOutputWriter()
     let terminalSetup = TerminalSetup()
     let telemetry = DefaultTelemetry(
         // Telemetry starts before SwiftLog is bootstrapped. Resolve its logger only when logging an event.
@@ -50,8 +51,11 @@ struct Dependencies: Sendable {
         .default
     }
 
-    func agentSkillInstaller() -> AgentSkillInstaller {
-        AgentSkillInstaller(logger: Logger(label: "com.techprimate.apple-docs.skills.installer"))
+    func agentSkillInstallationService() -> DefaultAgentSkillInstallationService {
+        DefaultAgentSkillInstallationService(
+            logger: Logger(label: "com.techprimate.apple-docs.skills.installer"),
+            fileManager: agentSkillFileManager()
+        )
     }
 
     func documentationRenderer(output: OutputOptions) -> DefaultTypeDocumentationRenderer {

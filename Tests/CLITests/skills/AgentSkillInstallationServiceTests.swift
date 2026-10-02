@@ -6,13 +6,13 @@ import Testing
 @testable import CLI
 
 @Suite("Agent skill installer logging")
-struct AgentSkillInstallerTests {
+struct DefaultAgentSkillInstallationServiceTests {
     @available(macOS 15, *)
     @Test("logs installation, unchanged files, removal, and absent installations")
     func logsLifecycle() throws {
         // -- Arrange --
         let recorder = ClientLogRecorder()
-        let installer = AgentSkillInstaller(logger: recorder.logger())
+        let installer = DefaultAgentSkillInstallationService(logger: recorder.logger())
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         let skill = try #require(BundledAgentSkills.skill(named: "apple-docs"))
@@ -48,7 +48,7 @@ struct AgentSkillInstallerTests {
     func logsDryRuns() throws {
         // -- Arrange --
         let recorder = ClientLogRecorder()
-        let installer = AgentSkillInstaller(logger: recorder.logger())
+        let installer = DefaultAgentSkillInstallationService(logger: recorder.logger())
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         let skill = try #require(BundledAgentSkills.skill(named: "apple-docs"))
@@ -76,7 +76,7 @@ struct AgentSkillInstallerTests {
     func logsUnmanagedConflict(uninstall: Bool) throws {
         // -- Arrange --
         let recorder = ClientLogRecorder()
-        let installer = AgentSkillInstaller(logger: recorder.logger())
+        let installer = DefaultAgentSkillInstallationService(logger: recorder.logger())
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         let skill = try #require(BundledAgentSkills.skill(named: "apple-docs"))
@@ -107,7 +107,7 @@ struct AgentSkillInstallerTests {
     func logsForcedReplacement() throws {
         // -- Arrange --
         let recorder = ClientLogRecorder()
-        let installer = AgentSkillInstaller(logger: recorder.logger())
+        let installer = DefaultAgentSkillInstallationService(logger: recorder.logger())
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         let skill = try #require(BundledAgentSkills.skill(named: "apple-docs"))
@@ -130,7 +130,7 @@ struct AgentSkillInstallerTests {
     func logsInvalidReceipt() throws {
         // -- Arrange --
         let recorder = ClientLogRecorder()
-        let installer = AgentSkillInstaller(logger: recorder.logger())
+        let installer = DefaultAgentSkillInstallationService(logger: recorder.logger())
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         let skill = try #require(BundledAgentSkills.skill(named: "apple-docs"))
@@ -157,7 +157,7 @@ struct AgentSkillInstallerTests {
     func logsFilesystemFailure(uninstall: Bool) throws {
         // -- Arrange --
         let recorder = ClientLogRecorder()
-        let installer = AgentSkillInstaller(logger: recorder.logger())
+        let installer = DefaultAgentSkillInstallationService(logger: recorder.logger())
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

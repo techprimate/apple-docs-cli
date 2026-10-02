@@ -5,7 +5,7 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
     #if DEBUG
         typealias Deps = any (
             TelemetryProvider & TerminalCapabilitiesProvider & DocumentationTypeSearchClientProvider
-                & DocumentationTypeListRendererProvider
+                & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
         )
     #else
         typealias Deps = Dependencies
@@ -44,8 +44,8 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
             let warning =
                 "Warning: search results are incomplete. "
                 + "\(result.unavailableCollectionCount) collections were unavailable.\n"
-            FileHandle.standardError.write(Data(warning.utf8))
+            deps.commandOutputWriter.writeWarning(warning)
         }
-        print(result.output)
+        deps.commandOutputWriter.write(result.output)
     }
 }

@@ -18,16 +18,20 @@ struct TypesListCommandTests {
         // -- Assert --
         #expect(telemetry.commands == ["types.list"])
         #expect(telemetry.typeCounts == [1])
+        #expect(deps.output.lines.count == 1)
+        #expect(deps.output.lines[0].contains("\"name\" : \"Model\""))
     }
 }
 
 private typealias TestProviders = TelemetryProvider & TerminalCapabilitiesProvider
-    & DocumentationTypeCatalogClientProvider & DocumentationTypeListRendererProvider
+    & DocumentationTypeCatalogClientProvider & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
 
 private struct TestDeps: TestProviders {
     let telemetry = TypesListTelemetryRecorder()
     let terminalCapabilities = TypesListTestTerminal()
     let documentationClient = TypesListTestClient()
+    let output = RecordingCommandOutputWriter()
+    var commandOutputWriter: RecordingCommandOutputWriter { output }
 
     typealias Renderer = DefaultDocumentationTypeListRenderer
 
