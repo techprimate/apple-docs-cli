@@ -4,7 +4,7 @@ struct TypesListCommand: AsyncParsableCommand, GlobalOptionsProviding {
     #if DEBUG
         typealias Deps = any (
             TelemetryProvider & TerminalCapabilitiesProvider & DocumentationTypeCatalogClientProvider
-                & DocumentationTypeListRendererProvider
+                & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
         )
     #else
         typealias Deps = Dependencies
@@ -34,6 +34,6 @@ struct TypesListCommand: AsyncParsableCommand, GlobalOptionsProviding {
         )
         let result = try await runner.run(technology: technology, mode: deps.terminalCapabilities.mode(for: output))
         deps.telemetry.record(.typeCatalog(count: result.typeCount), context: context)
-        print(result.output)
+        deps.commandOutputWriter.write(result.output)
     }
 }

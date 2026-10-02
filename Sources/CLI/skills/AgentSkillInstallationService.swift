@@ -3,7 +3,7 @@ import Foundation
 import Logging
 
 /// Owns only SKILL.md and its installation receipt, never an entire skill directory.
-struct AgentSkillInstaller {
+struct DefaultAgentSkillInstallationService {
     private struct Receipt: Codable {
         let name: String
         let content: Data
@@ -18,10 +18,11 @@ struct AgentSkillInstaller {
         let receipt: Receipt?
     }
 
-    private let fileManager = FileManager.default
+    private let fileManager: AgentSkillFileSystem
     private let logger: Logger
 
-    init(logger: Logger) {
+    init(logger: Logger, fileManager: AgentSkillFileSystem = FileManager.default) {
+        self.fileManager = fileManager
         self.logger = logger
         logger.trace("Initialized agent skill installer")
     }
@@ -116,7 +117,8 @@ struct AgentSkillInstaller {
             )
         }
         if !dryRun {
-            try fileManager.createDirectory(at: installation.directory, withIntermediateDirectories: true)
+            try fileManager.createDirectory(
+                at: installation.directory, withIntermediateDirectories: true, attributes: nil)
             try content.write(to: installation.file, options: .atomic)
             let receipt = Receipt(name: installation.skill.name, content: content)
             try JSONEncoder().encode(receipt).write(to: installation.receiptFile, options: .atomic)
@@ -221,18 +223,21 @@ struct AgentSkillInstaller {
 }
 
 #if DEBUG
-    protocol AgentSkillInstalling {
+    protocol AgentSkillInstallationService {
         func install(_ skills: [BundledAgentSkill], root: String, dryRun: Bool, force: Bool) throws -> String
         func uninstall(_ skills: [BundledAgentSkill], root: String, dryRun: Bool) throws -> String
     }
 
-    extension AgentSkillInstaller: AgentSkillInstalling {}
+    extension DefaultAgentSkillInstallationService: AgentSkillInstallationService {}
 
-    protocol AgentSkillInstallerProvider {
-        associatedtype Installer: AgentSkillInstalling
-        func agentSkillInstaller() -> Installer
-        func agentSkillFileManager() -> FileManager
+    protocol AgentSkillInstallationServiceProvider {
+        associatedtype Service: AgentSkillInstallationService
+        associatedtype FileSystem: AgentSkillFileSystem
+        func agentSkillInstallationService() -> Service
+        func agentSkillFileManager() -> FileSystem
     }
 
-    extension Dependencies: AgentSkillInstallerProvider {}
+    extension Dependencies: AgentSkillInstallationServiceProvider {}
+#else
+    typealias AgentSkillInstallationService = DefaultAgentSkillInstallationService
 #endif

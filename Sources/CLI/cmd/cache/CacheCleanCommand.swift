@@ -2,7 +2,7 @@ import ArgumentParser
 
 struct CacheCleanCommand: ParsableCommand, GlobalOptionsProviding {
     #if DEBUG
-        typealias Deps = any (TelemetryProvider & DocumentationCacheProvider)
+        typealias Deps = any (TelemetryProvider & DocumentationCacheProvider & CommandOutputWriterProvider)
     #else
         typealias Deps = Dependencies
     #endif
@@ -24,6 +24,6 @@ struct CacheCleanCommand: ParsableCommand, GlobalOptionsProviding {
             cache: deps.documentationCache
         )
         let result = runner.run()
-        print(result.output)
+        deps.commandOutputWriter.write(result.output)
     }
 }

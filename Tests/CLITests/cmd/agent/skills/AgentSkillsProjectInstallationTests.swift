@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -120,6 +121,25 @@ struct AgentSkillsProjectInstallationTests {
         #expect(try String(contentsOf: unrelated, encoding: .utf8) == "keep")
     }
 
+    @Test("installation uses the injected file manager for filesystem changes")
+    func honorsInjectedFileManager() throws {
+        // -- Arrange --
+        let home = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: home) }
+        let fileManager = DenyingInstallationFileManager(home: home)
+        let deps = TestAgentSkillDependencies(fileManager: fileManager)
+        let command = try #require(
+            CLI.parseAsRoot(["agent", "skills", "install", "apple-docs"]) as? AgentSkillsInstallCommand)
+
+        // -- Act --
+        #expect(throws: DenyingInstallationFileManager.Denied.self) {
+            try command.run(deps: deps)
+        }
+
+        // -- Assert --
+        #expect(!FileManager.default.fileExists(atPath: home.path))
+    }
+
     @Test("project and dir cannot be combined")
     func rejectsAmbiguousInstallationRoot() throws {
         // -- Arrange --
@@ -162,12 +182,34 @@ struct AgentSkillsProjectInstallationTests {
     }
 }
 
-private struct TestAgentSkillDependencies: AgentSkillInstallerProvider {
+private struct TestAgentSkillDependencies: AgentSkillInstallationServiceProvider {
     let fileManager: FileManager
 
     func agentSkillFileManager() -> FileManager { fileManager }
 
-    func agentSkillInstaller() -> AgentSkillInstaller { Dependencies.shared.agentSkillInstaller() }
+    func agentSkillInstallationService() -> DefaultAgentSkillInstallationService {
+        DefaultAgentSkillInstallationService(logger: Logger(label: "test"), fileManager: fileManager)
+    }
+}
+
+private final class DenyingInstallationFileManager: FileManager {
+    enum Denied: Error { case createDirectory }
+
+    let home: URL
+
+    init(home: URL) {
+        self.home = home
+        super.init()
+    }
+
+    override var homeDirectoryForCurrentUser: URL { home }
+
+    override func createDirectory(
+        at url: URL, withIntermediateDirectories createIntermediates: Bool,
+        attributes: [FileAttributeKey: Any]? = nil
+    ) throws {
+        throw Denied.createDirectory
+    }
 }
 
 private final class TestHomeFileManager: FileManager {

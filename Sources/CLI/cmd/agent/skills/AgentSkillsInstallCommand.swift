@@ -2,7 +2,7 @@ import ArgumentParser
 
 struct AgentSkillsInstallCommand: ParsableCommand, GlobalOptionsProviding {
     #if DEBUG
-        typealias Deps = any AgentSkillInstallerProvider
+        typealias Deps = any AgentSkillInstallationServiceProvider
     #else
         typealias Deps = Dependencies
     #endif
@@ -39,7 +39,7 @@ struct AgentSkillsInstallCommand: ParsableCommand, GlobalOptionsProviding {
     }
 
     func run(deps: Deps) throws {
-        let output = try deps.agentSkillInstaller().install(
+        let output = try deps.agentSkillInstallationService().install(
             selection.selectedSkills(), root: selection.installationRoot(fileManager: deps.agentSkillFileManager()),
             dryRun: selection.dryRun, force: force
         )
