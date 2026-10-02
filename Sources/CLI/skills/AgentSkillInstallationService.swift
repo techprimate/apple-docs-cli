@@ -119,9 +119,9 @@ struct DefaultAgentSkillInstallationService {
         if !dryRun {
             try fileManager.createDirectory(
                 at: installation.directory, withIntermediateDirectories: true, attributes: nil)
-            try content.write(to: installation.file, options: .atomic)
+            try fileManager.writeSkillData(content, to: installation.file)
             let receipt = Receipt(name: installation.skill.name, content: content)
-            try JSONEncoder().encode(receipt).write(to: installation.receiptFile, options: .atomic)
+            try fileManager.writeSkillData(JSONEncoder().encode(receipt), to: installation.receiptFile)
         }
         logger.info(dryRun ? "Would install skill" : "Installed skill", metadata: metadata)
         return "\(dryRun ? "Would install" : "Installed"): \(installation.skill.name) at \(installation.file.path)"
@@ -208,7 +208,7 @@ struct DefaultAgentSkillInstallationService {
                 metadata: ["file": .string(url.lastPathComponent)])
             throw ValidationError("Expected a regular file, not a symlink or directory, at '\(url.path)'.")
         }
-        return try Data(contentsOf: url)
+        return try fileManager.readSkillData(at: url)
     }
 
     private func fileType(_ url: URL) throws -> FileAttributeType? {

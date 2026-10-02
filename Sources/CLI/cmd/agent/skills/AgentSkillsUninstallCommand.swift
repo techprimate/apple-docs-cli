@@ -2,7 +2,7 @@ import ArgumentParser
 
 struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
     #if DEBUG
-        typealias Deps = any AgentSkillInstallationServiceProvider
+        typealias Deps = any (AgentSkillInstallationServiceProvider & CommandOutputWriterProvider)
     #else
         typealias Deps = Dependencies
     #endif
@@ -46,6 +46,6 @@ struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
             selection.selectedSkills(), root: selection.installationRoot(fileManager: deps.agentSkillFileManager()),
             dryRun: selection.dryRun
         )
-        print(output)
+        deps.commandOutputWriter.write(output)
     }
 }

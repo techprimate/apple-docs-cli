@@ -2,7 +2,7 @@ import ArgumentParser
 
 struct AgentSkillsGetCommand: ParsableCommand, GlobalOptionsProviding {
     #if DEBUG
-        typealias Deps = any TelemetryProvider
+        typealias Deps = any (TelemetryProvider & CommandOutputWriterProvider)
     #else
         typealias Deps = Dependencies
     #endif
@@ -26,6 +26,6 @@ struct AgentSkillsGetCommand: ParsableCommand, GlobalOptionsProviding {
         guard let skill = BundledAgentSkills.skill(named: name) else {
             throw ValidationError("Unknown bundled Agent Skill '\(name)'.")
         }
-        print(skill.content)
+        deps.commandOutputWriter.write(skill.content)
     }
 }

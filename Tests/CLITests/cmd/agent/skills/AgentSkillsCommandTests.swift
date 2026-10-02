@@ -19,6 +19,20 @@ struct AgentSkillsCommandTests {
         #expect(deps.telemetry.commands == ["agent.skills.list"])
     }
 
+    @Test("get writes bundled skill content through the injected output")
+    func writesSkillContent() throws {
+        // -- Arrange --
+        let command = try AgentSkillsGetCommand.parse(["apple-docs"])
+        let deps = SkillListDependencies()
+
+        // -- Act --
+        try command.run(deps: deps)
+
+        // -- Assert --
+        #expect(deps.output.lines == [BundledAgentSkills.skill(named: "apple-docs")?.content])
+        #expect(deps.telemetry.commands == ["agent.skills.get"])
+    }
+
     @Test("registers the nested list command")
     func parsesListCommand() throws {
         // -- Arrange --
