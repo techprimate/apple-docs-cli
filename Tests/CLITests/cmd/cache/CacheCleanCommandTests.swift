@@ -3,6 +3,10 @@ import Testing
 
 @testable import CLI
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 @Suite("Cache clean command")
 struct CacheCleanCommandTests {
     @Test("writes the unavailable-cache result through the injected output")
