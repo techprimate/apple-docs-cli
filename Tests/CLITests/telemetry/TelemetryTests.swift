@@ -76,8 +76,9 @@ struct TelemetryTests {
     }
 }
 
-private struct CommandDeps: TelemetryProvider {
+private struct CommandDeps: TelemetryProvider, CommandOutputWriterProvider {
     let telemetry: CommandTelemetryRecorder
+    let commandOutputWriter = RecordingCommandOutputWriter()
 }
 
 private final class CommandTelemetryRecorder: Telemetry, @unchecked Sendable {

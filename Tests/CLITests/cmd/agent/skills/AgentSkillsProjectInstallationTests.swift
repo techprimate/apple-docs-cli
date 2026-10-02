@@ -22,6 +22,10 @@ struct AgentSkillsProjectInstallationTests {
         #expect(
             FileManager.default.fileExists(
                 atPath: home.appendingPathComponent(".agents/skills/apple-docs/SKILL.md").path))
+        #expect(
+            deps.output.lines == [
+                "Installed: apple-docs at \(home.appendingPathComponent(".agents/skills/apple-docs/SKILL.md").path)"
+            ])
     }
 
     @Test("default uninstall uses the file manager's home directory")
@@ -43,6 +47,7 @@ struct AgentSkillsProjectInstallationTests {
         #expect(
             !FileManager.default.fileExists(
                 atPath: home.appendingPathComponent(".agents/skills/apple-docs/SKILL.md").path))
+        #expect(deps.output.lines.last == "Uninstalled: apple-docs")
     }
 
     @Test("project installation targets the Git root from a nested directory")
@@ -182,8 +187,10 @@ struct AgentSkillsProjectInstallationTests {
     }
 }
 
-private struct TestAgentSkillDependencies: AgentSkillInstallationServiceProvider {
+private struct TestAgentSkillDependencies: AgentSkillInstallationServiceProvider, CommandOutputWriterProvider {
     let fileManager: FileManager
+    let output = RecordingCommandOutputWriter()
+    var commandOutputWriter: RecordingCommandOutputWriter { output }
 
     func agentSkillFileManager() -> FileManager { fileManager }
 
