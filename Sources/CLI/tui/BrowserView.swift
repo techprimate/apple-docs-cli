@@ -19,12 +19,29 @@ struct BrowserView: View {
     var body: some View {
         VStack {
             Text("Apple Docs CLI")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
-                ForEach(technologies) { technology in
-                    Text(technology.name)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
+                        ForEach(technologies) { technology in
+                            Text(technology.name)
+                        }
+                    }
+                }
+                .border(.single, color: Color.white)
+                .onKeyPress { key in
+                    switch key {
+                    case .character("g"):
+                        guard let first = technologies.first else { return .ignored }
+                        proxy.scrollTo(first.id, anchor: .top)
+                    case .character("G"):
+                        guard let last = technologies.last else { return .ignored }
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    default:
+                        return .ignored
+                    }
+                    return .handled
                 }
             }
-            .border(.single, color: Color.white)
             if let errorMessage {
                 Text(errorMessage)
             }
