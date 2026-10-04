@@ -12,6 +12,7 @@
 - Keep the executable entry point and composition root in `Sources/CLI/main/`.
 - Put commands under `Sources/CLI/cmd/` and reusable implementation code in its matching domain directory.
 - Mirror source hierarchy for behavior tests under `Tests/CLITests/`.
+- Keep deterministic browser interaction tests in `Tests/CLITests/tui/` with the Swift PTY fixture and visible-screen assertions. `Tests/CLIIntegrationTests/` covers release subprocess commands; live network cases are opt-in.
 - Keep bundled Agent Skills compiled into `Sources/CLI/skills/BundledAgentSkills.swift`. Do not introduce SwiftPM resource bundles for them.
 
 ## Architecture
@@ -41,4 +42,4 @@ make analyze
 make build
 ```
 
-Run `make format` after Swift edits, then rerun `make analyze`. For command-facing changes, also exercise the affected release command directly.
+Run `make format` after Swift edits, then rerun `make analyze`. For command-facing changes, exercise the release command and assert its result. TUI behavior is verified by the PTY tests included in `make test`; sending keys without checking the resulting screen is not verification. See `docs/DEVELOPMENT.md` for test-suite boundaries.

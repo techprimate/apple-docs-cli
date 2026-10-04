@@ -41,7 +41,7 @@ pre-commit install
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `make run ARGS="types view Button --technology SwiftUI"` | Run the executable through SwiftPM.                                                                |
 | `make build`                                             | Build the release binary at `dist/apple-docs`.                                                     |
-| `make test`                                              | Run the test suite.                                                                                |
+| `make test`                                              | Run deterministic unit and in-process interactive tests.                                           |
 | `make test-linux`                                        | Run tests in pinned Swift 6.4.0 containers for amd64 and arm64.                                    |
 | `make test-integration`                                  | Build the release binary and run live tests against Apple documentation. Requires internet access. |
 | `make analyze`                                           | Run SwiftLint, formatting checks, and actionlint.                                                  |
@@ -59,7 +59,7 @@ make build-linux-native
 make test-integration-linux
 ```
 
-Live integration tests require internet access. Both integration targets accept `INTEGRATION_FILTER=SuiteName`. `make test` also accepts `TEST_ARGS`.
+`make test` includes the offline `BrowserApplicationTests` suite. It runs a real Twill application on a pseudo-terminal, feeds keys, and asserts the visible screen rather than searching accumulated terminal output. To focus on it locally, use `make test TEST_ARGS="--filter BrowserApplicationTests"`. `CLIIntegrationTests` run the release executable as a subprocess for one-shot commands; their live documentation cases run only with `make test-integration` and require internet access. Both live integration targets accept `INTEGRATION_FILTER=SuiteName`. `make test` also accepts `TEST_ARGS`. Do not count sending keys to a release process and observing only its exit as verification of browser behavior.
 
 For static release builds, use the matching Swift.org 6.4.0 toolchain, not Xcode's bundled compiler:
 
@@ -83,4 +83,4 @@ Container targets accept `LINUX_DOCKER_FLAGS`. Direct container targets also acc
 
 Follow the [repository instructions](../AGENTS.md), keep changes focused, and add a regression test for behavior changes and bug fixes.
 
-Run `make test`, `make analyze`, and `make build`. After Swift edits, run `make format` and rerun `make analyze`. For command-facing changes, also exercise the affected release command directly.
+Run `make test`, `make analyze`, and `make build`. After Swift edits, run `make format` and rerun `make analyze`. For command-facing changes, exercise the affected release command and check its result, not just its exit status. Interactive behavior is covered by the PTY tests in `make test`.
