@@ -30,10 +30,10 @@ struct BrowserView: View {
                 .border(.single, color: Color.white)
                 .onKeyPress { key in
                     switch key {
-                    case .character("g"):
+                    case .g:
                         guard let first = technologies.first else { return .ignored }
                         proxy.scrollTo(first.id, anchor: .top)
-                    case .character("G"):
+                    case .G:
                         guard let last = technologies.last else { return .ignored }
                         proxy.scrollTo(last.id, anchor: .bottom)
                     default:
