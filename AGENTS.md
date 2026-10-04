@@ -11,6 +11,7 @@
 
 - Keep the executable entry point and composition root in `Sources/CLI/main/`.
 - Put commands under `Sources/CLI/cmd/` and reusable implementation code in its matching domain directory.
+- Put each global `View` type in its own file under `Sources/CLI/tui/`.
 - Mirror source hierarchy for behavior tests under `Tests/CLITests/`.
 - Keep deterministic browser interaction tests in `Tests/CLITests/tui/` with the Swift PTY fixture and visible-screen assertions. `Tests/CLIIntegrationTests/` covers release subprocess commands; live network cases are opt-in.
 - Keep bundled Agent Skills compiled into `Sources/CLI/skills/BundledAgentSkills.swift`. Do not introduce SwiftPM resource bundles for them.

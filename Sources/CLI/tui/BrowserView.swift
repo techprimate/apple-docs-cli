@@ -45,6 +45,10 @@ struct BrowserView: View {
             if let errorMessage {
                 Text(errorMessage)
             }
+            KeyBindingsFooter(bindings: [
+                .init(key: "g", action: "Scroll to top"),
+                .init(key: "G", action: "Scroll to bottom"),
+            ])
         }
         .task {
             do {
