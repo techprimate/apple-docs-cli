@@ -48,6 +48,12 @@ struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
                 dryRun: selection.dryRun
             )
             deps.commandOutputWriter.write(AgentSkillInstallationRenderer().render(outcomes))
+        } catch let failure as AgentSkillBatchFailure {
+            deps.commandOutputWriter.write(AgentSkillInstallationRenderer().render(failure.completed))
+            if let error = failure.underlying as? AgentSkillInstallationError {
+                throw ValidationError(error.localizedDescription)
+            }
+            throw failure.underlying
         } catch let error as AgentSkillInstallationError {
             throw ValidationError(error.localizedDescription)
         }

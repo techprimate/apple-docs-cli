@@ -15,6 +15,11 @@ extension AgentSkillInstallationError: LocalizedError {
             return "Expected a directory, not a symlink or other file, at '\(url.path)'."
         case .invalidFile(let url):
             return "Expected a regular file, not a symlink or directory, at '\(url.path)'."
+        case .invalidPendingOperation(let url):
+            return "Invalid pending skill operation at '\(url.path)'. No recovery was performed."
+        case .recoveryConflict(let url):
+            return "Skill files changed during an interrupted operation at '\(url.path)'. "
+                + "Back up and inspect them before retrying."
         }
     }
 }

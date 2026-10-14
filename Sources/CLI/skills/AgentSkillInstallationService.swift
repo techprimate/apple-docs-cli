@@ -1,20 +1,16 @@
 import Foundation
 import Logging
 
-/// Owns only SKILL.md and its installation receipt, never an entire skill directory.
+/// Owns only SKILL.md, its receipt, and its recovery journal, never an entire skill directory.
 struct DefaultAgentSkillInstallationService {
-    private struct Receipt: Codable {
-        let name: String
-        let content: Data
-    }
-
     private struct Installation {
         let skill: BundledAgentSkill
-        let directory: URL
-        let file: URL
-        let receiptFile: URL
-        let content: Data?
-        let receipt: Receipt?
+        let store: AgentSkillInstallationStore
+        let inspection: AgentSkillInstallationStore.Inspection
+
+        var content: Data? { inspection.state.content }
+        var receipt: AgentSkillInstallationStore.Receipt? { inspection.state.receipt }
+        var file: URL { store.file }
     }
 
     private let fileManager: AgentSkillFileSystem
@@ -55,7 +51,7 @@ struct DefaultAgentSkillInstallationService {
             }
             logger.debug(
                 "Skill installation preflight completed", metadata: ["count": .stringConvertible(installations.count)])
-            return try installations.map { try install($0, dryRun: dryRun, force: force) }
+            return try execute(installations) { try install($0, dryRun: dryRun, force: force) }
         } catch {
             if !(error is AgentSkillInstallationError) {
                 logger.error(
@@ -91,7 +87,7 @@ struct DefaultAgentSkillInstallationService {
             }
             logger.debug(
                 "Skill removal preflight completed", metadata: ["count": .stringConvertible(installations.count)])
-            return try installations.map { try uninstall($0, dryRun: dryRun) }
+            return try execute(installations) { try uninstall($0, dryRun: dryRun) }
         } catch {
             if !(error is AgentSkillInstallationError) {
                 logger.error(
@@ -101,15 +97,33 @@ struct DefaultAgentSkillInstallationService {
         }
     }
 
+    private func execute(
+        _ installations: [Installation], operation: (Installation) throws -> AgentSkillInstallationOutcome
+    ) throws -> [AgentSkillInstallationOutcome] {
+        var completed: [AgentSkillInstallationOutcome] = []
+        for installation in installations {
+            do {
+                completed.append(try operation(installation))
+            } catch {
+                guard !completed.isEmpty else { throw error }
+                throw AgentSkillBatchFailure(
+                    completed: completed, failedSkill: installation.skill.name, underlying: error)
+            }
+        }
+        return completed
+    }
+
     private func install(
         _ installation: Installation, dryRun: Bool, force: Bool
     ) throws -> AgentSkillInstallationOutcome {
         let metadata: Logger.Metadata = ["skill": .string(installation.skill.name)]
         let content = Data(installation.skill.content.utf8)
+        if !dryRun { try installation.store.recover(installation.inspection) }
         if installation.content == content, installation.receipt?.content == content {
             logger.debug("Skill installation unchanged", metadata: metadata)
             return AgentSkillInstallationOutcome(
-                name: installation.skill.name, file: installation.file, status: .unchanged)
+                name: installation.skill.name, file: installation.file, status: .unchanged,
+                requiresRecovery: dryRun && installation.inspection.pending != nil)
         }
         if force, let previousContent = installation.content, previousContent != content {
             logger.notice(
@@ -117,41 +131,34 @@ struct DefaultAgentSkillInstallationService {
             )
         }
         if !dryRun {
-            try fileManager.createDirectory(
-                at: installation.directory, withIntermediateDirectories: true, attributes: nil)
-            try fileManager.writeSkillData(content, to: installation.file)
-            let receipt = Receipt(name: installation.skill.name, content: content)
-            try fileManager.writeSkillData(JSONEncoder().encode(receipt), to: installation.receiptFile)
+            try installation.store.update(
+                from: installation.inspection.state,
+                to: .init(content: content, receipt: .init(name: installation.skill.name, content: content)))
         }
         logger.info(dryRun ? "Would install skill" : "Installed skill", metadata: metadata)
         let updating = installation.content != nil
         return AgentSkillInstallationOutcome(
             name: installation.skill.name, file: installation.file,
-            status: dryRun ? (updating ? .wouldUpdate : .wouldInstall) : (updating ? .updated : .installed))
+            status: dryRun ? (updating ? .wouldUpdate : .wouldInstall) : (updating ? .updated : .installed),
+            requiresRecovery: dryRun && installation.inspection.pending != nil)
     }
 
     private func uninstall(_ installation: Installation, dryRun: Bool) throws -> AgentSkillInstallationOutcome {
         let metadata: Logger.Metadata = ["skill": .string(installation.skill.name)]
+        if !dryRun { try installation.store.recover(installation.inspection) }
         guard installation.receipt != nil else {
             logger.debug("Skill not installed", metadata: metadata)
             return AgentSkillInstallationOutcome(
-                name: installation.skill.name, file: installation.file, status: .notInstalled)
+                name: installation.skill.name, file: installation.file, status: .notInstalled,
+                requiresRecovery: dryRun && installation.inspection.pending != nil)
         }
         if !dryRun {
-            if installation.content != nil {
-                try fileManager.removeItem(at: installation.file)
-            }
-            try fileManager.removeItem(at: installation.receiptFile)
-            if try fileManager.contentsOfDirectory(atPath: installation.directory.path).isEmpty {
-                try fileManager.removeItem(at: installation.directory)
-                logger.trace("Removed empty skill directory", metadata: metadata)
-            } else {
-                logger.debug("Preserved unrelated skill directory contents", metadata: metadata)
-            }
+            try installation.store.update(from: installation.inspection.state, to: .init())
         }
         logger.info(dryRun ? "Would uninstall skill" : "Uninstalled skill", metadata: metadata)
         return AgentSkillInstallationOutcome(
-            name: installation.skill.name, file: installation.file, status: dryRun ? .wouldUninstall : .uninstalled)
+            name: installation.skill.name, file: installation.file, status: dryRun ? .wouldUninstall : .uninstalled,
+            requiresRecovery: dryRun && installation.inspection.pending != nil)
     }
 
     private func inspect(_ skills: [BundledAgentSkill], root: String) throws -> [Installation] {
@@ -163,66 +170,9 @@ struct DefaultAgentSkillInstallationService {
         let rootURL = URL(fileURLWithPath: (root as NSString).expandingTildeInPath).standardizedFileURL
         return try skills.map { skill in
             logger.debug("Inspecting skill installation", metadata: ["skill": .string(skill.name)])
-            let directory = rootURL.appendingPathComponent("skills").appendingPathComponent(skill.name)
-            let file = directory.appendingPathComponent("SKILL.md")
-            let receiptFile = directory.appendingPathComponent(".apple-docs-managed.json")
-            try validateDirectory(directory, root: rootURL)
-            let content = try readRegularFile(file)
-            let receiptData = try readRegularFile(receiptFile)
-            let receipt: Receipt?
-            if let receiptData {
-                guard let decoded = try? JSONDecoder().decode(Receipt.self, from: receiptData),
-                    decoded.name == skill.name
-                else {
-                    logger.warning("Invalid skill installation receipt", metadata: ["skill": .string(skill.name)])
-                    throw AgentSkillInstallationError.invalidReceipt(receiptFile)
-                }
-                logger.trace("Validated skill installation receipt", metadata: ["skill": .string(skill.name)])
-                receipt = decoded
-            } else {
-                logger.trace("No skill installation receipt", metadata: ["skill": .string(skill.name)])
-                receipt = nil
-            }
-            return Installation(
-                skill: skill, directory: directory, file: file, receiptFile: receiptFile,
-                content: content, receipt: receipt
-            )
-        }
-    }
-
-    private func validateDirectory(_ directory: URL, root: URL) throws {
-        logger.trace("Validating skill directory ancestors")
-        var ancestor = directory
-        while true {
-            if let type = try fileType(ancestor), type != .typeDirectory {
-                logger.warning("Refusing symlink or non-directory in skill installation path")
-                throw AgentSkillInstallationError.invalidDirectory(ancestor)
-            }
-            // Ancestors above the user-selected root may be OS aliases such as /var on macOS.
-            if ancestor.path == root.path { return }
-            ancestor.deleteLastPathComponent()
-        }
-    }
-
-    private func readRegularFile(_ url: URL) throws -> Data? {
-        logger.trace("Reading skill installation file", metadata: ["file": .string(url.lastPathComponent)])
-        guard let type = try fileType(url) else { return nil }
-        guard type == .typeRegular else {
-            logger.warning(
-                "Refusing symlink or non-regular skill installation file",
-                metadata: ["file": .string(url.lastPathComponent)])
-            throw AgentSkillInstallationError.invalidFile(url)
-        }
-        return try fileManager.readSkillData(at: url)
-    }
-
-    private func fileType(_ url: URL) throws -> FileAttributeType? {
-        logger.trace("Inspecting filesystem entry type")
-        do {
-            return try fileManager.attributesOfItem(atPath: url.path)[.type] as? FileAttributeType
-        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
-            logger.trace("Filesystem entry absent")
-            return nil
+            let store = AgentSkillInstallationStore(
+                name: skill.name, root: rootURL, fileManager: fileManager, logger: logger)
+            return Installation(skill: skill, store: store, inspection: try store.inspect())
         }
     }
 }
