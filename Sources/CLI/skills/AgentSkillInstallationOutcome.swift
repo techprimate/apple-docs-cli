@@ -9,6 +9,7 @@ struct AgentSkillInstallationOutcome: Equatable, Sendable {
     let name: String
     let file: URL
     let status: Status
+    var requiresRecovery = false
 }
 
 enum AgentSkillInstallationError: Error, Equatable {
@@ -18,4 +19,12 @@ enum AgentSkillInstallationError: Error, Equatable {
     case invalidReceipt(URL)
     case invalidDirectory(URL)
     case invalidFile(URL)
+    case invalidPendingOperation(URL)
+    case recoveryConflict(URL)
+}
+
+struct AgentSkillBatchFailure: Error {
+    let completed: [AgentSkillInstallationOutcome]
+    let failedSkill: String
+    let underlying: any Error
 }

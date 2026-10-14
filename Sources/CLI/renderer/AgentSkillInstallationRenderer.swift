@@ -1,16 +1,19 @@
 struct AgentSkillInstallationRenderer {
     func render(_ outcomes: [AgentSkillInstallationOutcome]) -> String {
         outcomes.map { outcome in
+            let action: String
             switch outcome.status {
             case .installed, .updated:
-                return "Installed: \(outcome.name) at \(outcome.file.path)"
+                action = "Installed: \(outcome.name) at \(outcome.file.path)"
             case .wouldInstall, .wouldUpdate:
-                return "Would install: \(outcome.name) at \(outcome.file.path)"
-            case .unchanged: return "Unchanged: \(outcome.name)"
-            case .uninstalled: return "Uninstalled: \(outcome.name)"
-            case .wouldUninstall: return "Would uninstall: \(outcome.name)"
-            case .notInstalled: return "Not installed: \(outcome.name)"
+                action = "Would install: \(outcome.name) at \(outcome.file.path)"
+            case .unchanged: action = "Unchanged: \(outcome.name)"
+            case .uninstalled: action = "Uninstalled: \(outcome.name)"
+            case .wouldUninstall: action = "Would uninstall: \(outcome.name)"
+            case .notInstalled: action = "Not installed: \(outcome.name)"
             }
+            let recovery = outcome.requiresRecovery ? "Would recover pending operation: \(outcome.name)\n" : ""
+            return recovery + action
         }.joined(separator: "\n")
     }
 }
