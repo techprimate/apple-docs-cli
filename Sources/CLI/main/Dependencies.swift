@@ -71,6 +71,10 @@ struct Dependencies: Sendable {
             output: output.json ? .json : .table, audience: output.audience, technology: technology)
     }
 
+    func documentationSearchRenderer(output: OutputOptions) -> DefaultDocumentationSearchRenderer {
+        DefaultDocumentationSearchRenderer(output: output.format, audience: output.audience)
+    }
+
     func technologyListRenderer(output: OutputOptions) -> DefaultTechnologyListRenderer {
         DefaultTechnologyListRenderer(output: output.json ? .json : .table, audience: output.audience)
     }

@@ -90,10 +90,10 @@ enum BundledAgentSkills {
         apple-docs types view URLSession --technology Foundation --agent --json
         ```
 
-        Technology, list, and search JSON are arrays. Page JSON is a normalized semantic object, not raw DocC bytes.
+        Catalog JSON is arrays. Search JSON contains `technology`, `types`, and `coverage`. Check coverage before
+        interpreting no matches: `isComplete` and `unavailableCollections`. Page JSON is semantic, not raw DocC.
         Inspect `title`, `declarations`, `availability`, `content`, `relationships`, `topics`, and `seeAlso`.
-        Agent output adds `navigation` commands where a destination can be represented safely on the CLI.
-        Follow validated targets in grouped references. A missing field is not a guarantee.
+        Agent `navigation` commands and grouped references retain validated targets. A missing field is not a guarantee.
 
         ## Availability and examples
 

@@ -11,7 +11,7 @@ extension DefaultAppleDocumentationRepository {
         let rootPath = "/documentation/\(root.slug.lowercased())"
         logger.debug("Traversing documentation collection groups", metadata: ["path": .string(rootPath)])
         var typesByPath: [String: DocumentationType] = [:]
-        var unavailablePaths: [String] = []
+        var unavailableCollections: [DocumentationCollectionFailure] = []
         for type in documentationTypes(in: root.page, technology: root.slug) {
             typesByPath[type.path] = type
         }
@@ -35,7 +35,7 @@ extension DefaultAppleDocumentationRepository {
 
             for result in pages {
                 guard case .page(let page) = result else {
-                    if case .unavailable(let path) = result { unavailablePaths.append(path) }
+                    if case .unavailable(let failure) = result { unavailableCollections.append(failure) }
                     continue
                 }
                 for type in documentationTypes(in: page, technology: root.slug) {
@@ -50,17 +50,18 @@ extension DefaultAppleDocumentationRepository {
 
         try Task.checkCancellation()
         return searchResult(
-            query: query, root: root, types: Array(typesByPath.values), unavailablePaths: unavailablePaths)
+            query: query, root: root, types: Array(typesByPath.values), unavailableCollections: unavailableCollections)
     }
 
     private func searchResult(
-        query: String, root: DocumentationRoot, types: [DocumentationType], unavailablePaths: [String]
+        query: String, root: DocumentationRoot, types: [DocumentationType],
+        unavailableCollections: [DocumentationCollectionFailure]
     ) -> DocumentationSearchResult {
         logger.debug(
             "Documentation search coverage",
             metadata: [
                 "apple_docs.technology": .string(root.slug), "candidates": .stringConvertible(types.count),
-                "unavailable": .stringConvertible(unavailablePaths.count),
+                "unavailable": .stringConvertible(unavailableCollections.count),
             ])
         let normalizedQuery = query.lowercased()
         let matches = sortTypes(
@@ -82,12 +83,14 @@ extension DefaultAppleDocumentationRepository {
             metadata: [
                 "apple_docs.technology": .string(root.name), "matches": .stringConvertible(matches.count),
             ])
-        return DocumentationSearchResult(types: matches, unavailableCollectionPaths: unavailablePaths.sorted())
+        return DocumentationSearchResult(
+            technology: root.slug.lowercased(), types: matches,
+            unavailableCollections: unavailableCollections.sorted { $0.path < $1.path })
     }
 
     private enum CollectionResult: Sendable {
         case page(TechnologyDocumentationPageDTO)
-        case unavailable(String)
+        case unavailable(DocumentationCollectionFailure)
     }
 
     private func fetchDocumentationPages(
@@ -103,12 +106,13 @@ extension DefaultAppleDocumentationRepository {
                         if error is CancellationError || (error as? URLError)?.code == .cancelled {
                             throw CancellationError()
                         }
+                        guard let reason = DocumentationCollectionFailure.reason(for: error) else { throw error }
                         logger.warning(
                             "Skipping unavailable collection group",
                             metadata: [
                                 "path": .string(path), "error_type": .string(String(reflecting: type(of: error))),
                             ])
-                        return .unavailable(path)
+                        return .unavailable(DocumentationCollectionFailure(path: path, reason: reason))
                     }
                 }
             }

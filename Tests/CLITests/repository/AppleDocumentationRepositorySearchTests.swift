@@ -25,7 +25,7 @@ struct AppleDocumentationRepositorySearchTests {
 
         // -- Assert --
         #expect(result.types.map(\.name) == ["ButtonStyle"])
-        #expect(result.unavailableCollectionPaths == ["/documentation/swiftui/controls"])
+        #expect(result.unavailableCollections.map(\.path) == ["/documentation/swiftui/controls"])
         #expect(Set(await transport.requestedURLs) == Set([rootURL, controlsURL, stylesURL]))
         let coverage = try #require(recorder.events.first { $0.message.description == "Documentation search coverage" })
         #expect(coverage.level == .debug)
@@ -47,7 +47,7 @@ struct AppleDocumentationRepositorySearchTests {
 
         // -- Assert --
         #expect(result.types.isEmpty)
-        #expect(result.unavailableCollectionPaths.isEmpty)
+        #expect(result.unavailableCollections.map(\.path).isEmpty)
         #expect(await transport.requestedURLs == [rootURL])
     }
 
@@ -210,7 +210,7 @@ struct AppleDocumentationRepositorySearchTests {
 
         // -- Assert --
         #expect(result.types.isEmpty)
-        #expect(result.unavailableCollectionPaths.isEmpty)
+        #expect(result.unavailableCollections.map(\.path).isEmpty)
         #expect(await transport.requestedURLs.count == 3)
     }
 
