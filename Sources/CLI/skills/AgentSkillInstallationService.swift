@@ -1,4 +1,3 @@
-import ArgumentParser
 import Foundation
 import Logging
 
@@ -29,7 +28,7 @@ struct DefaultAgentSkillInstallationService {
 
     func install(
         _ skills: [BundledAgentSkill], root: String, dryRun: Bool, force: Bool
-    ) throws -> String {
+    ) throws -> [AgentSkillInstallationOutcome] {
         logger.debug(
             "Installing agent skills",
             metadata: [
@@ -44,23 +43,21 @@ struct DefaultAgentSkillInstallationService {
                         logger.warning(
                             "Refusing to overwrite unmanaged skill",
                             metadata: ["skill": .string(installation.skill.name)])
-                        throw ValidationError("Refusing to overwrite unmanaged skill '\(installation.skill.name)'.")
+                        throw AgentSkillInstallationError.unmanagedSkill(name: installation.skill.name, removing: false)
                     }
                     if content != Data(installation.skill.content.utf8), !force {
                         logger.warning(
                             "Managed skill differs, force required",
                             metadata: ["skill": .string(installation.skill.name)])
-                        throw ValidationError(
-                            "Skill '\(installation.skill.name)' differs. Use --force to replace the managed file."
-                        )
+                        throw AgentSkillInstallationError.modifiedSkill(name: installation.skill.name, removing: false)
                     }
                 }
             }
             logger.debug(
                 "Skill installation preflight completed", metadata: ["count": .stringConvertible(installations.count)])
-            return try installations.map { try install($0, dryRun: dryRun, force: force) }.joined(separator: "\n")
+            return try installations.map { try install($0, dryRun: dryRun, force: force) }
         } catch {
-            if !(error is ValidationError) {
+            if !(error is AgentSkillInstallationError) {
                 logger.error(
                     "Skill installation failed", metadata: ["error_type": .string(String(reflecting: type(of: error)))])
             }
@@ -68,7 +65,9 @@ struct DefaultAgentSkillInstallationService {
         }
     }
 
-    func uninstall(_ skills: [BundledAgentSkill], root: String, dryRun: Bool) throws -> String {
+    func uninstall(
+        _ skills: [BundledAgentSkill], root: String, dryRun: Bool
+    ) throws -> [AgentSkillInstallationOutcome] {
         logger.debug(
             "Uninstalling agent skills",
             metadata: [
@@ -81,22 +80,20 @@ struct DefaultAgentSkillInstallationService {
                     guard let receipt = installation.receipt else {
                         logger.warning(
                             "Refusing to remove unmanaged skill", metadata: ["skill": .string(installation.skill.name)])
-                        throw ValidationError("Refusing to remove unmanaged skill '\(installation.skill.name)'.")
+                        throw AgentSkillInstallationError.unmanagedSkill(name: installation.skill.name, removing: true)
                     }
                     guard content == receipt.content else {
                         logger.warning(
                             "Refusing to remove edited skill", metadata: ["skill": .string(installation.skill.name)])
-                        throw ValidationError(
-                            "Skill '\(installation.skill.name)' was edited. Back up and restore it before uninstalling."
-                        )
+                        throw AgentSkillInstallationError.modifiedSkill(name: installation.skill.name, removing: true)
                     }
                 }
             }
             logger.debug(
                 "Skill removal preflight completed", metadata: ["count": .stringConvertible(installations.count)])
-            return try installations.map { try uninstall($0, dryRun: dryRun) }.joined(separator: "\n")
+            return try installations.map { try uninstall($0, dryRun: dryRun) }
         } catch {
-            if !(error is ValidationError) {
+            if !(error is AgentSkillInstallationError) {
                 logger.error(
                     "Skill removal failed", metadata: ["error_type": .string(String(reflecting: type(of: error)))])
             }
@@ -104,12 +101,15 @@ struct DefaultAgentSkillInstallationService {
         }
     }
 
-    private func install(_ installation: Installation, dryRun: Bool, force: Bool) throws -> String {
+    private func install(
+        _ installation: Installation, dryRun: Bool, force: Bool
+    ) throws -> AgentSkillInstallationOutcome {
         let metadata: Logger.Metadata = ["skill": .string(installation.skill.name)]
         let content = Data(installation.skill.content.utf8)
         if installation.content == content, installation.receipt?.content == content {
             logger.debug("Skill installation unchanged", metadata: metadata)
-            return "Unchanged: \(installation.skill.name)"
+            return AgentSkillInstallationOutcome(
+                name: installation.skill.name, file: installation.file, status: .unchanged)
         }
         if force, let previousContent = installation.content, previousContent != content {
             logger.notice(
@@ -124,14 +124,18 @@ struct DefaultAgentSkillInstallationService {
             try fileManager.writeSkillData(JSONEncoder().encode(receipt), to: installation.receiptFile)
         }
         logger.info(dryRun ? "Would install skill" : "Installed skill", metadata: metadata)
-        return "\(dryRun ? "Would install" : "Installed"): \(installation.skill.name) at \(installation.file.path)"
+        let updating = installation.content != nil
+        return AgentSkillInstallationOutcome(
+            name: installation.skill.name, file: installation.file,
+            status: dryRun ? (updating ? .wouldUpdate : .wouldInstall) : (updating ? .updated : .installed))
     }
 
-    private func uninstall(_ installation: Installation, dryRun: Bool) throws -> String {
+    private func uninstall(_ installation: Installation, dryRun: Bool) throws -> AgentSkillInstallationOutcome {
         let metadata: Logger.Metadata = ["skill": .string(installation.skill.name)]
         guard installation.receipt != nil else {
             logger.debug("Skill not installed", metadata: metadata)
-            return "Not installed: \(installation.skill.name)"
+            return AgentSkillInstallationOutcome(
+                name: installation.skill.name, file: installation.file, status: .notInstalled)
         }
         if !dryRun {
             if installation.content != nil {
@@ -146,14 +150,15 @@ struct DefaultAgentSkillInstallationService {
             }
         }
         logger.info(dryRun ? "Would uninstall skill" : "Uninstalled skill", metadata: metadata)
-        return "\(dryRun ? "Would uninstall" : "Uninstalled"): \(installation.skill.name)"
+        return AgentSkillInstallationOutcome(
+            name: installation.skill.name, file: installation.file, status: dryRun ? .wouldUninstall : .uninstalled)
     }
 
     private func inspect(_ skills: [BundledAgentSkill], root: String) throws -> [Installation] {
         logger.trace("Inspecting skill installations", metadata: ["count": .stringConvertible(skills.count)])
         guard !root.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             logger.warning("Empty skill installation root")
-            throw ValidationError("The installation directory must not be empty.")
+            throw AgentSkillInstallationError.emptyRoot
         }
         let rootURL = URL(fileURLWithPath: (root as NSString).expandingTildeInPath).standardizedFileURL
         return try skills.map { skill in
@@ -170,7 +175,7 @@ struct DefaultAgentSkillInstallationService {
                     decoded.name == skill.name
                 else {
                     logger.warning("Invalid skill installation receipt", metadata: ["skill": .string(skill.name)])
-                    throw ValidationError("Invalid apple-docs installation receipt at '\(receiptFile.path)'.")
+                    throw AgentSkillInstallationError.invalidReceipt(receiptFile)
                 }
                 logger.trace("Validated skill installation receipt", metadata: ["skill": .string(skill.name)])
                 receipt = decoded
@@ -191,7 +196,7 @@ struct DefaultAgentSkillInstallationService {
         while true {
             if let type = try fileType(ancestor), type != .typeDirectory {
                 logger.warning("Refusing symlink or non-directory in skill installation path")
-                throw ValidationError("Expected a directory, not a symlink or other file, at '\(ancestor.path)'.")
+                throw AgentSkillInstallationError.invalidDirectory(ancestor)
             }
             // Ancestors above the user-selected root may be OS aliases such as /var on macOS.
             if ancestor.path == root.path { return }
@@ -206,7 +211,7 @@ struct DefaultAgentSkillInstallationService {
             logger.warning(
                 "Refusing symlink or non-regular skill installation file",
                 metadata: ["file": .string(url.lastPathComponent)])
-            throw ValidationError("Expected a regular file, not a symlink or directory, at '\(url.path)'.")
+            throw AgentSkillInstallationError.invalidFile(url)
         }
         return try fileManager.readSkillData(at: url)
     }
@@ -224,8 +229,10 @@ struct DefaultAgentSkillInstallationService {
 
 #if DEBUG
     protocol AgentSkillInstallationService {
-        func install(_ skills: [BundledAgentSkill], root: String, dryRun: Bool, force: Bool) throws -> String
-        func uninstall(_ skills: [BundledAgentSkill], root: String, dryRun: Bool) throws -> String
+        func install(_ skills: [BundledAgentSkill], root: String, dryRun: Bool, force: Bool) throws
+            -> [AgentSkillInstallationOutcome]
+        func uninstall(_ skills: [BundledAgentSkill], root: String, dryRun: Bool) throws
+            -> [AgentSkillInstallationOutcome]
     }
 
     extension DefaultAgentSkillInstallationService: AgentSkillInstallationService {}
