@@ -54,7 +54,7 @@ import Testing
         @Test("treats documentation lookup failures as expected command errors")
         func treatsLookupFailureAsExpected() {
             // -- Arrange --
-            let error = DefaultAppleDocumentationClient<URLSession>.Error.typeNotFound(
+            let error = AppleDocumentationRepositoryError.typeNotFound(
                 name: "Model",
                 technology: "SwiftData",
                 suggestion: nil,

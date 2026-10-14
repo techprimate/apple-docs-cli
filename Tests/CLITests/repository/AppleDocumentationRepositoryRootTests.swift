@@ -5,7 +5,7 @@ import Testing
 @testable import CLI
 
 @Suite("Apple documentation root lookup")
-struct AppleDocumentationClientRootTests {
+struct AppleDocumentationRepositoryRootTests {
     @Test("maps a missing canonical root to unsupported technology guidance", arguments: [false, true])
     func mapsMissingCanonicalRoot(search: Bool) async throws {
         // -- Arrange --
@@ -23,13 +23,13 @@ struct AppleDocumentationClientRootTests {
             catalogURL: .http(statusCode: 200, data: cryptoKitCatalogData),
             canonicalURL: .http(statusCode: 404, data: Data()),
         ])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
         )
 
         // -- Act --
         await #expect(
-            throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.unsupportedTechnology(
+            throws: AppleDocumentationRepositoryError.unsupportedTechnology(
                 name: "Apple CryptoKit", url: "https://developer.apple.com/documentation/cryptokit"
             )
         ) {
@@ -57,13 +57,13 @@ struct AppleDocumentationClientRootTests {
             rootURL: .http(statusCode: 404, data: Data()),
             catalogURL: .http(statusCode: 200, data: cryptoKitCatalogData),
         ])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
         )
 
         // -- Act --
         await #expect(
-            throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.unsupportedTechnology(
+            throws: AppleDocumentationRepositoryError.unsupportedTechnology(
                 name: "Apple CryptoKit", url: "https://developer.apple.com/documentation/cryptokit"
             )
         ) {
@@ -102,7 +102,7 @@ struct AppleDocumentationClientRootTests {
             catalogURL: .http(statusCode: 200, data: cryptoKitCatalogData),
             canonicalURL: .http(statusCode: 200, data: rootData),
         ])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
         )
 
@@ -125,12 +125,12 @@ struct AppleDocumentationClientRootTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
         )
         let transport = HTTPTestTransport(responses: [rootURL: .http(statusCode: status, data: Data())])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
         )
 
         // -- Act --
-        await #expect(throws: DefaultAppleDocumentationClient<HTTPTestTransport>.Error.httpStatus(status)) {
+        await #expect(throws: AppleDocumentationClientError.httpStatus(status)) {
             if search {
                 _ = try await client.searchTypes(query: "AES", technology: "CryptoKit")
             } else {

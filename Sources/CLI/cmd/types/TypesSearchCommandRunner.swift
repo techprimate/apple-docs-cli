@@ -5,11 +5,11 @@ struct TypesSearchCommandRunner: Sendable {
         let unavailableCollectionCount: Int
     }
 
-    private let client: DocumentationTypeSearchClient
+    private let client: DocumentationTypeSearchRepository
     private let renderer: DocumentationTypeListRenderer
 
     init(
-        client: DocumentationTypeSearchClient,
+        client: DocumentationTypeSearchRepository,
         renderer: DocumentationTypeListRenderer
     ) {
         self.client = client

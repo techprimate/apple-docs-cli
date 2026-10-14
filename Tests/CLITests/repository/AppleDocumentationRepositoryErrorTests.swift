@@ -5,7 +5,7 @@ import Testing
 @testable import CLI
 
 @Suite("Apple documentation client errors")
-struct AppleDocumentationClientErrorTests {
+struct AppleDocumentationRepositoryErrorTests {
     @Test("maps a missing type to discovery guidance")
     func mapsMissingTypeToDiscoveryGuidance() async throws {
         // -- Arrange --
@@ -18,7 +18,7 @@ struct AppleDocumentationClientErrorTests {
         let rootURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftdata.json")
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [

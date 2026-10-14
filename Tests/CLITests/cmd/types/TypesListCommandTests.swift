@@ -24,12 +24,12 @@ struct TypesListCommandTests {
 }
 
 private typealias TestProviders = TelemetryProvider & TerminalCapabilitiesProvider
-    & DocumentationTypeCatalogClientProvider & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
+    & DocumentationTypeCatalogRepositoryProvider & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
 
 private struct TestDeps: TestProviders {
     let telemetry = TypesListTelemetryRecorder()
     let terminalCapabilities = TypesListTestTerminal()
-    let documentationClient = TypesListTestClient()
+    let documentationRepository = TypesListTestClient()
     let output = RecordingCommandOutputWriter()
     var commandOutputWriter: RecordingCommandOutputWriter { output }
 
@@ -44,7 +44,7 @@ private struct TypesListTestTerminal: TerminalCapabilities {
     var stdinIsTTY: Bool { false }
 }
 
-private struct TypesListTestClient: DocumentationTypeCatalogClient {
+private struct TypesListTestClient: DocumentationTypeCatalogRepository {
     func fetchTypes(technology: String) async throws -> [DocumentationType] {
         #expect(technology == "SwiftData")
         return [

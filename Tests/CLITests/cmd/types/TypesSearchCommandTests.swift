@@ -25,12 +25,12 @@ struct TypesSearchCommandTests {
 }
 
 private typealias SearchProviders = TelemetryProvider & TerminalCapabilitiesProvider
-    & DocumentationTypeSearchClientProvider & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
+    & DocumentationTypeSearchRepositoryProvider & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
 
 private struct SearchDependencies: SearchProviders {
     let telemetry = RecordingCommandTelemetry()
     let terminalCapabilities = DefaultTerminalCapabilities()
-    let documentationClient = SearchTestClient()
+    let documentationRepository = SearchTestClient()
     let output = RecordingCommandOutputWriter()
     var commandOutputWriter: RecordingCommandOutputWriter { output }
 
@@ -39,7 +39,7 @@ private struct SearchDependencies: SearchProviders {
     }
 }
 
-private struct SearchTestClient: DocumentationTypeSearchClient {
+private struct SearchTestClient: DocumentationTypeSearchRepository {
     func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult {
         #expect(query == "Button")
         #expect(technology == "SwiftUI")

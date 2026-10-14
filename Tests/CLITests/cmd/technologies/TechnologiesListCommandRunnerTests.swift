@@ -8,7 +8,7 @@ struct TechnologiesListCommandRunnerTests {
     @Test("sorts technologies case-insensitively before rendering")
     func sortsTechnologies() async throws {
         // -- Arrange --
-        let client = UnsortedTechnologyCatalogClient(
+        let client = UnsortedTechnologyCatalogRepository(
             technologies: [
                 Technology(name: "swiftUI", identifier: "swiftui"),
                 Technology(name: "MetricKit", identifier: "metrickit"),
@@ -33,7 +33,7 @@ struct TechnologiesListCommandRunnerTests {
     }
 }
 
-private struct UnsortedTechnologyCatalogClient: TechnologyCatalogClient {
+private struct UnsortedTechnologyCatalogRepository: TechnologyCatalogRepository {
     let technologies: [Technology]
 
     func fetchTechnologies() async throws -> [Technology] {

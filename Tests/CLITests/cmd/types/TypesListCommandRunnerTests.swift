@@ -29,7 +29,7 @@ struct TypesListCommandRunnerTests {
     }
 }
 
-private struct RequestedTypesClient: DocumentationTypeCatalogClient {
+private struct RequestedTypesClient: DocumentationTypeCatalogRepository {
     let types: [DocumentationType]
 
     func fetchTypes(technology: String) async throws -> [DocumentationType] {

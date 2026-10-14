@@ -18,7 +18,7 @@ struct Dependencies: Sendable {
     )
     let httpCache: URLCache?
     let httpDataTransport: URLSession
-    let documentationClient: DefaultAppleDocumentationClient<URLSession>
+    let documentationRepository: DefaultAppleDocumentationRepository<DefaultAppleDocumentationClient<URLSession>>
 
     init() {
         if let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
@@ -39,8 +39,10 @@ struct Dependencies: Sendable {
             configuration.urlCache = httpCache
         }
         httpDataTransport = URLSession(configuration: configuration)
-        documentationClient = DefaultAppleDocumentationClient(
-            logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport)
+        documentationRepository = DefaultAppleDocumentationRepository(
+            logger: Logger(label: "com.techprimate.apple-docs.repository"),
+            dependencies: DefaultAppleDocumentationClient(
+                logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport))
     }
 
     var documentationCache: URLCache? {

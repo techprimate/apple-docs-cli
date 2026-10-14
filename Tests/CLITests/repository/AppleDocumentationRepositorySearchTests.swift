@@ -5,7 +5,7 @@ import Testing
 @testable import CLI
 
 @Suite("Apple documentation type search client")
-struct AppleDocumentationClientSearchTests {
+struct AppleDocumentationRepositorySearchTests {
     @available(macOS 15, *)
     @Test("detailed search returns partial-result paths and successful matches")
     func reportsPartialResults() async throws {
@@ -18,7 +18,7 @@ struct AppleDocumentationClientSearchTests {
             controlsURL: .http(statusCode: 404, data: Data()), stylesURL: .http(data: stylesSearchPage),
         ])
         let recorder = ClientLogRecorder()
-        let client = DefaultAppleDocumentationClient(logger: recorder.logger(), dependencies: transport)
+        let client = makeDocumentationRepository(logger: recorder.logger(), dependencies: transport)
 
         // -- Act --
         let result = try await client.searchTypes(query: "buttonstyle", technology: "SwiftUI")
@@ -38,7 +38,7 @@ struct AppleDocumentationClientSearchTests {
         // -- Arrange --
         let rootURL = try searchURL("swiftui")
         let transport = HTTPTestTransport(responses: [rootURL: .http(data: duplicateRootSearchPage)])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
         )
 
@@ -60,7 +60,7 @@ struct AppleDocumentationClientSearchTests {
         let transport = HTTPTestTransport(responses: [
             rootURL: .http(data: rootSearchPage), controlsURL: .failure(error),
         ])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport
         )
 
@@ -83,7 +83,7 @@ struct AppleDocumentationClientSearchTests {
         let rootURL = try searchURL("swiftui")
         let controlsURL = try searchURL("swiftui/controls")
         let stylesURL = try searchURL("swiftui/styles")
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(responses: [
                 rootURL: .http(data: rootSearchPage), controlsURL: .http(data: controlsSearchPage),
@@ -105,7 +105,7 @@ struct AppleDocumentationClientSearchTests {
         let rootURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftui.json")
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [rootURL: .http(data: duplicateRootSearchPage)]
@@ -138,7 +138,7 @@ struct AppleDocumentationClientSearchTests {
                     "https://developer.apple.com/tutorials/data/documentation/swiftui/styles.json"
             )
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [
@@ -175,7 +175,7 @@ struct AppleDocumentationClientSearchTests {
         let resolvedRootURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [
@@ -202,7 +202,7 @@ struct AppleDocumentationClientSearchTests {
             try searchURL("swiftui/controls"): .http(data: controlsSearchPage),
             try searchURL("swiftui/styles"): .http(data: stylesSearchPage),
         ])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport)
 
         // -- Act --

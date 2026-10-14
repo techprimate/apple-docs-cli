@@ -14,7 +14,8 @@ struct DefaultTypeDocumentationRendererTests {
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
         // -- Act --
-        let output = try renderer.render(document)
+        let output = try renderer.render(
+            try DocumentationPageDecoder().decode(document.data, destination: document.destination))
 
         // -- Assert --
         #expect(output.hasPrefix("SwiftUI\n"))
@@ -42,7 +43,8 @@ struct DefaultTypeDocumentationRendererTests {
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
         // -- Act --
-        let output = try renderer.render(document)
+        let output = try renderer.render(
+            try DocumentationPageDecoder().decode(document.data, destination: document.destination))
 
         // -- Assert --
         #expect(
@@ -81,7 +83,8 @@ struct DefaultTypeDocumentationRendererTests {
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
         // -- Act --
-        let output = try renderer.render(document)
+        let output = try renderer.render(
+            try DocumentationPageDecoder().decode(document.data, destination: document.destination))
 
         // -- Assert --
         #expect(
@@ -129,7 +132,8 @@ struct DefaultTypeDocumentationRendererTests {
         let renderer = DefaultTypeDocumentationRenderer(output: .text)
 
         // -- Act --
-        let output = try renderer.render(document)
+        let output = try renderer.render(
+            try DocumentationPageDecoder().decode(document.data, destination: document.destination))
 
         // -- Assert --
         #expect(output.hasPrefix("Distributing binary frameworks as Swift packages\n"))
@@ -148,7 +152,8 @@ struct DefaultTypeDocumentationRendererTests {
         let renderer = DefaultTypeDocumentationRenderer(output: .json, audience: audience)
 
         // -- Act --
-        let output = try renderer.render(document)
+        let output = try renderer.render(
+            try DocumentationPageDecoder().decode(document.data, destination: document.destination))
         let value = try #require(JSONSerialization.jsonObject(with: Data(output.utf8)) as? [String: Any])
 
         // -- Assert --
@@ -166,7 +171,9 @@ struct DefaultTypeDocumentationRendererTests {
         let renderer = DefaultTypeDocumentationRenderer(output: .json)
 
         // -- Act --
-        let render = { try renderer.render(document) }
+        let render = {
+            try renderer.render(try DocumentationPageDecoder().decode(document.data, destination: document.destination))
+        }
 
         // -- Assert --
         #expect(throws: (any Error).self) { try render() }

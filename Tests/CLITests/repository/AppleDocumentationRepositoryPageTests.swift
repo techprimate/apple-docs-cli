@@ -5,7 +5,7 @@ import Testing
 @testable import CLI
 
 @Suite("Documentation page requests")
-struct AppleDocumentationClientPageTests {
+struct AppleDocumentationRepositoryPageTests {
     @Test("preserves exact path spelling and response bytes without fetching fragments")
     func fetchesExactPage() async throws {
         // -- Arrange --
@@ -15,7 +15,7 @@ struct AppleDocumentationClientPageTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swift/Member.with.dots(_:).json"))
         let data = Data("{ \"newUpstreamField\": true }\n".utf8)
         let transport = HTTPTestTransport(responses: [url: .http(data: data)])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport)
 
         // -- Act --
@@ -48,7 +48,7 @@ struct AppleDocumentationClientPageTests {
             requestedURL: .http(statusCode: 404, data: Data()), catalogURL: .http(data: catalog),
             canonicalURL: .http(data: data),
         ])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() }, dependencies: transport)
 
         // -- Act --

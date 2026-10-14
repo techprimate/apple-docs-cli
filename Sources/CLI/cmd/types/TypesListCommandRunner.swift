@@ -4,11 +4,11 @@ struct TypesListCommandRunner: Sendable {
         let typeCount: Int
     }
 
-    private let client: DocumentationTypeCatalogClient
+    private let client: DocumentationTypeCatalogRepository
     private let renderer: DocumentationTypeListRenderer
 
     init(
-        client: DocumentationTypeCatalogClient,
+        client: DocumentationTypeCatalogRepository,
         renderer: DocumentationTypeListRenderer
     ) {
         self.client = client
