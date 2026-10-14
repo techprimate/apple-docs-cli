@@ -2,7 +2,8 @@
 
 ## Scope
 
-- This is a Swift 6.3 command-line package targeting macOS 13 or later.
+- This is a Swift command-line package.
+- Do not duplicate toolchain or deployment-target versions in prose documentation.
 - Use SwiftPM for dependencies and the Makefile for standard development workflows.
 - Keep the CLI stateless. Commands must receive the technology they operate on.
 - Do not add or update dependencies unless the requested change requires it.
