@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Swift 6.3 or later and Make. CI and Linux containers use Swift 6.4.0.
+- Swift and Make.
 - Homebrew for `make init`, which installs actionlint, dprint, pre-commit, and SwiftLint.
 - Docker for container-based Linux build and test targets.
 
@@ -42,7 +42,7 @@ pre-commit install
 | `make run ARGS="types view Button --technology SwiftUI"` | Run the executable through SwiftPM.                                                                |
 | `make build`                                             | Build the release binary at `dist/apple-docs`.                                                     |
 | `make test`                                              | Run the test suite.                                                                                |
-| `make test-linux`                                        | Run tests in pinned Swift 6.4.0 containers for amd64 and arm64.                                    |
+| `make test-linux`                                        | Run tests in pinned Swift containers for amd64 and arm64.                                          |
 | `make test-integration`                                  | Build the release binary and run live tests against Apple documentation. Requires internet access. |
 | `make analyze`                                           | Run SwiftLint, formatting checks, and actionlint.                                                  |
 | `make format`                                            | Format Swift with `swift format` and JSON, YAML, Markdown, and TOML with dprint.                   |
@@ -54,14 +54,14 @@ Container commands mount the source read-only and keep build products in Docker 
 
 ```bash
 make test-linux-amd64
-make test-linux-arm64 TEST_ARGS="--filter AppleDocumentationClientSearchTests"
+make test-linux-arm64 TEST_ARGS="--filter AppleDocumentationRepositorySearchTests"
 make build-linux-native
 make test-integration-linux
 ```
 
 Live integration tests require internet access. Both integration targets accept `INTEGRATION_FILTER=SuiteName`. `make test` also accepts `TEST_ARGS`.
 
-For static release builds, use the matching Swift.org 6.4.0 toolchain, not Xcode's bundled compiler:
+For static release builds, use a Swift.org toolchain matching the SDK configured in the Makefile, not Xcode's bundled compiler:
 
 ```bash
 make install-linux-sdk
