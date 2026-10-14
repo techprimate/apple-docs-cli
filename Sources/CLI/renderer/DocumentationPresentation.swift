@@ -162,3 +162,21 @@ extension DocumentationBlock: Encodable {
         }
     }
 }
+
+struct SearchPresentation: Encodable, Sendable {
+    let technology: String
+    let types: [SymbolPresentation]
+    let coverage: SearchCoveragePresentation
+}
+
+struct SearchCoveragePresentation: Encodable, Sendable {
+    let isComplete: Bool
+    let unavailableCollections: [CollectionFailurePresentation]
+}
+
+struct CollectionFailurePresentation: Encodable, Sendable {
+    let path: String
+    let kind: String
+    var status: Int?
+    var code: Int?
+}

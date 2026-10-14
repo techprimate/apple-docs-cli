@@ -25,7 +25,7 @@ struct TypesSearchCommandTests {
 }
 
 private typealias SearchProviders = TelemetryProvider & TerminalCapabilitiesProvider
-    & DocumentationTypeSearchRepositoryProvider & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
+    & DocumentationTypeSearchRepositoryProvider & DocumentationSearchRendererProvider & CommandOutputWriterProvider
 
 private struct SearchDependencies: SearchProviders {
     let telemetry = RecordingCommandTelemetry()
@@ -34,7 +34,7 @@ private struct SearchDependencies: SearchProviders {
     let output = RecordingCommandOutputWriter()
     var commandOutputWriter: RecordingCommandOutputWriter { output }
 
-    func documentationTypeListRenderer(output: OutputOptions, technology: String) -> SearchTestRenderer {
+    func documentationSearchRenderer(output: OutputOptions) -> SearchTestRenderer {
         SearchTestRenderer()
     }
 }
@@ -43,10 +43,14 @@ private struct SearchTestClient: DocumentationTypeSearchRepository {
     func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult {
         #expect(query == "Button")
         #expect(technology == "SwiftUI")
-        return DocumentationSearchResult(types: [], unavailableCollectionPaths: ["/documentation/swiftui/controls"])
+        return DocumentationSearchResult(
+            technology: "swiftui", types: [],
+            unavailableCollections: [
+                DocumentationCollectionFailure(path: "/documentation/swiftui/controls", reason: .httpStatus(404))
+            ])
     }
 }
 
-private struct SearchTestRenderer: DocumentationTypeListRenderer {
-    func render(_ types: [DocumentationType]) -> String { "[]" }
+private struct SearchTestRenderer: DocumentationSearchRenderer {
+    func render(_ result: DocumentationSearchResult) -> String { "[]" }
 }

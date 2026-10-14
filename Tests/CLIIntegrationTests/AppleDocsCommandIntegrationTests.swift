@@ -127,9 +127,11 @@ struct AppleDocsCommandIntegrationTests {
 
         // -- Act --
         let output = try runAppleDocs(arguments)
-        let types = try JSONDecoder().decode([ListedType].self, from: Data(output.utf8))
+        let result = try JSONDecoder().decode(SearchResult.self, from: Data(output.utf8))
+        let types = result.types
 
         // -- Assert --
+        #expect(result.technology == "swiftui")
         #expect(
             types.contains(
                 ListedType(
@@ -204,4 +206,14 @@ private struct ListedType: Decodable, Equatable {
 private struct Technology: Decodable, Equatable {
     let identifier: String
     let name: String
+}
+
+private struct SearchResult: Decodable {
+    let technology: String
+    let types: [ListedType]
+    let coverage: Coverage
+
+    struct Coverage: Decodable {
+        let isComplete: Bool
+    }
 }

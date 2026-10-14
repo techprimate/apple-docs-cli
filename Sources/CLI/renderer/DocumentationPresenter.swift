@@ -1,6 +1,26 @@
 import Foundation
 
 struct DocumentationPresenter: Sendable {
+    func search(_ result: DocumentationSearchResult, audience: OutputAudience) -> SearchPresentation {
+        SearchPresentation(
+            technology: result.technology,
+            types: symbols(result.types, technology: result.technology, audience: audience),
+            coverage: SearchCoveragePresentation(
+                isComplete: result.isComplete,
+                unavailableCollections: result.unavailableCollections.map { failure in
+                    switch failure.reason {
+                    case .httpStatus(let status):
+                        return CollectionFailurePresentation(path: failure.path, kind: "http", status: status)
+                    case .invalidResponse:
+                        return CollectionFailurePresentation(path: failure.path, kind: "invalidResponse")
+                    case .transport(let code):
+                        return CollectionFailurePresentation(path: failure.path, kind: "transport", code: code)
+                    case .decoding:
+                        return CollectionFailurePresentation(path: failure.path, kind: "decoding")
+                    }
+                }))
+    }
+
     func page(_ page: DocumentationPage, audience: OutputAudience) -> PagePresentation {
         PagePresentation(
             document: page, audience: audience,

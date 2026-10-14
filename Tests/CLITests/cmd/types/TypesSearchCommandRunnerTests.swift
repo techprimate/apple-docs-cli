@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import CLI
@@ -30,19 +31,22 @@ struct TypesSearchCommandRunnerTests {
         #expect(result.unavailableCollectionCount == 1)
     }
 
-    @Test("empty searches are successful JSON arrays")
+    @Test("empty searches are successful structured results with coverage")
     func rendersEmptySearch() async throws {
         // -- Arrange --
         let runner = TypesSearchCommandRunner(
             client: RequestedTypeSearchClient(types: []),
-            renderer: DefaultDocumentationTypeListRenderer(output: .json))
+            renderer: DefaultDocumentationSearchRenderer(output: .json))
 
         // -- Act --
         let result = try await runner.run(
             query: "Button", technology: "SwiftUI", mode: .oneShot(audience: .human, format: .json))
 
         // -- Assert --
-        #expect(result.output == "[\n\n]")
+        let json = try #require(JSONSerialization.jsonObject(with: Data(result.output.utf8)) as? [String: Any])
+        #expect((json["types"] as? [Any])?.isEmpty == true)
+        let coverage = try #require(json["coverage"] as? [String: Any])
+        #expect(coverage["isComplete"] as? Bool == false)
         #expect(result.matchCount == 0)
         #expect(result.unavailableCollectionCount == 1)
     }
@@ -55,15 +59,19 @@ private struct RequestedTypeSearchClient: DocumentationTypeSearchRepository {
         guard query == "Button", technology == "SwiftUI" else {
             throw TypesSearchRunnerTestError.unexpectedRequest
         }
-        return DocumentationSearchResult(types: types, unavailableCollectionPaths: ["/documentation/swiftui/styles"])
+        return DocumentationSearchResult(
+            technology: "swiftui", types: types,
+            unavailableCollections: [
+                DocumentationCollectionFailure(path: "/documentation/swiftui/styles", reason: .httpStatus(404))
+            ])
     }
 }
 
-private struct SearchTypesRenderer: DocumentationTypeListRenderer {
+private struct SearchTypesRenderer: DocumentationSearchRenderer {
     let expectedTypes: [DocumentationType]
 
-    func render(_ types: [DocumentationType]) throws -> String {
-        guard types == expectedTypes else {
+    func render(_ result: DocumentationSearchResult) throws -> String {
+        guard result.types == expectedTypes else {
             throw TypesSearchRunnerTestError.unexpectedTypes
         }
         return "rendered matches"
