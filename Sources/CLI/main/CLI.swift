@@ -3,7 +3,7 @@ import Twill
 
 struct CLI: AsyncParsableCommand, GlobalOptionsProviding {
     #if DEBUG
-        typealias Deps = any TechnologyCatalogClientProvider
+        typealias Deps = any TechnologyCatalogRepositoryProvider
     #else
         typealias Deps = Dependencies
     #endif
@@ -31,7 +31,7 @@ struct CLI: AsyncParsableCommand, GlobalOptionsProviding {
 
     @MainActor
     func run(deps: Deps) async throws {
-        let rootView = BrowserView(client: deps.documentationClient)
+        let rootView = BrowserView(client: deps.documentationRepository)
         let application = Application(rootView: rootView)
         try await application.run()
     }

@@ -87,7 +87,7 @@ struct BrowserTerminal {
     }
 }
 
-struct BrowserCatalogFixture: TechnologyCatalogClient {
+struct BrowserCatalogFixture: TechnologyCatalogRepository {
     let technologies: [Technology]
 
     static var sequential: Self {

@@ -2,9 +2,9 @@ import Twill
 
 struct BrowserView: View {
     #if DEBUG
-        typealias Client = any TechnologyCatalogClient
+        typealias Client = any TechnologyCatalogRepository
     #else
-        typealias Client = TechnologyCatalogClient
+        typealias Client = TechnologyCatalogRepository
     #endif
 
     private let client: Client
