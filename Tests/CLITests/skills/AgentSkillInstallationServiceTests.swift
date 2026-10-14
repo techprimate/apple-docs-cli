@@ -1,4 +1,3 @@
-import ArgumentParser
 import Foundation
 import Logging
 import Testing
@@ -83,7 +82,7 @@ struct DefaultAgentSkillInstallationServiceTests {
         try write("private user skill", to: skillFile(root))
 
         // -- Act --
-        #expect(throws: ValidationError.self) {
+        #expect(throws: AgentSkillInstallationError.self) {
             if uninstall {
                 _ = try installer.uninstall([skill], root: root.path, dryRun: false)
             } else {
@@ -140,7 +139,7 @@ struct DefaultAgentSkillInstallationServiceTests {
         let previousEventCount = recorder.events.count
 
         // -- Act --
-        #expect(throws: ValidationError.self) {
+        #expect(throws: AgentSkillInstallationError.self) {
             try installer.uninstall([skill], root: root.path, dryRun: false)
         }
 
