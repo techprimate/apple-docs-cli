@@ -34,7 +34,7 @@ Named CLI input interprets dots as hierarchy separators and lowercases paths. No
 
 ## JSON result shapes
 
-There is no versioned envelope. Page output is an object. Symbol and technology catalogs are top-level arrays.
+There is no versioned envelope. Page and search output are objects. Symbol and technology catalogs are top-level arrays.
 
 ### Pages
 
@@ -77,11 +77,14 @@ Targets use a `type` of `documentation`, `external`, or `unavailable`. Documenta
 
 ### Discovery results
 
-- `types list` and `types search`: arrays of objects with `name`, `kind`, technology-relative `path`, and `url`.
+- `types list`: an array of objects with `name`, `kind`, technology-relative `path`, and `url`.
+- `types search`: an object with resolved `technology`, a `types` array with those same symbol fields, and `coverage`.
 - `technologies list`: a case-insensitively sorted array of objects with `name` and `identifier`.
 - Agent variants additionally include `navigation` where supported. Navigation contains `technology`, a technology-relative `path` for document destinations, and `command`. Technology-root navigation omits `path`.
 
-No search matches is a successful empty array, not an error. Partial results remain usable but emit an incomplete-coverage warning to stderr. Human text reports no matches explicitly. Cancellation stops the search rather than returning partial results.
+No search matches is a successful result with an empty `types` array, not an error. Search coverage contains `isComplete` and `unavailableCollections`. Each unavailable collection contains `path` and `kind`: `http` with `status`, `transport` with a URL error `code`, `invalidResponse`, or `decoding`.
+
+Completeness refers to the reachable curated collection graph, not an exhaustive index of every symbol. Partial results remain usable and also emit a warning to stderr. Unexpected failures abort the search. Human text reports no matches explicitly. Cancellation stops the search rather than returning partial results.
 
 ## Compatibility with older output
 
@@ -91,6 +94,7 @@ The current output contracts differ from the earlier raw-DocC interface:
 - Use both `--agent --json` for structured agent output.
 - `types view --json` emits normalized semantic content, not unchanged upstream DocC bytes.
 - There is no replacement raw-DocC export flag.
+- Search JSON uses an object rather than a top-level array. Read matches from `.types` and check `.coverage.isComplete`.
 
 For example, title extraction uses `.title`, not `.metadata.title`:
 

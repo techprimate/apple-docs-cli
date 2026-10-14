@@ -105,7 +105,7 @@ apple-docs types search Button --technology SwiftUI
 
 Search deliberately does not crawl individual symbol pages, which keeps requests bounded. Collection pages can directly reference some nested members, so those may appear, but search is not an exhaustive nested-member index. A missing search result does not necessarily mean the API is undocumented. If you know the exact type or DocC path, try `types view` directly.
 
-No matches is a successful empty result, rendered as an empty array in JSON. If some collection pages cannot be fetched, available matches are still returned and an incomplete-coverage warning is written to stderr. Cancellation stops the search instead of returning partial results.
+No matches is a successful result with an empty `types` array in JSON. Search JSON also includes the resolved `technology` and `coverage`, with `isComplete` and typed `unavailableCollections`. If some collection pages cannot be fetched, available matches are still returned and an incomplete-coverage warning is written to stderr. Unexpected failures and cancellation stop the search instead of returning partial results.
 
 ### Type documentation
 
@@ -150,11 +150,12 @@ Agent output uses the same normalized documentation content as human text. Follo
 
 The documentation commands accept `--json` for normalized semantic output:
 
-| Command                       | JSON output                                                                                                                                                                             |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types view`                  | An object with `title`, `kind`, `technology`, `path`, `url`, `modules`, `abstract`, `deprecation`, `declarations`, `availability`, `content`, `relationships`, `topics`, and `seeAlso`. |
-| `types list` / `types search` | An array with `name`, `kind`, `path`, and `url` fields.                                                                                                                                 |
-| `technologies list`           | A sorted array of `name` and `identifier` objects.                                                                                                                                      |
+| Command             | JSON output                                                                                                                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types view`        | An object with `title`, `kind`, `technology`, `path`, `url`, `modules`, `abstract`, `deprecation`, `declarations`, `availability`, `content`, `relationships`, `topics`, and `seeAlso`. |
+| `types list`        | An array with `name`, `kind`, `path`, and `url` fields.                                                                                                                                 |
+| `types search`      | An object containing `technology`, a `types` array, and `coverage` with completeness and typed collection failures.                                                                     |
+| `technologies list` | A sorted array of `name` and `identifier` objects.                                                                                                                                      |
 
 Add `--agent` to include `navigation` commands for supported destinations. Content blocks retain semantic types and links distinguish documentation, external, and unavailable targets. Availability includes `introducedAt`, `deprecatedAt`, `obsoletedAt`, `isBeta`, and `isUnavailable` when applicable. Inapplicable optional fields are omitted.
 

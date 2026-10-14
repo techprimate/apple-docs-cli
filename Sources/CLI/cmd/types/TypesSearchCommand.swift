@@ -5,7 +5,7 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
     #if DEBUG
         typealias Deps = any (
             TelemetryProvider & TerminalCapabilitiesProvider & DocumentationTypeSearchRepositoryProvider
-                & DocumentationTypeListRendererProvider & CommandOutputWriterProvider
+                & DocumentationSearchRendererProvider & CommandOutputWriterProvider
         )
     #else
         typealias Deps = Dependencies
@@ -35,7 +35,7 @@ struct TypesSearchCommand: AsyncParsableCommand, GlobalOptionsProviding {
         deps.telemetry.startCommand(context)
         let runner = TypesSearchCommandRunner(
             client: deps.documentationRepository,
-            renderer: deps.documentationTypeListRenderer(output: output, technology: technology)
+            renderer: deps.documentationSearchRenderer(output: output)
         )
         let result = try await runner.run(
             query: query, technology: technology, mode: deps.terminalCapabilities.mode(for: output))
