@@ -32,10 +32,9 @@ struct TypesViewCommandRunnerTests {
             document: document
         )
         let renderer = RequestedTypeRenderer(
-            expectedData: data,
             output: "rendered documentation"
         )
-        let runner = TypesViewCommandRunner(client: client, renderer: renderer)
+        let runner = TypesViewCommandRunner(repository: client, renderer: renderer)
 
         // -- Act --
         let result = try await runner.run(
@@ -50,25 +49,26 @@ struct TypesViewCommandRunnerTests {
     }
 }
 
-private struct RequestedTypeClient: AppleDocumentationClient {
+private struct RequestedTypeClient: AppleDocumentationRepository {
     let expectedName: String
     let expectedTechnology: String
     let document: TypeDocumentationDocument
 
-    func fetchType(named name: String, technology: String) async throws -> TypeDocumentationDocument {
+    func fetchPage(named name: String, technology: String) async throws -> LoadedDocumentationPage {
         guard name == expectedName, technology == expectedTechnology else {
             throw TestDocumentationClientError.unexpectedRequest
         }
-        return document
+        return LoadedDocumentationPage(
+            page: try DocumentationPageDecoder().decode(document.data, destination: document.destination),
+            responseByteCount: document.data.count)
     }
 }
 
 private struct RequestedTypeRenderer: TypeDocumentationRenderer {
-    let expectedData: Data
     let output: String
 
-    func render(_ document: TypeDocumentationDocument) -> String {
-        guard document.data == expectedData else {
+    func render(_ document: DocumentationPage) -> String {
+        guard document.title == "MXHangDiagnostic" else {
             return "unexpected document"
         }
         return output

@@ -25,29 +25,30 @@ struct TypesViewCommandExecutionTests {
 }
 
 private typealias ViewProviders = TelemetryProvider & TerminalCapabilitiesProvider
-    & AppleDocumentationClientProvider & TypeDocumentationRendererProvider & CommandOutputWriterProvider
+    & AppleDocumentationRepositoryProvider & TypeDocumentationRendererProvider & CommandOutputWriterProvider
 
 private struct ViewDependencies: ViewProviders {
     let telemetry = RecordingCommandTelemetry()
     let terminalCapabilities = DefaultTerminalCapabilities()
-    let documentationClient = ViewTestClient()
+    let documentationRepository = ViewTestClient()
     let output = RecordingCommandOutputWriter()
     var commandOutputWriter: RecordingCommandOutputWriter { output }
 
     func documentationRenderer(output: OutputOptions) -> ViewTestRenderer { ViewTestRenderer() }
 }
 
-private struct ViewTestClient: AppleDocumentationClient {
-    func fetchType(named name: String, technology: String) async throws -> TypeDocumentationDocument {
+private struct ViewTestClient: AppleDocumentationRepository {
+    func fetchPage(named name: String, technology: String) async throws -> LoadedDocumentationPage {
         #expect(name == "String")
         #expect(technology == "Swift")
-        return TypeDocumentationDocument(
-            data: Data("page".utf8),
-            destination: DocumentationDestination(technology: "swift", path: "/documentation/swift/string")
-        )
+        return LoadedDocumentationPage(
+            page: DocumentationPage(
+                destination: .init(technology: "swift", path: "/documentation/swift/string"),
+                title: "String", kind: "struct"),
+            responseByteCount: 4)
     }
 }
 
 private struct ViewTestRenderer: TypeDocumentationRenderer {
-    func render(_ document: TypeDocumentationDocument) -> String { "rendered page" }
+    func render(_ document: DocumentationPage) -> String { "rendered page" }
 }

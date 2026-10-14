@@ -48,7 +48,7 @@ struct TypesSearchCommandRunnerTests {
     }
 }
 
-private struct RequestedTypeSearchClient: DocumentationTypeSearchClient {
+private struct RequestedTypeSearchClient: DocumentationTypeSearchRepository {
     let types: [DocumentationType]
 
     func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult {

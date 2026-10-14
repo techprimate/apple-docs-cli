@@ -5,14 +5,14 @@ import Testing
 @testable import CLI
 
 @Suite("Apple documentation type catalog client")
-struct AppleDocumentationClientTypeListTests {
+struct AppleDocumentationRepositoryTypeListTests {
     @Test("lists direct symbols from a technology root document")
     func listsTechnologyRootSymbols() async throws {
         // -- Arrange --
         let rootURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swiftdata.json")
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [rootURL: .http(statusCode: 200, data: swiftDataRootData)]
@@ -53,7 +53,7 @@ struct AppleDocumentationClientTypeListTests {
         let resolvedRootURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/cryptokit.json")
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [
@@ -90,7 +90,7 @@ struct AppleDocumentationClientTypeListTests {
         let technologiesURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/technologies.json")
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [

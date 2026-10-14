@@ -5,7 +5,7 @@ import Testing
 @testable import CLI
 
 @Suite("Apple documentation technology client")
-struct AppleDocumentationClientTechnologyTests {
+struct AppleDocumentationRepositoryTechnologyTests {
     @Test("fetches technologies from every catalog group")
     func fetchesTechnologies() async throws {
         // -- Arrange --
@@ -13,7 +13,7 @@ struct AppleDocumentationClientTechnologyTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/technologies.json")
         )
         let transport = HTTPTestTransport(responses: [expectedURL: .http(data: technologyCatalogData)])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: transport
         )

@@ -24,19 +24,19 @@ struct TechnologiesListCommandTests {
 }
 
 private typealias TechnologiesProviders = TelemetryProvider & TerminalCapabilitiesProvider
-    & TechnologyCatalogClientProvider & TechnologyListRendererProvider & CommandOutputWriterProvider
+    & TechnologyCatalogRepositoryProvider & TechnologyListRendererProvider & CommandOutputWriterProvider
 
 private struct TechnologiesDependencies: TechnologiesProviders {
     let telemetry = RecordingCommandTelemetry()
     let terminalCapabilities = DefaultTerminalCapabilities()
-    let documentationClient = TechnologiesTestClient()
+    let documentationRepository = TechnologiesTestClient()
     let output = RecordingCommandOutputWriter()
     var commandOutputWriter: RecordingCommandOutputWriter { output }
 
     func technologyListRenderer(output: OutputOptions) -> TechnologiesTestRenderer { TechnologiesTestRenderer() }
 }
 
-private struct TechnologiesTestClient: TechnologyCatalogClient {
+private struct TechnologiesTestClient: TechnologyCatalogRepository {
     func fetchTechnologies() async throws -> [Technology] {
         [Technology(name: "Swift", identifier: "doc://com.apple.documentation/documentation/Swift")]
     }

@@ -5,7 +5,7 @@ import Testing
 @testable import CLI
 
 @Suite("Apple documentation client")
-struct AppleDocumentationClientTests {
+struct AppleDocumentationRepositoryLookupTests {
     @Test("requests and decodes a type documentation page")
     func fetchesTypeDocumentation() async throws {
         // -- Arrange --
@@ -29,7 +29,7 @@ struct AppleDocumentationClientTests {
             """.utf8
         )
         let transport = HTTPTestTransport(responses: [expectedURL: .http(data: data)])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: transport
         )
@@ -49,7 +49,7 @@ struct AppleDocumentationClientTests {
             URL(string: "https://developer.apple.com/tutorials/data/documentation/swift/string.json")
         )
         let data = Data("{\"newUpstreamShape\":true}".utf8)
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(responses: [expectedURL: .http(data: data)])
         )
@@ -73,7 +73,7 @@ struct AppleDocumentationClientTests {
             )
         )
         let transport = HTTPTestTransport(responses: [expectedURL: .http(data: Data("{}".utf8))])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: transport
         )
@@ -95,7 +95,7 @@ struct AppleDocumentationClientTests {
         )
         let data = Data("{}".utf8)
         let transport = HTTPTestTransport(responses: [expectedURL: .http(data: data)])
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: transport
         )
@@ -114,7 +114,7 @@ struct AppleDocumentationClientTests {
         let expectedURL = try #require(
             URL(string: "https://developer.apple.com/tutorials/data/documentation/metrickit/missingtype.json")
         )
-        let client = DefaultAppleDocumentationClient(
+        let client = makeDocumentationRepository(
             logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
             dependencies: HTTPTestTransport(
                 responses: [expectedURL: .http(statusCode: 500, data: Data("Not Found".utf8))]
@@ -125,7 +125,7 @@ struct AppleDocumentationClientTests {
         do {
             _ = try await client.fetchType(named: "MissingType", technology: "MetricKit")
             Issue.record("Expected the request to fail")
-        } catch let error as DefaultAppleDocumentationClient<HTTPTestTransport>.Error {
+        } catch let error as AppleDocumentationClientError {
             // -- Assert --
             #expect(error == .httpStatus(500))
         }

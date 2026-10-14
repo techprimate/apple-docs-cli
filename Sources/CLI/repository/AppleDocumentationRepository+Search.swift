@@ -1,6 +1,6 @@
 import Foundation
 
-extension DefaultAppleDocumentationClient {
+extension DefaultAppleDocumentationRepository {
     func searchTypes(query: String, technology: String) async throws -> DocumentationSearchResult {
         let root = try await fetchDocumentationRoot(technology: technology)
         return try await searchDocumentation(query: query, root: root)

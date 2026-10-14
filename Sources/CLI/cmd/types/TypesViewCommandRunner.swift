@@ -4,25 +4,25 @@ struct TypesViewCommandRunner: Sendable {
         let responseByteCount: Int
     }
 
-    private let client: AppleDocumentationClient
+    private let repository: AppleDocumentationRepository
     private let renderer: TypeDocumentationRenderer
 
     init(
-        client: AppleDocumentationClient,
+        repository: AppleDocumentationRepository,
         renderer: TypeDocumentationRenderer
     ) {
-        self.client = client
+        self.repository = repository
         self.renderer = renderer
     }
 
     func run(name: String, technology: String, mode: OutputMode) async throws -> Result {
-        let document = try await client.fetchType(
+        let document = try await repository.fetchPage(
             named: name,
             technology: technology
         )
         return Result(
-            output: try renderer.render(document),
-            responseByteCount: document.data.count
+            output: try renderer.render(document.page),
+            responseByteCount: document.responseByteCount
         )
     }
 }

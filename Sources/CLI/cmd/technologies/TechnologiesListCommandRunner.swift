@@ -6,11 +6,11 @@ struct TechnologiesListCommandRunner: Sendable {
         let technologyCount: Int
     }
 
-    private let client: TechnologyCatalogClient
+    private let client: TechnologyCatalogRepository
     private let renderer: TechnologyListRenderer
 
     init(
-        client: TechnologyCatalogClient,
+        client: TechnologyCatalogRepository,
         renderer: TechnologyListRenderer
     ) {
         self.client = client

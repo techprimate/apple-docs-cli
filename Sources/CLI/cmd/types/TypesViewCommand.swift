@@ -3,7 +3,7 @@ import ArgumentParser
 struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
     #if DEBUG
         typealias Deps = any (
-            TelemetryProvider & TerminalCapabilitiesProvider & AppleDocumentationClientProvider
+            TelemetryProvider & TerminalCapabilitiesProvider & AppleDocumentationRepositoryProvider
                 & TypeDocumentationRendererProvider & CommandOutputWriterProvider
         )
     #else
@@ -32,7 +32,7 @@ struct TypesViewCommand: AsyncParsableCommand, GlobalOptionsProviding {
         let context = TelemetryCommandContext.typesView(name: name, technology: technology, json: output.json)
         deps.telemetry.startCommand(context)
         let runner = TypesViewCommandRunner(
-            client: deps.documentationClient,
+            repository: deps.documentationRepository,
             renderer: deps.documentationRenderer(output: output)
         )
         let result = try await runner.run(

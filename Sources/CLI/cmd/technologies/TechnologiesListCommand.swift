@@ -3,7 +3,7 @@ import ArgumentParser
 struct TechnologiesListCommand: AsyncParsableCommand, GlobalOptionsProviding {
     #if DEBUG
         typealias Deps = any (
-            TelemetryProvider & TerminalCapabilitiesProvider & TechnologyCatalogClientProvider
+            TelemetryProvider & TerminalCapabilitiesProvider & TechnologyCatalogRepositoryProvider
                 & TechnologyListRendererProvider & CommandOutputWriterProvider
         )
     #else
@@ -26,7 +26,7 @@ struct TechnologiesListCommand: AsyncParsableCommand, GlobalOptionsProviding {
         let context = TelemetryCommandContext.technologiesList(json: output.json)
         deps.telemetry.startCommand(context)
         let runner = TechnologiesListCommandRunner(
-            client: deps.documentationClient,
+            client: deps.documentationRepository,
             renderer: deps.technologyListRenderer(output: output)
         )
         let result = try await runner.run(mode: deps.terminalCapabilities.mode(for: output))
