@@ -3,6 +3,23 @@ import Testing
 @Suite("Browser application integration")
 @MainActor
 struct BrowserApplicationTests {
+    @Test("Enter has no action and arrows reveal focused buttons", .timeLimit(.minutes(1)))
+    func navigatesButtons() async throws {
+        // -- Arrange --
+        let terminal = try BrowserTerminal(client: .sequential)
+
+        // -- Act --
+        let screens = try await terminal.run([
+            .init("Item00", keys: [0x0D, 0x1B, 0x5B, 0x43, 0x1B, 0x5B, 0x43, 0x1B, 0x5B, 0x43]),
+            .init("Item03"),
+        ])
+
+        // -- Assert --
+        #expect(screens[1].contains("Apple Docs CLI"))
+        #expect(!screens[1].contains("Item00"))
+        #expect(screens[1].contains("Item03"))
+    }
+
     @Test("page down reveals grid rows outside the viewport", .timeLimit(.minutes(1)))
     func scrollsGrid() async throws {
         // -- Arrange --
@@ -34,7 +51,7 @@ struct BrowserApplicationTests {
 
         // -- Assert --
         for screen in screens {
-            #expect(screen.split(separator: "\n").last == "g: Scroll to top  G: Scroll to bottom")
+            #expect(screen.split(separator: "\n").last == "Arrows: Move  g/G: Top/Bottom")
         }
     }
 

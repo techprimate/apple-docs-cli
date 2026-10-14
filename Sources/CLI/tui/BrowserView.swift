@@ -23,7 +23,7 @@ struct BrowserView: View {
                 ScrollView {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
                         ForEach(technologies) { technology in
-                            Text(technology.name)
+                            Button(technology.name) {}
                         }
                     }
                 }
@@ -46,8 +46,8 @@ struct BrowserView: View {
                 Text(errorMessage)
             }
             KeyBindingsFooter(bindings: [
-                .init(key: "g", action: "Scroll to top"),
-                .init(key: "G", action: "Scroll to bottom"),
+                .init(key: "Arrows", action: "Move"),
+                .init(key: "g/G", action: "Top/Bottom"),
             ])
         }
         .task {
