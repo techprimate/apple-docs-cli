@@ -27,7 +27,7 @@ struct BrowserTerminal {
     private let pipe = Pipe()
     private let runLoop = DefaultRunLoop()
     private let columns = 48
-    private let rows = 6
+    private let rows = 7
     private let client: BrowserCatalogFixture
 
     init(client: BrowserCatalogFixture) throws {
@@ -36,7 +36,7 @@ struct BrowserTerminal {
         try #require(openpty(&hostDescriptor, &terminalDescriptor, nil, nil, nil) == 0)
         host = FileHandle(fileDescriptor: hostDescriptor, closeOnDealloc: true)
         terminal = FileHandle(fileDescriptor: terminalDescriptor, closeOnDealloc: true)
-        var size = winsize(ws_row: 6, ws_col: 48, ws_xpixel: 0, ws_ypixel: 0)
+        var size = winsize(ws_row: 7, ws_col: 48, ws_xpixel: 0, ws_ypixel: 0)
         try #require(ioctl(terminalDescriptor, TIOCSWINSZ, &size) == 0)
         self.client = client
     }
