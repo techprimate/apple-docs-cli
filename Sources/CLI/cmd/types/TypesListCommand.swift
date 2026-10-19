@@ -22,7 +22,7 @@ struct TypesListCommand: AsyncParsableCommand, GlobalOptionsProviding {
     var technology: String
 
     mutating func run() async throws {
-        try await run(deps: Dependencies.shared)
+        try await run(deps: AppleDocs.dependencies)
     }
 
     func run(deps: Deps) async throws {

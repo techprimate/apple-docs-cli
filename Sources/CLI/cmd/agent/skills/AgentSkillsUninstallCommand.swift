@@ -38,7 +38,7 @@ struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
     }
 
     mutating func run() throws {
-        try run(deps: Dependencies.shared)
+        try run(deps: AppleDocs.dependencies)
     }
 
     func run(deps: Deps) throws {

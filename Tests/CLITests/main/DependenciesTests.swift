@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -12,8 +13,8 @@ struct DependenciesTests {
     @Test("separate dependency instances own separate transports and caches")
     func isolatesInstances() throws {
         // -- Arrange --
-        let first = Dependencies()
-        let second = Dependencies()
+        let first = makeDependencies()
+        let second = makeDependencies()
 
         // -- Act --
         let firstCache = try #require(first.documentationCache)
@@ -29,7 +30,7 @@ struct DependenciesTests {
     @Test("uses a dedicated large documentation cache")
     func usesDedicatedDocumentationCache() throws {
         // -- Arrange --
-        let dependencies = Dependencies.shared
+        let dependencies = makeDependencies()
         let session = dependencies.httpDataTransport
 
         // -- Act --
@@ -40,5 +41,14 @@ struct DependenciesTests {
         #expect(session !== URLSession.shared)
         #expect(cache === documentationCache)
         #expect(cache.diskCapacity == 1_000_000_000)
+    }
+
+    private func makeDependencies() -> Dependencies {
+        Dependencies(
+            telemetry: DefaultTelemetry(
+                logger: { Logger(label: "test") { _ in SwiftLogNoOpLogHandler() } },
+                environment: ["TELEMETRY_DISABLED": "true"]
+            )
+        )
     }
 }
