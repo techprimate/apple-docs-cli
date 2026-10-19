@@ -1,16 +1,23 @@
 import ArgumentParser
+import Foundation
 import Logging
 
 @main
 enum AppleDocs {
     private static let logger = Logger(label: "com.techprimate.apple-docs")
+    private static let telemetry = DefaultTelemetry(
+        // Telemetry starts before SwiftLog is bootstrapped. Resolve its logger only when logging an event.
+        logger: { Logger(label: "com.techprimate.apple-docs.telemetry") },
+        environment: ProcessInfo.processInfo.environment
+    )
+    static let dependencies = Dependencies(telemetry: telemetry)
 
     @MainActor
     static func main() async {
-        let telemetry = Dependencies.shared.telemetry
+        let telemetry = Self.telemetry
         telemetry.start()
         // Telemetry installs a SIGPIPE handler during start, so configure the terminal afterward.
-        Dependencies.shared.terminalSetup.configure()
+        TerminalSetup().configure()
         var loggingConfigured = false
 
         do {
@@ -20,6 +27,8 @@ enum AppleDocs {
                 telemetry: telemetry
             )
             loggingConfigured = true
+            // Construct command dependencies only after their log handlers are installed.
+            _ = Self.dependencies
             Self.logger.debug("CLI command parsed")
             if var asyncCommand = command as? any AsyncParsableCommand {
                 try await asyncCommand.run()

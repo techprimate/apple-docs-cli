@@ -18,7 +18,7 @@ struct AgentSkillsGetCommand: ParsableCommand, GlobalOptionsProviding {
     var name: String
 
     mutating func run() throws {
-        try run(deps: Dependencies.shared)
+        try run(deps: AppleDocs.dependencies)
     }
 
     func run(deps: Deps) throws {
