@@ -6,28 +6,15 @@ import Logging
 #endif
 
 struct Dependencies: Sendable {
-    static let shared = Dependencies()
-
     let terminalCapabilities = DefaultTerminalCapabilities()
     let commandOutputWriter = DefaultCommandOutputWriter()
-    let terminalSetup = TerminalSetup()
-    let telemetry = DefaultTelemetry(
-        // Telemetry starts before SwiftLog is bootstrapped. Resolve its logger only when logging an event.
-        logger: { Logger(label: "com.techprimate.apple-docs.telemetry") },
-        environment: ProcessInfo.processInfo.environment
-    )
+    let telemetry: DefaultTelemetry
     let httpCache: URLCache?
     let httpDataTransport: URLSession
+    let documentationRepository: DefaultAppleDocumentationRepository<DefaultAppleDocumentationClient<URLSession>>
 
-    // Commands resolve the repository after logging is bootstrapped.
-    var documentationRepository: DefaultAppleDocumentationRepository<DefaultAppleDocumentationClient<URLSession>> {
-        DefaultAppleDocumentationRepository(
-            logger: Logger(label: "com.techprimate.apple-docs.repository"),
-            dependencies: DefaultAppleDocumentationClient(
-                logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport))
-    }
-
-    init() {
+    init(telemetry: DefaultTelemetry) {
+        self.telemetry = telemetry
         if let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
             let cacheDirectory = cachesDirectory.appendingPathComponent("com.techprimate.apple-docs", isDirectory: true)
             #if canImport(FoundationNetworking)
@@ -46,6 +33,10 @@ struct Dependencies: Sendable {
             configuration.urlCache = httpCache
         }
         httpDataTransport = URLSession(configuration: configuration)
+        documentationRepository = DefaultAppleDocumentationRepository(
+            logger: Logger(label: "com.techprimate.apple-docs.repository"),
+            dependencies: DefaultAppleDocumentationClient(
+                logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport))
     }
 
     var documentationCache: URLCache? {

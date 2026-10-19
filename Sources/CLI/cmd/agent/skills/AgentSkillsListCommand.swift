@@ -15,7 +15,7 @@ struct AgentSkillsListCommand: ParsableCommand, GlobalOptionsProviding {
     )
 
     mutating func run() throws {
-        run(deps: Dependencies.shared)
+        run(deps: AppleDocs.dependencies)
     }
 
     func run(deps: Deps) {
