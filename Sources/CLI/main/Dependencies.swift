@@ -18,7 +18,14 @@ struct Dependencies: Sendable {
     )
     let httpCache: URLCache?
     let httpDataTransport: URLSession
-    let documentationRepository: DefaultAppleDocumentationRepository<DefaultAppleDocumentationClient<URLSession>>
+
+    // Commands resolve the repository after logging is bootstrapped.
+    var documentationRepository: DefaultAppleDocumentationRepository<DefaultAppleDocumentationClient<URLSession>> {
+        DefaultAppleDocumentationRepository(
+            logger: Logger(label: "com.techprimate.apple-docs.repository"),
+            dependencies: DefaultAppleDocumentationClient(
+                logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport))
+    }
 
     init() {
         if let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
@@ -39,10 +46,6 @@ struct Dependencies: Sendable {
             configuration.urlCache = httpCache
         }
         httpDataTransport = URLSession(configuration: configuration)
-        documentationRepository = DefaultAppleDocumentationRepository(
-            logger: Logger(label: "com.techprimate.apple-docs.repository"),
-            dependencies: DefaultAppleDocumentationClient(
-                logger: Logger(label: "com.techprimate.apple-docs.client"), dependencies: httpDataTransport))
     }
 
     var documentationCache: URLCache? {
