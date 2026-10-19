@@ -46,6 +46,28 @@ struct AppleDocsCommandIntegrationTests {
         #expect(!output.contains("\u{1B}"))
     }
 
+    @Test("startup routes documentation logs only to verbose stderr", arguments: [false, true])
+    func routesDocumentationLogs(verbose: Bool) throws {
+        // -- Arrange --
+        var arguments = ["types", "view", "environmentvalues/linelimit", "--technology", "SwiftUI", "--agent"]
+        if verbose { arguments.append("--verbose") }
+        var diagnostics = ""
+
+        // -- Act --
+        let output = try runAppleDocs(arguments, captureStandardError: { diagnostics = $0 })
+
+        // -- Assert --
+        #expect(output.hasPrefix("# lineLimit\n"))
+        #expect(!output.contains("Fetched type documentation"))
+        #expect(!output.contains("Requesting documentation data"))
+        if verbose {
+            #expect(diagnostics.contains("Fetched type documentation"))
+            #expect(diagnostics.contains("Requesting documentation data"))
+        } else {
+            #expect(diagnostics.isEmpty)
+        }
+    }
+
     @Test("agent JSON includes navigation without verbose diagnostics on stdout")
     func rendersAgentJSON() throws {
         // -- Arrange --
