@@ -31,10 +31,7 @@ extension SupportHTMLParser {
         while let current = sibling, !["h2", "h3"].contains(current.tagName()) {
             let anchors = try current.select("a.list-icon-document").array()
             if !anchors.isEmpty {
-                let translations = try current.select("a.open-modal").first().map(translationSet)
-                for anchor in anchors {
-                    resources.append(SupportTermsResource(link: try link(anchor), translations: translations))
-                }
+                resources += try termsResources(in: current)
             } else if current.tagName() == "p" {
                 if !description.isEmpty { description.append(.text(" ")) }
                 description += try inline(in: current)
@@ -47,10 +44,26 @@ extension SupportHTMLParser {
             id: id, title: nonemptyText(heading), description: description, resources: resources)
     }
 
+    private func termsResources(in container: Element) throws -> [SupportTermsResource] {
+        var resources: [SupportTermsResource] = []
+        for anchor in try container.select("a.list-icon-document, a.open-modal") {
+            if anchor.hasClass("list-icon-document") {
+                resources.append(SupportTermsResource(link: try link(anchor), translations: nil))
+            } else {
+                guard let index = resources.indices.last, resources[index].translations == nil else {
+                    throw layoutError
+                }
+                resources[index] = SupportTermsResource(
+                    link: resources[index].link, translations: try translationSet(anchor))
+            }
+        }
+        return resources
+    }
+
     private func translationSet(_ trigger: Element) throws -> SupportTranslationSet {
-        let modalClass = try trigger.classNames().first { $0.hasPrefix("modal") }
-        guard let modalClass else { throw layoutError }
-        let modal = try required("#" + modalClass + " .force-height")
+        let targets = try trigger.classNames().compactMap { try document.getElementById($0) }
+        guard let target = targets.first(where: { $0.hasClass("modal") }) else { throw layoutError }
+        let modal = try required(".force-height", in: target)
         var notice: [SupportContentBlock] = []
         var updated: String?
         for child in modal.children() where child.tagName() == "p" {

@@ -40,7 +40,7 @@ extension SupportHTMLParser {
                 pending.append(
                     .text(text.text().replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)))
             } else if let child = node as? Element, !ignored(child) {
-                if ["a", "em", "i", "strong", "b", "sup", "code", "span", "br"].contains(child.tagName()) {
+                if isInline(child) {
                     let wrapper = try Element(Tag.valueOf("p"), "")
                     try wrapper.appendChild(child.copy(parent: nil))
                     pending += try inline(in: wrapper)
@@ -104,6 +104,12 @@ extension SupportHTMLParser {
         }
         let caption = try element.select("figcaption").first().map { try inline(in: $0) } ?? []
         return [.image(url: try resolve(image.attr("src")), alt: try image.attr("alt"), caption: caption)]
+    }
+
+    private func isInline(_ element: Element) -> Bool {
+        guard element.tagName() != "img" else { return false }
+        if !element.isBlock() { return true }
+        return ["ins", "del", "s"].contains(element.tagName()) && element.children().allSatisfy(isInline)
     }
 
     private func ignored(_ element: Element) -> Bool {
