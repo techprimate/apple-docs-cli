@@ -1,5 +1,5 @@
 {
-  "originHash" : "2436dbcfb55663689cf7fa91d089b6b0f056cdf5152666df83264d9d8816fd0a",
+  "originHash" : "6a98a760c3e325bdd763ce4b5f632d0b8385e56073648c11f31516a303aa0d5a",
   "pins" : [
     {
       "identity" : "sentry-apple-swift-log",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "9c6fb14227f55d8f711ce3847dc2f419fb0ecacb",
         "version" : "1.15.1"
+      }
+    },
+    {
+      "identity" : "swiftsoup",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/scinfu/SwiftSoup.git",
+      "state" : {
+        "revision" : "8397a860c6955924b584c50c5265c6aac0970015",
+        "version" : "2.14.4"
       }
     }
   ],
