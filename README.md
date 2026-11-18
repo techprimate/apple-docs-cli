@@ -7,6 +7,7 @@
 
 - Read APIs, inspect declarations, platform availability, conformances, and documented members.
 - Discover symbols, list technologies and search their documentation collections.
+- Browse support articles, help guides, glossary definitions, agreements, and guidelines.
 - Use in scripts and agents to retrieve structured results, agent Markdown, and bundled Agent Skills.
 
 > [!NOTE]
@@ -23,7 +24,7 @@ apple-docs --version
 
 For **Linux packages**, manual downloads, and checksums, see the [latest release notes](https://github.com/techprimate/apple-docs-cli/releases/latest). To build from source, see the [development guide](docs/DEVELOPMENT.md).
 
-Fetching documentation requires internet access to Apple's documentation service.
+Fetching documentation requires internet access to Apple's documentation services.
 
 ## Quick start
 
@@ -72,9 +73,19 @@ Output reflects Apple's documentation and can change as Apple updates it.
 | `apple-docs types list --technology <technology>`           | List symbols linked directly from a technology's root page. |
 | `apple-docs types search <query> --technology <technology>` | Search symbols in a technology's documentation collections. |
 | `apple-docs types view <type> --technology <technology>`    | Read a type's documentation.                                |
+| `apple-docs support articles list`                          | Discover categorized support resources.                     |
+| `apple-docs support guides list`                            | Discover help resources and topic groups.                   |
+| `apple-docs support guides contents --name <guide>`         | Browse a guide's table of contents.                         |
+| `apple-docs support glossary list`                          | List or filter glossary terms and definitions.              |
+| `apple-docs support glossary view --term <term>`            | Read one glossary definition.                               |
+| `apple-docs support terms list`                             | Discover agreements and guidelines.                         |
+| `apple-docs support terms view --name <entry>`              | Read an entry's document resources and translations.        |
+| `apple-docs support view --path <path>`                     | Read a supported help or support HTML page.                 |
 | `apple-docs cache clean`                                    | Clear cached documentation responses.                       |
 | `apple-docs agent skills list`                              | List bundled Agent Skills.                                  |
-| `apple-docs agent skills get apple-docs`                    | Print the bundled documentation skill.                      |
+| `apple-docs agent skills get <name>`                        | Print a bundled research skill.                             |
+| `apple-docs agent skills install <name>`                    | Install a selected bundled skill.                           |
+| `apple-docs agent skills uninstall <name>`                  | Remove an unchanged managed skill.                          |
 
 Use `apple-docs --help` or append `--help` to a command for its arguments and options.
 
@@ -132,14 +143,59 @@ apple-docs types view URLSession.AsyncBytes --technology Foundation
 apple-docs types view URLSession/AsyncBytes --technology Foundation
 ```
 
+### Support articles, guides, and glossary
+
+Discover categorized support resources and browse help guides:
+
+```bash
+apple-docs support articles list
+apple-docs support articles list --category membership
+apple-docs support guides list
+apple-docs support guides contents --name app-store-connect
+```
+
+Use category identifiers and guide names from returned resources or agent follow-up commands. Article catalogs contain resource links, not article bodies. Guide contents retain nested sections and page links. These commands are not full-text or exhaustive site search.
+
+Read a supported HTML page by its path relative to `developer.apple.com`:
+
+```bash
+apple-docs support view --path support/fee-waiver
+apple-docs support view --path help/app-store-connect/reference/app-information/screenshot-specifications
+```
+
+Paths must start with `help/` or `support/`. Do not pass full URLs, query strings, or fragments. The reader preserves available headings, lists, tables, code, links, images, breadcrumbs, and substantive notices. PDFs and unknown HTML layouts are unsupported. A link in a catalog does not guarantee that the CLI can read its contents.
+
+Find a glossary term, then read its definition:
+
+```bash
+apple-docs support glossary list --query account
+apple-docs support glossary view --term "Account Holder"
+```
+
+The query matches term names by case-insensitive substring, not definition text. Viewing a definition requires the exact displayed term, matched case-insensitively.
+
+### Agreements and guidelines
+
+```bash
+apple-docs support terms list
+apple-docs support terms list --category guidelines
+apple-docs support terms view --name apple-developer-program-license-agreement
+```
+
+Copy category and entry identifiers from the catalog. An entry contains its description, document links, resource-specific translations, notices, and available update labels. It does not download the linked legal document or establish which agreement a user has accepted. Keep translations and notices associated with their original document resource.
+
+All support commands are stateless and accept `--agent` and `--json` independently. They do not take `--technology`.
+
 ### Agent output
 
-Use `--agent` on documentation commands for Markdown with explicit technology, paths, links, and safely quoted follow-up commands:
+Use `--agent` on documentation and support commands for Markdown with explicit destinations, links, and safely quoted follow-up commands:
 
 ```bash
 apple-docs types view String --technology Swift --agent
 apple-docs types search Button --technology SwiftUI --agent
 apple-docs technologies list --agent
+apple-docs support guides contents --name app-store-connect --agent
+apple-docs support view --path support/fee-waiver --agent
 ```
 
 Agent output uses the same normalized documentation content as human text. Follow-up commands are included only for destinations the CLI can represent safely. All commands remain one-shot, even when run in a terminal.
@@ -148,7 +204,7 @@ Agent output uses the same normalized documentation content as human text. Follo
 
 ### JSON output
 
-The documentation commands accept `--json` for normalized semantic output:
+The DocC documentation commands accept `--json` for normalized semantic output:
 
 | Command             | JSON output                                                                                                                                                                             |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -157,7 +213,17 @@ The documentation commands accept `--json` for normalized semantic output:
 | `types search`      | An object containing `technology`, a `types` array, and `coverage` with completeness and typed collection failures.                                                                     |
 | `technologies list` | A sorted array of `name` and `identifier` objects.                                                                                                                                      |
 
-Add `--agent` to include `navigation` commands for supported destinations. Content blocks retain semantic types and links distinguish documentation, external, and unavailable targets. Availability includes `introducedAt`, `deprecatedAt`, `obsoletedAt`, `isBeta`, and `isUnavailable` when applicable. Inapplicable optional fields are omitted.
+Support commands return objects tagged with `kind`, including catalogs, guide contents, glossary definitions, terms entries, and articles. For example:
+
+```bash
+apple-docs support articles list --agent --json
+apple-docs support glossary view --term "Account Holder" --json
+apple-docs support view --path support/fee-waiver --agent --json
+```
+
+Support JSON has its own catalog and rich-content shapes, distinct from DocC pages. See [Output formats and JSON](docs/OUTPUT.md#support-json-result-shapes) for fields and examples.
+
+Add `--agent` to include `navigation` commands for supported destinations. DocC content blocks retain semantic types and links distinguish documentation, external, and unavailable targets. Availability includes `introducedAt`, `deprecatedAt`, `obsoletedAt`, `isBeta`, and `isUnavailable` when applicable. Inapplicable optional fields are omitted.
 
 ```bash
 apple-docs types view String --technology Swift --json
@@ -171,7 +237,7 @@ For example, extract the documented title using [jq](https://jqlang.org/), insta
 apple-docs types view String --technology Swift --json | jq -r '.title'
 ```
 
-This is a breaking change: page JSON is normalized rather than raw DocC, and title extraction uses `.title` instead of `.metadata.title`. There is no raw-DocC export flag. Normalization does not preserve every upstream field, so missing normalized content is not evidence that Apple supplies no such information. JSON stdout contains only the result, with warnings and verbose diagnostics sent to stderr.
+Page JSON is normalized rather than raw DocC. There is no raw-DocC export flag. Normalization does not preserve every upstream field, so missing normalized content is not evidence that Apple supplies no such information. JSON stdout contains only the result, with warnings and verbose diagnostics sent to stderr.
 
 See [Output formats and JSON](docs/OUTPUT.md) for the complete normalized JSON shapes, link targets, and follow-up-command limitations.
 
@@ -185,7 +251,7 @@ apple-docs cache clean
 
 ## Agent Skills
 
-The executable includes task-specific guidance for coding agents. Ask your agent to read the bundled skill when using `apple-docs` to look up APIs. The root help points agents to the catalog:
+The executable includes task-specific research guidance for coding agents. List available skills and their descriptions, then read the relevant skill before researching:
 
 ```bash
 apple-docs agent skills list
@@ -197,9 +263,27 @@ Print the bundled skill without installing files:
 apple-docs agent skills get apple-docs
 ```
 
+Preview and install all bundled skills:
+
+```bash
+apple-docs agent skills install --all --dry-run
+apple-docs agent skills install --all
+```
+
+The default destination is `~/.agents/skills`. Use `--project` for `.agents/skills` beneath the Git root, or beneath the current directory outside Git. Use `--dir <root>` for another `.agents` root. Installation does not configure individual agent tools, which must support this directory convention.
+
+To remove managed skills, preview first:
+
+```bash
+apple-docs agent skills uninstall --all --dry-run
+apple-docs agent skills uninstall --all --yes
+```
+
+`--force` replaces differing managed skill files during installation, never unmanaged files. Uninstall refuses to remove modified managed skills and preserves unrelated files. Bulk removal requires `--yes` unless previewing with `--dry-run`. Agents should obtain approval before installation or removal.
+
 ## Telemetry
 
-macOS builds include Sentry telemetry for errors, crashes, command traces, logs, and metrics. Command metadata can include the requested technology and type. Linux builds do not include the Sentry SDK.
+macOS builds include Sentry telemetry for errors, crashes, command traces, logs, and metrics. API command metadata can include the requested technology and type. Support commands record their command name and JSON output mode, not lookup paths, filters, or terms. Linux builds do not include the Sentry SDK. See the [telemetry policy](docs/TELEMETRY.md) for details.
 
 Disable telemetry for a command:
 

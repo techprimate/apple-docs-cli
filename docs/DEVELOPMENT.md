@@ -48,6 +48,30 @@ pre-commit install
 | `make format`                                            | Format Swift with `swift format` and JSON, YAML, Markdown, and TOML with dprint.                   |
 | `make help`                                              | Show all development commands.                                                                     |
 
+## Focused verification
+
+Start with the tests for the behavior you changed. For support commands and their live Apple pages:
+
+```bash
+make test TEST_ARGS="--filter SupportCommandTests --filter SupportRendererTests"
+make test-integration INTEGRATION_FILTER=SupportCommandIntegrationTests
+./dist/apple-docs support view --path support/fee-waiver --agent --json
+```
+
+The live suite exercises catalogs, guide contents, glossary definitions, terms resources, and supported HTML layouts. It requires internet access and runs against the release executable, not a mocked service.
+
+For bundled research skills, verify discovery, retrieval, and the existing installation behavior:
+
+```bash
+make test TEST_ARGS="--filter BundledAgentSkillsTests --filter AgentSkillsCommandTests --filter AgentSkillsInstallationTests"
+make build
+./dist/apple-docs agent skills list
+./dist/apple-docs agent skills get apple-docs
+./dist/apple-docs agent skills install --all --dry-run --project
+```
+
+Use a dry run to inspect installation destinations without changing agent configuration. Follow the [repository instructions](../AGENTS.md) for source organization and skill bundling. Focused checks supplement the full verification commands below.
+
 ## Linux workflows
 
 Container commands mount the source read-only and keep build products in Docker volumes, separate from the host build directory. The two test architectures use isolated volumes. Select one architecture or narrow the tests when needed:
