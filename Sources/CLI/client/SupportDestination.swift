@@ -18,7 +18,9 @@ struct SupportDestination: Equatable, Hashable, Sendable {
             value = decoded
         }
         let path = value.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        guard let root = path.split(separator: "/").first, root == "help" || root == "support" else {
+        guard let root = path.split(separator: "/").first,
+            root == "help" || root == "support" || path == "xcode/system-requirements"
+        else {
             throw AppleSupportClientError.invalidPath
         }
         self.path = path
@@ -28,7 +30,7 @@ struct SupportDestination: Equatable, Hashable, Sendable {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "developer.apple.com"
-        components.path = "/" + path + "/"
+        components.path = "/" + path + (path.lowercased().hasSuffix(".pdf") ? "" : "/")
         return components.url!
     }
 

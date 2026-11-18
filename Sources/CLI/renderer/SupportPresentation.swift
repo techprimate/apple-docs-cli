@@ -9,6 +9,7 @@ enum SupportPayload: Sendable {
     case terms(SupportTermsCatalog)
     case termsEntry(SupportTermsEntry)
     case article(SupportArticle)
+    case pdf(SupportPDF)
 
     var kind: String {
         switch self {
@@ -20,6 +21,7 @@ enum SupportPayload: Sendable {
         case .terms: return "termsCatalog"
         case .termsEntry: return "termsEntry"
         case .article: return "article"
+        case .pdf: return "pdf"
         }
     }
 
@@ -33,6 +35,7 @@ enum SupportPayload: Sendable {
         case .terms(let value): try value.encode(to: encoder)
         case .termsEntry(let value): try value.encode(to: encoder)
         case .article(let value): try value.encode(to: encoder)
+        case .pdf(let value): try value.encode(to: encoder)
         }
     }
 }
@@ -133,8 +136,8 @@ struct SupportPresenter {
         return
             (parts.count > 2 && parts[0] == "help"
             && ["account", "app-store-connect", "app-review"].contains(parts[1]))
-            || path == "support/fee-waiver"
-            || path == "support/terms/apple-developer-program-license-agreement"
+            || path.hasPrefix("support/")
+            || path == "xcode/system-requirements"
     }
 
     private func quote(_ text: String) -> String {

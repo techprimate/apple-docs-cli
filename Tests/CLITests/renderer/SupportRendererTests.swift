@@ -70,6 +70,31 @@ struct SupportRendererTests {
         #expect(presentation.navigation?.first?.command.contains("'Developer'\\''s account'") == true)
     }
 
+    @Test("offers view commands for standalone articles and Xcode support")
+    func standaloneNavigation() throws {
+        // -- Arrange --
+        let paths = SupportArticleFixture.standalone.map(\.path) + ["support/xcode", "xcode/system-requirements"]
+        let links = try paths.map { path in
+            SupportPageLink(
+                title: path, url: try #require(URL(string: "https://developer.apple.com/" + path + "/")))
+        }
+        let payload = SupportPayload.articles(
+            SupportArticlesCatalog(
+                header: SupportPageHeader(
+                    url: URL(string: "https://developer.apple.com/support/articles/")!,
+                    title: "Articles", introduction: ""),
+                categories: [SupportArticleCategory(id: "development", title: "Development", summary: "", links: links)]
+            ))
+
+        // -- Act --
+        let presentation = SupportPresenter().present(payload, audience: .agent)
+
+        // -- Assert --
+        #expect(
+            presentation.navigation?.map(\.command)
+                == paths.map { "apple-docs support view --path '\($0)' --agent" })
+    }
+
     @Test("human rendering keeps table contents, code whitespace and legal notices")
     func humanDocument() throws {
         // -- Arrange --

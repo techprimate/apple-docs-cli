@@ -41,7 +41,11 @@ struct SupportCommandRunner: Sendable {
         case .glossaryEntry(let term): payload = .glossaryEntry(try await service.fetchGlossaryEntry(term: term))
         case .terms(let category): payload = .terms(try await service.fetchTerms(category: category))
         case .termsEntry(let name): payload = .termsEntry(try await service.fetchTermsEntry(named: name))
-        case .article(let path): payload = .article(try await service.fetchArticle(path: path))
+        case .article(let path):
+            switch try await service.fetchDocument(path: path) {
+            case .article(let article): payload = .article(article)
+            case .pdf(let pdf): payload = .pdf(pdf)
+            }
         }
         return try renderer.render(payload)
     }

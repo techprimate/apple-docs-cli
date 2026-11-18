@@ -90,11 +90,67 @@ struct AppleSupportServiceTests {
             """)
 
         // -- Act --
-        let article = try await service.fetchArticle(path: "support/fee-waiver")
+        let document = try await service.fetchDocument(path: "support/fee-waiver")
 
         // -- Assert --
+        guard case .article(let article) = document else {
+            Issue.record("Expected an HTML article")
+            return
+        }
         #expect(article.title == "Fee waiver")
         #expect(article.content == [.paragraph([.text("Eligible organizations.")])])
+    }
+
+    @Test("reads the Xcode support redirect and its requirements table")
+    func fetchesXcodeRequirements() async throws {
+        // -- Arrange --
+        let destination = try SupportDestination(path: "support/xcode")
+        let finalURL = try #require(URL(string: "https://developer.apple.com/xcode/system-requirements"))
+        let html = """
+            <head><link rel='canonical' href='https://developer.apple.com/xcode/system-requirements/'></head>
+            <nav><h2>Xcode</h2><a href='/download/'>Download</a></nav>
+            <main id='main' class='main' role='main'>
+            <section class='section section-hero'><div class='section-content'>
+            <h1 class='typography-headline'>SDKs and system requirements</h1></div></section>
+            <section class='section section-requirements'><div class='section-content'>
+            <developer-accordion><accordion-panel id='previous-versions'>
+            <h3>Previous Xcode versions</h3><div><table class='typography-caption'>
+            <thead><tr><th>Xcode Version</th><th>Supported macOS Versions</th><th>SDKs</th></tr></thead>
+            <tbody><tr><td>Xcode&nbsp;15.4</td><td>macOS&nbsp;Sonoma&nbsp;14.x</td>
+            <td>iOS&nbsp;17.5<br>tvOS&nbsp;17.5</td></tr></tbody></table></div>
+            </accordion-panel></developer-accordion></div></section></main>
+            <aside>Unrelated router links</aside><footer><nav>Developer Footer</nav></footer>
+            """
+        let response = try #require(
+            HTTPURLResponse(
+                url: finalURL, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "text/html"]))
+        let service = Service(
+            dependencies: DefaultAppleSupportClient(
+                logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
+                dependencies: HTTPTestTransport(responses: [
+                    destination.url: .response(data: Data(html.utf8), response: response)
+                ])))
+
+        // -- Act --
+        let document = try await service.fetchDocument(path: "support/xcode")
+
+        // -- Assert --
+        guard case .article(let article) = document else {
+            Issue.record("Expected an HTML article")
+            return
+        }
+        #expect(article.title == "SDKs and system requirements")
+        #expect(article.url.absoluteString == "https://developer.apple.com/xcode/system-requirements/")
+        #expect(article.content.first == .heading(level: 3, text: "Previous Xcode versions", anchor: nil))
+        let table = try #require(article.content.last)
+        guard case .table(let rows) = table else {
+            Issue.record("Expected the requirements table without page chrome")
+            return
+        }
+        #expect(rows.count == 2)
+        #expect(rows[0].cells.map(\.isHeader) == [true, true, true])
+        #expect(rows[1].cells[0].content == [.paragraph([.text("Xcode 15.4")])])
+        #expect(rows[1].cells[2].content == [.paragraph([.text("iOS 17.5"), .lineBreak, .text("tvOS 17.5")])])
     }
 
     @Test(

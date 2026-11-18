@@ -13,7 +13,7 @@ import Foundation
         func fetchGlossaryEntry(term: String) async throws -> SupportGlossaryEntry
         func fetchTerms(category: String?) async throws -> SupportTermsCatalog
         func fetchTermsEntry(named name: String) async throws -> SupportTermsEntry
-        func fetchArticle(path: String) async throws -> SupportArticle
+        func fetchDocument(path: String) async throws -> SupportDocument
     }
     extension DefaultAppleSupportService: AppleSupportService {}
     typealias DefaultAppleSupportServiceDependencies = AppleSupportClient
@@ -88,8 +88,12 @@ final class DefaultAppleSupportService<Dependencies: DefaultAppleSupportServiceD
         return entry
     }
 
-    func fetchArticle(path: String) async throws -> SupportArticle {
-        try await parser(path: path).article()
+    func fetchDocument(path: String) async throws -> SupportDocument {
+        let destination = try SupportDestination(path: path)
+        switch try await dependencies.fetchDocument(at: destination) {
+        case .html(let document): return try .article(SupportHTMLParser(document: document).article())
+        case .pdf(let url): return .pdf(SupportPDF(url: url))
+        }
     }
 
     private func parser(path: String) async throws -> SupportHTMLParser {

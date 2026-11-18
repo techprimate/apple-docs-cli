@@ -77,7 +77,7 @@ struct SupportHTMLParser {
             let url = URL(string: raw, relativeTo: source.destination.url)?.absoluteURL,
             let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
             let scheme = components.scheme?.lowercased(),
-            ["https", "http", "mailto"].contains(scheme),
+            ["https", "http", "mailto", "applefeedback"].contains(scheme),
             components.user == nil, components.password == nil
         else { throw SupportParsingError.invalidLink }
         return url
@@ -108,8 +108,14 @@ struct SupportHTMLParser {
     }
 
     func article() throws -> SupportArticle {
-        let article = try required("main .main-content article")
-        let heading = try required("main h1")
+        let article: Element
+        if source.destination.path == "xcode/system-requirements" {
+            _ = try required("main .section-requirements")
+            article = try required("main")
+        } else {
+            article = try required("main .main-content article, main > article, body > article")
+        }
+        let heading = try document.select("main h1").first() ?? required("h1", in: article)
         let content = try blocks(in: article)
         guard !content.isEmpty else { throw layoutError }
         return SupportArticle(
