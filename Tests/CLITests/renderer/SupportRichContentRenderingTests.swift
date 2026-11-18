@@ -61,6 +61,22 @@ struct SupportRichContentRenderingTests {
         #expect(inline[2]["text"] as? String == " after.")
     }
 
+    @Test("explicit paragraph line breaks are preserved for both audiences")
+    func preservesParagraphLineBreaks() throws {
+        // -- Arrange --
+        let payload = try payload("<p>First<br>Second<br><br>Fourth.</p>")
+        let human = DefaultSupportRenderer(output: .text, audience: .human)
+        let agent = DefaultSupportRenderer(output: .text, audience: .agent)
+
+        // -- Act --
+        let humanOutput = try human.render(payload)
+        let agentOutput = try agent.render(payload)
+
+        // -- Assert --
+        #expect(humanOutput.contains("First\nSecond\n\nFourth."))
+        #expect(agentOutput.contains("First\nSecond\n\nFourth."))
+    }
+
     @Test(
         "ordered lists preserve exact numbering across integer boundaries",
         arguments: [

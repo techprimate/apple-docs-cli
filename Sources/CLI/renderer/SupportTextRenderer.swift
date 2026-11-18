@@ -122,9 +122,10 @@ struct SupportTextRenderer {
     private func block(_ value: SupportContentBlock) -> String {
         switch value {
         case .paragraph(let content):
+            let text = inline(content)
             return agent
-                ? inline(content).trimmingCharacters(in: .whitespacesAndNewlines)
-                : layout.paragraph(inline(content), indent: "")
+                ? text.trimmingCharacters(in: .whitespacesAndNewlines)
+                : text.components(separatedBy: "\n").map { layout.paragraph($0, indent: "") }.joined(separator: "\n")
         case .heading(let level, let text, _): return heading(text, level: level)
         case .list(let ordered, let start, let items):
             return items.enumerated().map { index, item in
