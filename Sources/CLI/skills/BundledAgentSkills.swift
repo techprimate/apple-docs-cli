@@ -21,27 +21,43 @@ enum BundledAgentSkills {
             shortDescription: "Check platform availability, deprecations, and documented migration options.",
             content: checkAvailabilityContent
         ),
+        BundledAgentSkill(
+            name: "apple-docs-support",
+            shortDescription: "Find support articles, browse help guides, and look up development glossary terms.",
+            content: supportContent
+        ),
+        BundledAgentSkill(
+            name: "apple-docs-terms",
+            shortDescription: "Discover agreements, guidelines, document resources, translations, and notices.",
+            content: termsContent
+        ),
     ]
 
     static func skill(named name: String) -> BundledAgentSkill? {
         all.first { $0.name == name }
     }
+}
 
+extension BundledAgentSkills {
     private static let appleDocsContent = """
         ---
         name: apple-docs
         description: >-
-          Use for Apple Developer research, Swift and Apple framework questions, API documentation, declarations,
-          behavior, members, code examples, and platform support. Start with the apple-docs CLI instead of web
-          searches, browser lookups, direct HTTP requests, or remembered API details. Report unsupported research
-          explicitly rather than silently switching sources.
+          Use for Apple Developer research, Swift and Apple framework APIs, developer program support,
+          App Store Connect help, glossary terms, agreements, and guidelines. Start with the apple-docs CLI
+          instead of web searches, browser lookups, direct HTTP requests, or remembered details.
+          Report unsupported research explicitly rather than silently switching sources.
         ---
 
         # Apple Developer Research
 
         Use `apple-docs` as the first source for all Apple Developer research. Ground API claims in retrieved Apple
-        documentation, not search snippets or memory. The CLI currently provides technology discovery and DocC API
-        documentation lookup, not comprehensive search across every Apple Developer resource.
+        documentation, not search snippets or memory. The CLI provides technology discovery, DocC API documentation,
+        support resource catalogs, and supported help and support HTML pages, not comprehensive Apple Developer search.
+
+        Use `apple-docs-support` for membership, App Store Connect workflows, support articles, guides, and glossary
+        definitions. Use `apple-docs-terms` for agreements, guidelines, and document translations. The API research
+        workflow below applies to framework and symbol questions.
 
         ## Start with the question
 
@@ -90,10 +106,13 @@ enum BundledAgentSkills {
         apple-docs types view URLSession --technology Foundation --agent --json
         ```
 
-        Catalog JSON is arrays. Search JSON contains `technology`, `types`, and `coverage`. Check coverage before
-        interpreting no matches: `isComplete` and `unavailableCollections`. Page JSON is semantic, not raw DocC.
+        Technology and type lists return JSON arrays. Type-search JSON contains `technology`, `types`, and `coverage`.
+        Check coverage before interpreting no matches: `isComplete` and `unavailableCollections`.
+        Page JSON is semantic, not raw DocC.
         Inspect `title`, `declarations`, `availability`, `content`, `relationships`, `topics`, and `seeAlso`.
         Agent `navigation` commands and grouped references retain validated targets. A missing field is not a guarantee.
+        Support commands return tagged objects with `kind`, not the DocC shapes above. Follow the support and terms
+        skills for their catalog, document, resource, and translation fields.
 
         ## Availability and examples
 
@@ -258,5 +277,90 @@ enum BundledAgentSkills {
         source-backed facts from suggested guards or migration code. State whether code was compiled or tested locally.
         If metadata is absent, a request fails, or historical/release-note evidence is needed, state that gap and ask
         before using sources outside the CLI. Never invent version numbers to complete a compatibility table.
+        """
+}
+
+extension BundledAgentSkills {
+    private static let supportContent = """
+        ---
+        name: apple-docs-support
+        description: Use for Apple Developer support, membership, App Store Connect guides, and glossary definitions.
+        ---
+
+        # Research Apple Developer Support
+
+        Follow `apple-docs` source rules. Support commands are stateless and do not take `--technology`.
+
+        ## Discover resources
+
+        ```bash
+        apple-docs support articles list --agent
+        apple-docs support articles list --category membership --agent
+        apple-docs support guides list --agent
+        apple-docs support guides contents --name app-store-connect --agent --json
+        ```
+
+        Articles list categorized links; guides list resources and topics; contents returns an embedded guide index.
+        Copy category IDs, guide identifiers, or follow-up commands. This is not full-text or exhaustive search.
+
+        ## Read the relevant page or definition
+
+        ```bash
+        apple-docs support view --path support/fee-waiver --agent
+        apple-docs support glossary list --query account --agent
+        apple-docs support glossary view --term "Account Holder" --agent --json
+        ```
+
+        Follow returned navigation commands using relative `help/` or `support/` paths, not full URLs or query strings.
+        Omit fragments from arguments but retain source anchors in citations. Glossary queries match names by substring,
+        not definitions. View requires the exact term, case-insensitively. Read the source before recommending steps.
+
+        ## Preserve evidence and limits
+
+        Use `--agent` for Markdown and validated follow-up commands; add `--json` independently for structured evidence.
+        Inspect `kind`, categories, topics or entries, and document `content`, `breadcrumbs`, and `notices`.
+        Cite canonical URLs and retain qualifications, nested steps, links, and notices. PDFs and unknown layouts
+        are unsupported. Report failed commands precisely; do not invent paths or crawl the site. Ask before using
+        another source rather than silently switching to web search, direct HTTP, or memory.
+        """
+
+    private static let termsContent = """
+        ---
+        name: apple-docs-terms
+        description: Use to find Apple Developer agreements, guidelines, document resources, translations, and notices.
+        ---
+
+        # Discover Agreements and Guidelines
+
+        Follow `apple-docs` source rules. Identify the program, document, and language.
+        Public catalog results do not establish account acceptance.
+
+        ## Find the source entry
+
+        ```bash
+        apple-docs support terms list --agent
+        apple-docs support terms list --category guidelines --agent --json
+        apple-docs support terms view --name apple-developer-program-license-agreement --agent --json
+        ```
+
+        Copy category and entry IDs from the catalog or navigation commands. `terms view` returns metadata, resources,
+        translations, notices, and update labels, not the linked legal document text. Keep each translation with its
+        resource. Do not merge notices, assume shared languages across documents, or infer missing update dates.
+
+        ## Read supported HTML without overstating coverage
+
+        ```bash
+        apple-docs support view --path support/terms/apple-developer-program-license-agreement --agent
+        ```
+
+        `support view` reads known `help/` and `support/` HTML, not necessarily the full agreement on a landing page.
+        PDFs, off-site documents, and unknown layouts are unsupported. Do not guess commands or fetch them elsewhere.
+
+        ## Report the evidence boundary
+
+        `--agent` selects the audience; `--json` independently selects structured output. Inspect `kind`, categories,
+        entries, and `resources` with their `translations`. Cite source URLs and retain language and precedence notices.
+        Metadata does not establish obligations, accepted versions, or legal equivalence of translations. If unread
+        document text or account evidence is needed, state the gap and ask before using another source.
         """
 }
