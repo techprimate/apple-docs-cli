@@ -1,6 +1,6 @@
 # Telemetry
 
-`apple-docs` uses telemetry to understand failures, improve reliability, and learn which parts of Apple documentation are useful. Telemetry is enabled by default and can be disabled by setting `TELEMETRY_DISABLED=true`.
+macOS builds of `apple-docs` use Sentry telemetry to understand failures, improve reliability, and learn which parts of Apple documentation are useful. Linux builds use a no-op telemetry implementation. Telemetry is enabled by default on macOS and can be disabled by setting `TELEMETRY_DISABLED=true`.
 
 ## Principles
 
@@ -25,18 +25,22 @@ Invalid commands, missing required arguments, invalid flags, and command-level v
 
 ### Command Context
 
-Each leaf command starts a `console.command` transaction and opts in to a fixed set of fields.
+Instrumented commands start a `console.command` transaction and opt in to a fixed set of fields.
 
-| Command             | Captured fields                                                    |
-| ------------------- | ------------------------------------------------------------------ |
-| `types view`        | Command name, documentation type, technology, and JSON output mode |
-| `types list`        | Command name, technology, and JSON output mode                     |
-| `types search`      | Command name, technology, and JSON output mode                     |
-| `technologies list` | Command name and JSON output mode                                  |
-| `agent skills list` | Command name                                                       |
-| `agent skills get`  | Command name                                                       |
+| Command                                | Captured fields                                                    |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| `types view`                           | Command name, documentation type, technology, and JSON output mode |
+| `types list`                           | Command name, technology, and JSON output mode                     |
+| `types search`                         | Command name, technology, and JSON output mode                     |
+| `technologies list`                    | Command name and JSON output mode                                  |
+| `support` catalog and content commands | Command name and JSON output mode                                  |
+| `cache clean`                          | Command name                                                       |
+| `agent skills list`                    | Command name                                                       |
+| `agent skills get`                     | Command name                                                       |
 
-Documentation type and technology values are captured because they identify public Apple documentation and are required to reproduce page-specific failures. Other positional values are excluded unless explicitly approved.
+Documentation type and technology values are captured because they identify public Apple documentation and are required to reproduce page-specific failures. Support paths, guide names, category filters, glossary queries and terms, and agreement identifiers are not attached to command context. Agent Skill installation and removal do not start command transactions or attach skill names and installation paths as command context.
+
+Other positional values are excluded unless explicitly approved.
 
 ### Logs
 
@@ -68,6 +72,7 @@ Metric names and attributes are allowlisted. Type and technology are the only va
 The CLI does not intentionally send:
 
 - Raw process arguments or type search queries.
+- Support lookup paths, identifiers, category filters, or glossary queries and terms.
 - Environment variables.
 - User identity or account information.
 - IP addresses or geographic location.
