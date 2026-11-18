@@ -106,9 +106,9 @@ extension BundledAgentSkills {
         apple-docs types view URLSession --technology Foundation --agent --json
         ```
 
-        Technology and type-list JSON is arrays. Type-search JSON contains `technology`, `types`, and `coverage`.
-        Check coverage before
-        interpreting no matches: `isComplete` and `unavailableCollections`. Page JSON is semantic, not raw DocC.
+        Technology and type lists return JSON arrays. Type-search JSON contains `technology`, `types`, and `coverage`.
+        Check coverage before interpreting no matches: `isComplete` and `unavailableCollections`.
+        Page JSON is semantic, not raw DocC.
         Inspect `title`, `declarations`, `availability`, `content`, `relationships`, `topics`, and `seeAlso`.
         Agent `navigation` commands and grouped references retain validated targets. A missing field is not a guarantee.
         Support commands return tagged objects with `kind`, not the DocC shapes above. Follow the support and terms
@@ -332,7 +332,8 @@ extension BundledAgentSkills {
 
         # Discover Agreements and Guidelines
 
-        Identify the program, document, and language. Public catalog results do not establish account acceptance.
+        Follow `apple-docs` source rules. Identify the program, document, and language.
+        Public catalog results do not establish account acceptance.
 
         ## Find the source entry
 
