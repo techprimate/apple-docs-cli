@@ -1,11 +1,15 @@
 import Foundation
 
 extension SupportInline {
-    private enum CodingKeys: CodingKey { case type, text, content, label, url }
+    private enum CodingKeys: CodingKey { case type, text, content, label, url, alt }
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
+        case .image(let url, let alt):
+            try container.encode("image", forKey: .type)
+            try container.encode(url, forKey: .url)
+            try container.encode(alt, forKey: .alt)
         case .text(let text):
             try container.encode("text", forKey: .type)
             try container.encode(text, forKey: .text)

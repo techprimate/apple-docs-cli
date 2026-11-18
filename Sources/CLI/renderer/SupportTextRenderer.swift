@@ -99,6 +99,8 @@ struct SupportTextRenderer {
     func inline(_ values: [SupportInline]) -> String {
         values.map { item in
             switch item {
+            case .image(let url, let alt):
+                return agent ? "![" + alt + "](" + url.absoluteString + ")" : alt + " (" + url.absoluteString + ")"
             case .text(let text): return text
             case .code(let text): return agent ? "`" + text + "`" : text
             case .emphasis(let content): return agent ? "*" + inline(content) + "*" : inline(content)
@@ -126,7 +128,9 @@ struct SupportTextRenderer {
         case .heading(let level, let text, _): return heading(text, level: level)
         case .list(let ordered, let start, let items):
             return items.enumerated().map { index, item in
-                let prefix = ordered ? "\(start + index). " : "- "
+                let prefix =
+                    ordered
+                    ? NSDecimalNumber(decimal: Decimal(start) + Decimal(index)).stringValue + ". " : "- "
                 let lines = blocks(item).components(separatedBy: "\n")
                 return prefix + (lines.first ?? "") + lines.dropFirst().map { "\n  " + $0 }.joined()
             }.joined(separator: "\n")
