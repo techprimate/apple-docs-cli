@@ -1,6 +1,6 @@
 import Foundation
 
-indirect enum SupportInline: Equatable, Sendable {
+indirect enum SupportInline: Encodable, Equatable, Sendable {
     case text(String)
     case code(String)
     case emphasis([SupportInline])
@@ -11,7 +11,7 @@ indirect enum SupportInline: Equatable, Sendable {
     case lineBreak
 }
 
-indirect enum SupportContentBlock: Equatable, Sendable {
+indirect enum SupportContentBlock: Encodable, Equatable, Sendable {
     case paragraph([SupportInline])
     case heading(level: Int, text: String, anchor: String?)
     case list(ordered: Bool, start: Int, items: [[SupportContentBlock]])
@@ -22,18 +22,18 @@ indirect enum SupportContentBlock: Equatable, Sendable {
     case separator
 }
 
-struct SupportTableRow: Equatable, Sendable {
+struct SupportTableRow: Encodable, Equatable, Sendable {
     let cells: [SupportTableCell]
 }
 
-struct SupportTableCell: Equatable, Sendable {
+struct SupportTableCell: Encodable, Equatable, Sendable {
     let content: [SupportContentBlock]
     let isHeader: Bool
     let columnSpan: Int
     let rowSpan: Int
 }
 
-struct SupportArticle: Equatable, Sendable {
+struct SupportArticle: Encodable, Equatable, Sendable {
     let url: URL
     let title: String
     let context: String?
