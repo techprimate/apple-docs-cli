@@ -10,6 +10,7 @@ struct AgentSkillsCommand: ParsableCommand, GlobalOptionsProviding {
             AgentSkillsListCommand.self,
             AgentSkillsGetCommand.self,
             AgentSkillsInstallCommand.self,
+            AgentSkillsUpdateCommand.self,
             AgentSkillsUninstallCommand.self,
         ]
     )

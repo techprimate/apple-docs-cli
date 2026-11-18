@@ -1,3 +1,5 @@
+import Foundation
+import Logging
 import Testing
 
 @testable import CLI
@@ -7,11 +9,13 @@ struct AgentSkillsCommandTests {
     @Test("list writes the bundled skill names through the injected output")
     func writesSkillList() throws {
         // -- Arrange --
-        let command = try AgentSkillsListCommand.parse([])
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let command = try AgentSkillsListCommand.parse(["--dir", root.path])
         let deps = SkillListDependencies()
 
         // -- Act --
-        command.run(deps: deps)
+        try command.run(deps: deps)
 
         // -- Assert --
         #expect(deps.output.lines.count == BundledAgentSkills.all.count)
@@ -38,6 +42,41 @@ struct AgentSkillsCommandTests {
         #expect(deps.telemetry.commands == ["agent.skills.get"])
     }
 
+    @Test("list distinguishes installation state without changing files")
+    func listsInstallationState() throws {
+        // -- Arrange --
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let deps = SkillListDependencies()
+        let service = deps.agentSkillInstallationService()
+        _ = try service.install(Array(BundledAgentSkills.all.prefix(3)), root: root.path, dryRun: false, force: false)
+        let outdated = root.appendingPathComponent("skills/apple-docs-discover-api")
+        try Data("previous version".utf8).write(to: outdated.appendingPathComponent("SKILL.md"))
+        let receipt = AgentSkillInstallationStore.Receipt(
+            name: "apple-docs-discover-api", content: Data("previous version".utf8))
+        try JSONEncoder().encode(receipt).write(to: outdated.appendingPathComponent(".apple-docs-managed.json"))
+        let modified = root.appendingPathComponent("skills/apple-docs-check-availability/SKILL.md")
+        try Data("local edits".utf8).write(to: modified)
+        let unmanaged = root.appendingPathComponent("skills/apple-docs-support")
+        try FileManager.default.createDirectory(at: unmanaged, withIntermediateDirectories: true)
+        try Data("user skill".utf8).write(to: unmanaged.appendingPathComponent("SKILL.md"))
+        let command = try AgentSkillsListCommand.parse(["--dir", root.path])
+
+        // -- Act --
+        try command.run(deps: deps)
+
+        // -- Assert --
+        #expect(deps.output.lines.contains { $0.hasPrefix("apple-docs\tinstalled\t") })
+        #expect(deps.output.lines.contains { $0.hasPrefix("apple-docs-discover-api\tupdate available\t") })
+        #expect(deps.output.lines.contains { $0.hasPrefix("apple-docs-check-availability\tmodified\t") })
+        #expect(deps.output.lines.contains { $0.hasPrefix("apple-docs-support\tunmanaged\t") })
+        #expect(deps.output.lines.contains { $0.hasPrefix("apple-docs-terms\tnot installed\t") })
+        #expect(deps.output.lines.allSatisfy { $0.contains(root.path) })
+        #expect(try String(contentsOf: modified, encoding: .utf8) == "local edits")
+        #expect(
+            try String(contentsOf: outdated.appendingPathComponent("SKILL.md"), encoding: .utf8) == "previous version")
+    }
+
     @Test("registers the nested list command")
     func parsesListCommand() throws {
         // -- Arrange --
@@ -62,10 +101,21 @@ struct AgentSkillsCommandTests {
         let getCommand = try #require(command as? AgentSkillsGetCommand)
         #expect(getCommand.name == "apple-docs")
     }
+    private func temporaryRoot() -> URL {
+        FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+    }
 }
 
 private struct SkillListDependencies: TelemetryProvider, CommandOutputWriterProvider {
     let telemetry = RecordingCommandTelemetry()
     let output = RecordingCommandOutputWriter()
     var commandOutputWriter: RecordingCommandOutputWriter { output }
+
+    func agentSkillFileManager() -> FileManager { .default }
+
+    func agentSkillInstallationService() -> DefaultAgentSkillInstallationService {
+        DefaultAgentSkillInstallationService(logger: Logger(label: "test"))
+    }
 }
+
+extension SkillListDependencies: AgentSkillInstallationServiceProvider {}

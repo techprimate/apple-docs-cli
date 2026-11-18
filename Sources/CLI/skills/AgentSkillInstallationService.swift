@@ -61,6 +61,40 @@ struct DefaultAgentSkillInstallationService {
         }
     }
 
+    func list(_ skills: [BundledAgentSkill], root: String) throws -> [AgentSkillInstallationStatus] {
+        try inspect(skills, root: root).map { installation in
+            let status: AgentSkillInstallationStatus.Status
+            if let content = installation.content {
+                if let receipt = installation.receipt {
+                    if content != receipt.content {
+                        status = .modified
+                    } else {
+                        status = content == Data(installation.skill.content.utf8) ? .installed : .updateAvailable
+                    }
+                } else {
+                    status = .unmanaged
+                }
+            } else {
+                status = installation.receipt == nil ? .notInstalled : .missing
+            }
+            return AgentSkillInstallationStatus(
+                skill: installation.skill, file: installation.file, status: status,
+                requiresRecovery: installation.inspection.pending != nil)
+        }
+    }
+
+    func update(
+        _ skills: [BundledAgentSkill], root: String, dryRun: Bool
+    ) throws -> [AgentSkillInstallationOutcome] {
+        let installations = try inspect(skills, root: root).filter { $0.receipt != nil && $0.content != nil }
+        for installation in installations {
+            guard installation.content == installation.receipt?.content else {
+                throw AgentSkillInstallationError.modifiedSkill(name: installation.skill.name, removing: false)
+            }
+        }
+        return try execute(installations) { try install($0, dryRun: dryRun, force: false) }
+    }
+
     func uninstall(
         _ skills: [BundledAgentSkill], root: String, dryRun: Bool
     ) throws -> [AgentSkillInstallationOutcome] {
@@ -135,8 +169,12 @@ struct DefaultAgentSkillInstallationService {
                 from: installation.inspection.state,
                 to: .init(content: content, receipt: .init(name: installation.skill.name, content: content)))
         }
-        logger.info(dryRun ? "Would install skill" : "Installed skill", metadata: metadata)
         let updating = installation.content != nil
+        if updating {
+            logger.info(dryRun ? "Would update skill" : "Updated skill", metadata: metadata)
+        } else {
+            logger.info(dryRun ? "Would install skill" : "Installed skill", metadata: metadata)
+        }
         return AgentSkillInstallationOutcome(
             name: installation.skill.name, file: installation.file,
             status: dryRun ? (updating ? .wouldUpdate : .wouldInstall) : (updating ? .updated : .installed),
@@ -179,6 +217,8 @@ struct DefaultAgentSkillInstallationService {
 
 #if DEBUG
     protocol AgentSkillInstallationService {
+        func list(_ skills: [BundledAgentSkill], root: String) throws -> [AgentSkillInstallationStatus]
+        func update(_ skills: [BundledAgentSkill], root: String, dryRun: Bool) throws -> [AgentSkillInstallationOutcome]
         func install(_ skills: [BundledAgentSkill], root: String, dryRun: Bool, force: Bool) throws
             -> [AgentSkillInstallationOutcome]
         func uninstall(_ skills: [BundledAgentSkill], root: String, dryRun: Bool) throws

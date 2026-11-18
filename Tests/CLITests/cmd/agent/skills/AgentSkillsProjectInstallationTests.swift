@@ -25,6 +25,7 @@ struct AgentSkillsProjectInstallationTests {
         #expect(
             deps.output.lines == [
                 "Installed: apple-docs at \(home.appendingPathComponent(".agents/skills/apple-docs/SKILL.md").path)"
+                    + "\nSummary: 1 installed"
             ])
     }
 
@@ -47,7 +48,7 @@ struct AgentSkillsProjectInstallationTests {
         #expect(
             !FileManager.default.fileExists(
                 atPath: home.appendingPathComponent(".agents/skills/apple-docs/SKILL.md").path))
-        #expect(deps.output.lines.last == "Uninstalled: apple-docs")
+        #expect(deps.output.lines.last == "Uninstalled: apple-docs\nSummary: 1 uninstalled")
     }
 
     @Test("project installation targets the Git root from a nested directory")
@@ -145,6 +146,38 @@ struct AgentSkillsProjectInstallationTests {
         #expect(!FileManager.default.fileExists(atPath: home.path))
     }
 
+    @Test("project list and update share the installation root")
+    func listsAndUpdatesProjectInstallation() throws {
+        // -- Arrange --
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let nested = root.appendingPathComponent("src/nested")
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent(".git"), withIntermediateDirectories: true)
+        let deps = TestAgentSkillDependencies(fileManager: TestHomeFileManager(home: root, currentDirectory: nested))
+        let service = deps.agentSkillInstallationService()
+        let previous = BundledAgentSkill(name: "apple-docs", shortDescription: "Fixture", content: "previous version")
+        let agents = root.appendingPathComponent(".agents")
+        _ = try service.install([previous], root: agents.path, dryRun: false, force: false)
+        let list = try AgentSkillsListCommand.parse(["--project"])
+        let update = try AgentSkillsUpdateCommand.parse(["--project"])
+
+        // -- Act --
+        try list.run(deps: deps)
+        let beforeUpdate = deps.output.lines
+        try update.run(deps: deps)
+        try list.run(deps: deps)
+
+        // -- Assert --
+        #expect(beforeUpdate.first?.hasPrefix("apple-docs\tupdate available\t") == true)
+        #expect(beforeUpdate.first?.contains(agents.path) == true)
+        #expect(
+            deps.output.lines.contains { $0.hasPrefix("Updated: apple-docs at") && $0.hasSuffix("Summary: 1 updated") })
+        #expect(deps.output.lines.contains { $0.hasPrefix("apple-docs\tinstalled\t") })
+        #expect(!FileManager.default.fileExists(atPath: nested.appendingPathComponent(".agents").path))
+    }
+
     @Test("project and dir cannot be combined")
     func rejectsAmbiguousInstallationRoot() throws {
         // -- Arrange --
@@ -188,6 +221,7 @@ struct AgentSkillsProjectInstallationTests {
 }
 
 private struct TestAgentSkillDependencies: AgentSkillInstallationServiceProvider, CommandOutputWriterProvider {
+    let telemetry = RecordingCommandTelemetry()
     let fileManager: FileManager
     let output = RecordingCommandOutputWriter()
     var commandOutputWriter: RecordingCommandOutputWriter { output }
@@ -198,6 +232,8 @@ private struct TestAgentSkillDependencies: AgentSkillInstallationServiceProvider
         DefaultAgentSkillInstallationService(logger: Logger(label: "test"), fileManager: fileManager)
     }
 }
+
+extension TestAgentSkillDependencies: TelemetryProvider {}
 
 private final class DenyingInstallationFileManager: FileManager {
     enum Denied: Error { case createDirectory }

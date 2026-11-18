@@ -44,7 +44,8 @@ struct AgentSkillsUninstallCommand: ParsableCommand, GlobalOptionsProviding {
     func run(deps: Deps) throws {
         do {
             let outcomes = try deps.agentSkillInstallationService().uninstall(
-                selection.selectedSkills(), root: selection.installationRoot(fileManager: deps.agentSkillFileManager()),
+                selection.selectedSkills(),
+                root: selection.root.installationRoot(fileManager: deps.agentSkillFileManager()),
                 dryRun: selection.dryRun
             )
             deps.commandOutputWriter.write(AgentSkillInstallationRenderer().render(outcomes))

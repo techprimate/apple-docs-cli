@@ -12,6 +12,22 @@ struct AgentSkillInstallationOutcome: Equatable, Sendable {
     var requiresRecovery = false
 }
 
+struct AgentSkillInstallationStatus {
+    enum Status: String {
+        case installed
+        case updateAvailable = "update available"
+        case modified
+        case unmanaged
+        case notInstalled = "not installed"
+        case missing
+    }
+
+    let skill: BundledAgentSkill
+    let file: URL
+    let status: Status
+    let requiresRecovery: Bool
+}
+
 enum AgentSkillInstallationError: Error, Equatable {
     case emptyRoot
     case unmanagedSkill(name: String, removing: Bool)
