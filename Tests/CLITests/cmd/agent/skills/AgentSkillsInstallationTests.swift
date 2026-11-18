@@ -5,22 +5,26 @@ import Testing
 
 @Suite("Agent skills installation")
 struct AgentSkillsInstallationTests {
-    @Test("installs selected skills and is idempotent")
-    func installsSelectedSkills() throws {
+    @Test(
+        "installs selected skills and is idempotent",
+        arguments: [
+            "apple-docs", "apple-docs-support", "apple-docs-terms",
+        ])
+    func installsSelectedSkills(name: String) throws {
         // -- Arrange --
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
 
         // -- Act --
-        try run(["install", "apple-docs", "--dir", root.path])
-        try run(["install", "apple-docs", "--dir", root.path])
+        try run(["install", name, "--dir", root.path])
+        try run(["install", name, "--dir", root.path])
 
         // -- Assert --
-        let installed = try String(contentsOf: skillFile(root), encoding: .utf8)
-        #expect(installed == BundledAgentSkills.skill(named: "apple-docs")?.content)
+        let installed = try String(contentsOf: skillFile(root, name: name), encoding: .utf8)
+        #expect(installed == BundledAgentSkills.skill(named: name)?.content)
         #expect(
             try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("skills").path)
-                == ["apple-docs"])
+                == [name])
     }
 
     @Test("installs and uninstalls the entire bundle")
@@ -187,8 +191,8 @@ struct AgentSkillsInstallationTests {
 
         // -- Assert --
         #expect(
-            try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("skills").path)
-                == ["apple-docs-check-availability"])
+            try Set(FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("skills").path))
+                == ["apple-docs-check-availability", "apple-docs-support", "apple-docs-terms"])
     }
 
     @Test("preflights all removals before deleting any skill")
@@ -282,8 +286,8 @@ struct AgentSkillsInstallationTests {
             .appendingPathComponent(UUID().uuidString)
     }
 
-    private func skillFile(_ root: URL) -> URL {
-        root.appendingPathComponent("skills/apple-docs/SKILL.md")
+    private func skillFile(_ root: URL, name: String = "apple-docs") -> URL {
+        root.appendingPathComponent("skills/\(name)/SKILL.md")
     }
 
     private func write(_ content: String, to url: URL) throws {
