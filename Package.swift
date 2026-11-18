@@ -5,10 +5,12 @@ import PackageDescription
 var packageDependencies: [Package.Dependency] = [
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.8.2"),
     .package(url: "https://github.com/apple/swift-log.git", exact: "1.15.1"),
+    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.14.4"),
 ]
 var cliDependencies: [Target.Dependency] = [
     .product(name: "ArgumentParser", package: "swift-argument-parser"),
     .product(name: "Logging", package: "swift-log"),
+    .product(name: "SwiftSoup", package: "SwiftSoup"),
 ]
 
 #if os(macOS)
