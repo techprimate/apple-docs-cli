@@ -142,14 +142,19 @@ extension BundledAgentSkills {
         apple-docs agent skills get apple-docs-discover-api
         apple-docs agent skills install --all --dry-run
         apple-docs agent skills install --all
+        apple-docs agent skills update --dry-run
+        apple-docs agent skills update
         apple-docs agent skills uninstall --all --dry-run
         apple-docs agent skills uninstall --all --yes
         ```
 
-        Skills install under `~/.agents/skills`. Use `--dir .agents` for project-local skills, or another .agents root.
+        Skills install under `~/.agents/skills`. Use `--project` for the Git root (current directory outside Git),
+        or `--dir` for another .agents root. List reports installation status and paths for the selected root.
+        Update refreshes only installed managed skills and refuses local edits. Use `--dry-run` to preview changes.
         Installation does not configure individual agent tools. The tool must support that skill directory convention.
-        Obtain user approval before installing or removing skills. `--force` replaces differing managed SKILL.md files
-        only, never unmanaged files. Uninstall refuses modified managed files and preserves unrelated files.
+        Obtain user approval before installing, updating, or removing skills. `--force` replaces differing managed
+        SKILL.md files only, never unmanaged files. Uninstall refuses modified managed files and preserves
+        unrelated files.
         """
 
     private static let discoverAPIContent = """

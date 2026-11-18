@@ -9,7 +9,7 @@ extension AgentSkillInstallationError: LocalizedError {
         case .modifiedSkill(let name, let removing):
             return removing
                 ? "Skill '\(name)' was edited. Back up and restore it before uninstalling."
-                : "Skill '\(name)' differs. Use --force to replace the managed file."
+                : "Skill '\(name)' differs. To replace it, use 'apple-docs agent skills install \(name) --force'."
         case .invalidReceipt(let url): return "Invalid apple-docs installation receipt at '\(url.path)'."
         case .invalidDirectory(let url):
             return "Expected a directory, not a symlink or other file, at '\(url.path)'."

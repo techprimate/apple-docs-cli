@@ -76,7 +76,8 @@ struct AgentSkillsInstallationTests {
             ["install"], ["install", "--all", "apple-docs"],
             ["install", "apple-docs", "unknown"], ["install", "../escape"],
             ["uninstall"], ["uninstall", "--all"], ["uninstall", "--all", "apple-docs", "--yes"],
-            ["uninstall", "unknown"],
+            ["uninstall", "unknown"], ["update", "unknown"], ["update", "--all", "apple-docs"],
+            ["update", "--project"], ["list", "--project"],
         ])
     func rejectsInvalidSelection(arguments: [String]) throws {
         // -- Arrange --

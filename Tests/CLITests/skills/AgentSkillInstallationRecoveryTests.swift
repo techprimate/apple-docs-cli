@@ -135,6 +135,53 @@ struct AgentSkillInstallationRecoveryTests {
         #expect(try Data(contentsOf: file(root)) == Data("bundled".utf8))
     }
 
+    @Test("list and update preview expose pending recovery without writing")
+    func listsAndPreviewsPendingUpdate() throws {
+        // -- Arrange --
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try healthy.install([fixture("old")], root: root.path, dryRun: false, force: false)
+        let failing = installer(operation: .write, filename: ".apple-docs-managed.json")
+        #expect(throws: InjectedSkillFailure.self) {
+            try failing.update([fixture("new")], root: root.path, dryRun: false)
+        }
+        let journal = try Data(contentsOf: pending(root))
+        let previousReceipt = try Data(contentsOf: receipt(root))
+
+        // -- Act --
+        let listed = try healthy.list([fixture("new")], root: root.path)
+        let preview = try healthy.update([fixture("new")], root: root.path, dryRun: true)
+        let previewOutput = AgentSkillInstallationRenderer().render(preview)
+        let listOutput = AgentSkillInstallationRenderer().renderList(listed)
+
+        // -- Assert --
+        #expect(listOutput.first?.contains("installed (pending recovery)") == true)
+        #expect(previewOutput.contains("Would recover pending operation: apple-docs"))
+        #expect(try Data(contentsOf: pending(root)) == journal)
+        #expect(try Data(contentsOf: receipt(root)) == previousReceipt)
+        let recovered = try healthy.update([fixture("new")], root: root.path, dryRun: false)
+        #expect(recovered.map(\.status) == [.unchanged])
+        #expect(!FileManager.default.fileExists(atPath: pending(root).path))
+        #expect(try Data(contentsOf: file(root)) == Data("new".utf8))
+    }
+
+    @Test("list reports a missing managed file without repairing it")
+    func listsMissingManagedFile() throws {
+        // -- Arrange --
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try healthy.install([fixture("bundled")], root: root.path, dryRun: false, force: false)
+        try FileManager.default.removeItem(at: file(root))
+
+        // -- Act --
+        let listed = try healthy.list([fixture("bundled")], root: root.path)
+
+        // -- Assert --
+        #expect(listed.map(\.status) == [.missing])
+        #expect(!FileManager.default.fileExists(atPath: file(root).path))
+        #expect(FileManager.default.fileExists(atPath: receipt(root).path))
+    }
+
     private var healthy: DefaultAgentSkillInstallationService {
         DefaultAgentSkillInstallationService(logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() })
     }

@@ -121,7 +121,7 @@ struct DefaultAgentSkillInstallationServiceTests {
         #expect(try String(contentsOf: skillFile(root), encoding: .utf8) == skill.content)
         let events = recorder.events.dropFirst(previousEventCount)
         #expect(events.contains { $0.level == .notice && $0.message.description == "Replacing modified managed skill" })
-        #expect(events.contains { $0.level == .info && $0.message.description == "Installed skill" })
+        #expect(events.contains { $0.level == .info && $0.message.description == "Updated skill" })
     }
 
     @available(macOS 15, *)
