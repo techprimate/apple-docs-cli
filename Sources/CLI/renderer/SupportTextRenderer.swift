@@ -47,7 +47,10 @@ struct SupportTextRenderer {
             return termsEntry(value, level: 1)
         case .article(let value):
             return [
-                heading(value.title, level: 1), value.url.absoluteString, plain(value.context ?? ""),
+                heading(value.title, level: 1), value.url.absoluteString,
+                plain(
+                    value.breadcrumbs.isEmpty
+                        ? value.context ?? "" : value.breadcrumbs.map(\.title).joined(separator: " > ")),
                 blocks(value.content),
             ]
                 + (value.related.isEmpty ? [] : [heading("Related", level: 2)] + value.related.map(reference))
@@ -117,6 +120,7 @@ struct SupportTextRenderer {
                 return agent
                     ? markdown.link(inline(label), target: .external(url))
                     : inline(label) + " (" + url.absoluteString + ")"
+            case .anchor(_, let content): return inline(content)
             case .lineBreak: return "\n"
             }
         }.joined()

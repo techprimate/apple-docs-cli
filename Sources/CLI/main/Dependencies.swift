@@ -12,6 +12,7 @@ struct Dependencies: Sendable {
     let httpCache: URLCache?
     let httpDataTransport: URLSession
     let documentationRepository: DefaultAppleDocumentationRepository<DefaultAppleDocumentationClient<URLSession>>
+    let supportService: DefaultAppleSupportService<DefaultAppleSupportClient<URLSession>>
 
     init(telemetry: DefaultTelemetry) {
         self.telemetry = telemetry
@@ -33,6 +34,9 @@ struct Dependencies: Sendable {
             configuration.urlCache = httpCache
         }
         httpDataTransport = URLSession(configuration: configuration)
+        supportService = DefaultAppleSupportService(
+            dependencies: DefaultAppleSupportClient(
+                logger: Logger(label: "com.techprimate.apple-docs.support.client"), dependencies: httpDataTransport))
         documentationRepository = DefaultAppleDocumentationRepository(
             logger: Logger(label: "com.techprimate.apple-docs.repository"),
             dependencies: DefaultAppleDocumentationClient(

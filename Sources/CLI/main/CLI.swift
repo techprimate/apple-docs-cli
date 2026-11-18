@@ -13,6 +13,7 @@ struct CLI: AsyncParsableCommand, GlobalOptionsProviding {
         subcommands: [
             TypesCommand.self,
             TechnologiesCommand.self,
+            SupportCommand.self,
             CacheCommand.self,
             AgentCommand.self,
         ]
