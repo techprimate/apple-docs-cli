@@ -73,6 +73,41 @@ struct SupportInlineParsingTests {
             ])
     }
 
+    @Test("inline images preserve sentence flow in list items and table cells")
+    func preservesImagesInBlockContainers() throws {
+        // -- Arrange --
+        let html = """
+            <main><div class='main-content'><article><h1>Instructions</h1>
+            <ul><li>Before <img src='/images/example.png' alt='Example'> after.</li></ul>
+            <table><tr><td>Before <img src='/images/example.png' alt='Example'> after.</td></tr></table>
+            </article></div></main>
+            """
+        let parser = try SupportHTMLParser(
+            document: SupportHTMLDocument(
+                destination: SupportDestination(path: "support/example"), html: html, responseByteCount: html.utf8.count
+            ))
+        let paragraph = SupportContentBlock.paragraph([
+            .text("Before "),
+            .image(url: URL(string: "https://developer.apple.com/images/example.png")!, alt: "Example"),
+            .text(" after."),
+        ])
+
+        // -- Act --
+        let article = try parser.article()
+
+        // -- Assert --
+        #expect(
+            article.content == [
+                .list(ordered: false, start: 1, items: [[paragraph]]),
+                .table([
+                    SupportTableRow(cells: [
+                        SupportTableCell(
+                            content: [paragraph], isHeader: false, columnSpan: 1, rowSpan: 1)
+                    ])
+                ]),
+            ])
+    }
+
     @Test("mixed-content wrappers retain nested block boundaries")
     func preservesBlocksInsideEdits() throws {
         // -- Arrange --

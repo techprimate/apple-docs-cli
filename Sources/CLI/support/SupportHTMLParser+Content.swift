@@ -110,7 +110,6 @@ extension SupportHTMLParser {
     }
 
     private func isInline(_ element: Element) -> Bool {
-        guard element.tagName() != "img" else { return false }
         if !element.isBlock() { return true }
         return ["ins", "del", "s"].contains(element.tagName()) && element.children().allSatisfy(isInline)
     }
