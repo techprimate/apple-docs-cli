@@ -15,6 +15,9 @@ extension SupportHTMLParser {
             case "strong", "b": return [.strong(content)]
             case "sup": return [.superscript(content)]
             case "code": return [.code(try child.text())]
+            case "img":
+                let alt = try child.attr("alt")
+                return alt.isEmpty ? [] : [.image(url: try resolve(child.attr("src")), alt: alt)]
             case "br": return [.lineBreak]
             default: return content
             }

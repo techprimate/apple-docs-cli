@@ -7,6 +7,7 @@ indirect enum SupportInline: Equatable, Sendable {
     case strong([SupportInline])
     case superscript([SupportInline])
     case link(label: [SupportInline], url: URL)
+    case image(url: URL, alt: String)
     case lineBreak
 }
 

@@ -37,6 +37,42 @@ struct SupportInlineParsingTests {
             ])
     }
 
+    @Test("paragraphs and links retain meaningful inline images in order")
+    func preservesInlineImages() throws {
+        // -- Arrange --
+        let html = """
+            <main><div class='main-content'><article><h1>Instructions</h1>
+            <p>Before <img src='/images/example.png' alt='Example'> after.</p>
+            <p><a href='/support/details/'><img src='/images/linked.png' alt='Linked example'></a></p>
+            </article></div></main>
+            """
+        let parser = try SupportHTMLParser(
+            document: SupportHTMLDocument(
+                destination: SupportDestination(path: "support/example"), html: html, responseByteCount: html.utf8.count
+            ))
+
+        // -- Act --
+        let article = try parser.article()
+
+        // -- Assert --
+        #expect(
+            article.content == [
+                .paragraph([
+                    .text("Before "),
+                    .image(url: URL(string: "https://developer.apple.com/images/example.png")!, alt: "Example"),
+                    .text(" after."),
+                ]),
+                .paragraph([
+                    .link(
+                        label: [
+                            .image(
+                                url: URL(string: "https://developer.apple.com/images/linked.png")!,
+                                alt: "Linked example")
+                        ], url: URL(string: "https://developer.apple.com/support/details/")!)
+                ]),
+            ])
+    }
+
     @Test("mixed-content wrappers retain nested block boundaries")
     func preservesBlocksInsideEdits() throws {
         // -- Arrange --
