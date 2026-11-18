@@ -1,34 +1,34 @@
 import Foundation
 
-struct SupportPageHeader: Equatable, Sendable {
+struct SupportPageHeader: Encodable, Equatable, Sendable {
     let url: URL
     let title: String
     let introduction: String
 }
 
-struct SupportPageLink: Equatable, Sendable {
+struct SupportPageLink: Encodable, Equatable, Sendable {
     let title: String
     let url: URL
 }
 
-struct SupportDescribedLink: Equatable, Sendable {
+struct SupportDescribedLink: Encodable, Equatable, Sendable {
     let link: SupportPageLink
     let summary: String
 }
 
-struct SupportArticlesCatalog: Equatable, Sendable {
+struct SupportArticlesCatalog: Encodable, Equatable, Sendable {
     let header: SupportPageHeader
     var categories: [SupportArticleCategory]
 }
 
-struct SupportArticleCategory: Equatable, Sendable {
+struct SupportArticleCategory: Encodable, Equatable, Sendable {
     let id: String
     let title: String
     let summary: String
     let links: [SupportPageLink]
 }
 
-struct SupportHelpCatalog: Equatable, Sendable {
+struct SupportHelpCatalog: Encodable, Equatable, Sendable {
     let header: SupportPageHeader
     let featuredResources: [SupportDescribedLink]
     let topicsTitle: String
@@ -36,62 +36,62 @@ struct SupportHelpCatalog: Equatable, Sendable {
     let glossary: SupportDescribedLink
 }
 
-struct SupportHelpTopic: Equatable, Sendable {
+struct SupportHelpTopic: Encodable, Equatable, Sendable {
     let title: String
     let groups: [SupportTopicLinkGroup]
 }
 
-struct SupportTopicLinkGroup: Equatable, Sendable {
+struct SupportTopicLinkGroup: Encodable, Equatable, Sendable {
     let title: String?
     let links: [SupportPageLink]
 }
 
-struct SupportGlossary: Equatable, Sendable {
+struct SupportGlossary: Encodable, Equatable, Sendable {
     let header: SupportPageHeader
     var entries: [SupportGlossaryEntry]
 }
 
-struct SupportGlossaryEntry: Equatable, Sendable {
+struct SupportGlossaryEntry: Encodable, Equatable, Sendable {
     let term: String
     let definition: [SupportContentBlock]
 }
 
-struct SupportTermsCatalog: Equatable, Sendable {
+struct SupportTermsCatalog: Encodable, Equatable, Sendable {
     let header: SupportPageHeader
     var categories: [SupportTermsCategory]
 }
 
-struct SupportTermsCategory: Equatable, Sendable {
+struct SupportTermsCategory: Encodable, Equatable, Sendable {
     let id: String
     let title: String
     let introduction: [SupportContentBlock]
     let entries: [SupportTermsEntry]
 }
 
-struct SupportTermsEntry: Equatable, Sendable {
+struct SupportTermsEntry: Encodable, Equatable, Sendable {
     let id: String
     let title: String
     let description: [SupportInline]
     let resources: [SupportTermsResource]
 }
 
-struct SupportTermsResource: Equatable, Sendable {
+struct SupportTermsResource: Encodable, Equatable, Sendable {
     let link: SupportPageLink
     let translations: SupportTranslationSet?
 }
 
-struct SupportTranslationSet: Equatable, Sendable {
+struct SupportTranslationSet: Encodable, Equatable, Sendable {
     let notice: [SupportContentBlock]
     let lastUpdatedLabel: String?
     let translations: [SupportPageLink]
 }
 
-struct SupportGuideContents: Equatable, Sendable {
+struct SupportGuideContents: Encodable, Equatable, Sendable {
     let header: SupportPageHeader
     let entries: [SupportContentsEntry]
 }
 
-struct SupportContentsEntry: Equatable, Sendable {
+struct SupportContentsEntry: Encodable, Equatable, Sendable {
     let title: String
     let link: SupportPageLink?
     let children: [SupportContentsEntry]
