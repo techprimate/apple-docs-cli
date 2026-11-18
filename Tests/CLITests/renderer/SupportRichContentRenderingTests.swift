@@ -25,8 +25,8 @@ struct SupportRichContentRenderingTests {
         if audience == .agent {
             #expect(
                 output.contains(
-                    "Before [![Example](https://developer.apple.com/images/example.png)]"
-                        + "(https://developer.apple.com/support/details/) after."))
+                    "Before [![Example](<https://developer.apple.com/images/example.png>)]"
+                        + "(<https://developer.apple.com/support/details/>) after."))
         } else {
             #expect(output.contains("Before Example"))
             #expect(output.contains("https://developer.apple.com/images/example.png"))
@@ -98,6 +98,25 @@ struct SupportRichContentRenderingTests {
         // -- Assert --
         #expect(humanOutput.contains(expected))
         #expect(agentOutput.contains(expected))
+    }
+
+    @Test("ordered list continuation blocks align with each marker's content column")
+    func alignsOrderedListContinuations() throws {
+        // -- Arrange --
+        let payload = try payload(
+            """
+            <ol start='9'>
+            <li><p>First</p><p>Second</p><ul><li>Child</li></ul></li>
+            <li><p>Next</p><p>More</p></li>
+            </ol>
+            """)
+        let renderer = DefaultSupportRenderer(output: .text, audience: .agent)
+
+        // -- Act --
+        let output = try renderer.render(payload)
+
+        // -- Assert --
+        #expect(output.contains("9. First\n\n   Second\n\n   - Child\n10. Next\n\n    More"))
     }
 
     private func payload(_ content: String) throws -> SupportPayload {
