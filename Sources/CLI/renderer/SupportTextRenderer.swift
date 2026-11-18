@@ -45,6 +45,8 @@ struct SupportTextRenderer {
                 }
         case .termsEntry(let value):
             return termsEntry(value, level: 1)
+        case .pdf(let value):
+            return [value.message + " " + value.url.absoluteString]
         case .article(let value):
             return [
                 heading(value.title, level: 1), value.url.absoluteString,

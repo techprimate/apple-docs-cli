@@ -35,11 +35,11 @@ extension SupportExecutableCommand {
 struct SupportViewCommand: SupportExecutableCommand {
     @OptionGroup var global: GlobalOptions
     @OptionGroup var output: OutputOptions
-    @Option(help: "A supported path relative to developer.apple.com, including help/ or support/.")
+    @Option(help: "A supported developer-site path, such as support/fee-waiver or xcode/system-requirements.")
     var path: String
 
     static let configuration = CommandConfiguration(
-        commandName: "view", abstract: "Read a supported HTML document. PDFs and unknown layouts are not parsed.")
+        commandName: "view", abstract: "Read a supported HTML document or show a PDF download link.")
 
     var request: SupportRequest { .article(path: path) }
 }

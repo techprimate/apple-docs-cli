@@ -5,6 +5,52 @@ import Testing
 
 @Suite("Support inline parsing boundaries")
 struct SupportInlineParsingTests {
+    @Test("preserves the interoperability page's Feedback Assistant submission link")
+    func feedbackAssistantLink() throws {
+        // -- Arrange --
+        let html = """
+            <main><article><section class='section section-enrollment'><div class='section-content'>
+            <h1>Interoperability requests</h1><div id='message-option1' class='hidden'>
+            <h4>This appears to be an interoperability request.</h4>
+            <p><a href='applefeedback://new?form_identifier=dev.tech&amp;answers%5B%3Aarea%5D=seed%3Ainterop'
+            class='button'>Submit request<span class='loc-en-only'></span></a></p>
+            </div></div></section></article></main>
+            """
+        let parser = try SupportHTMLParser(
+            document: SupportHTMLDocument(
+                destination: SupportDestination(path: "support/interoperability-requests"), html: html,
+                responseByteCount: html.utf8.count))
+
+        // -- Act --
+        let article = try parser.article()
+
+        // -- Assert --
+        let url = try #require(
+            URL(string: "applefeedback://new?form_identifier=dev.tech&answers%5B%3Aarea%5D=seed%3Ainterop"))
+        #expect(
+            article.content.last == .paragraph([.link(label: [.text("Submit request")], url: url)]))
+    }
+
+    @Test(
+        "rejects executable and local-file links",
+        arguments: ["javascript:alert(1)", "data:text/html,bad", "file:///etc/passwd"])
+    func rejectsUnsafeLinks(url: String) throws {
+        // -- Arrange --
+        let html = """
+            <main><article><h1>Interoperability requests</h1><p><a href='\(url)'>Submit request</a></p></article></main>
+            """
+        let parser = try SupportHTMLParser(
+            document: SupportHTMLDocument(
+                destination: SupportDestination(path: "support/interoperability-requests"), html: html,
+                responseByteCount: html.utf8.count))
+
+        // -- Act --
+        let parse = { try parser.article() }
+
+        // -- Assert --
+        #expect(throws: SupportParsingError.invalidLink) { try parse() }
+    }
+
     @Test("direct inline code does not absorb later sibling content")
     func directInlineCode() throws {
         // -- Arrange --

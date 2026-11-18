@@ -8,6 +8,7 @@ import Logging
 #if DEBUG
     protocol AppleSupportClient: Sendable {
         func fetchHTML(at destination: SupportDestination) async throws -> SupportHTMLDocument
+        func fetchDocument(at destination: SupportDestination) async throws -> SupportDocumentResponse
     }
     extension DefaultAppleSupportClient: AppleSupportClient {}
     typealias DefaultAppleSupportClientDependencies = HTTPDataTransport
@@ -15,6 +16,11 @@ import Logging
     typealias AppleSupportClient = DefaultAppleSupportClient<URLSession>
     typealias DefaultAppleSupportClientDependencies = URLSession
 #endif
+
+enum SupportDocumentResponse: Equatable, Sendable {
+    case html(SupportHTMLDocument)
+    case pdf(URL)
+}
 
 struct SupportHTMLDocument: Equatable, Sendable {
     let destination: SupportDestination
@@ -32,7 +38,14 @@ final class DefaultAppleSupportClient<Dependencies: DefaultAppleSupportClientDep
     }
 
     func fetchHTML(at destination: SupportDestination) async throws -> SupportHTMLDocument {
-        logger.debug("Requesting support HTML", metadata: ["path": .string(destination.path)])
+        switch try await fetchDocument(at: destination) {
+        case .html(let document): return document
+        case .pdf: throw AppleSupportClientError.unsupportedContentType("application/pdf")
+        }
+    }
+
+    func fetchDocument(at destination: SupportDestination) async throws -> SupportDocumentResponse {
+        logger.debug("Requesting support document", metadata: ["path": .string(destination.path)])
         let (data, response) = try await dependencies.data(from: destination.url)
         guard let response = response as? HTTPURLResponse, let responseURL = response.url else {
             throw AppleSupportClientError.invalidResponse
@@ -42,6 +55,7 @@ final class DefaultAppleSupportClient<Dependencies: DefaultAppleSupportClientDep
         }
         let resolved = try SupportDestination(responseURL: responseURL)
         let contentType = response.mimeType?.lowercased()
+        if contentType == "application/pdf" { return .pdf(resolved.url) }
         guard contentType == "text/html" || contentType == "application/xhtml+xml" else {
             throw AppleSupportClientError.unsupportedContentType(contentType)
         }
@@ -51,6 +65,6 @@ final class DefaultAppleSupportClient<Dependencies: DefaultAppleSupportClientDep
         logger.debug(
             "Received support HTML",
             metadata: ["path": .string(resolved.path), "bytes": .stringConvertible(data.count)])
-        return SupportHTMLDocument(destination: resolved, html: html, responseByteCount: data.count)
+        return .html(SupportHTMLDocument(destination: resolved, html: html, responseByteCount: data.count))
     }
 }

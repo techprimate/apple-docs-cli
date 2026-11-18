@@ -41,6 +41,31 @@ struct SupportCommandIntegrationTests {
             "help/app-store-connect/reference/app-information/screenshot-specifications",
             "support/fee-waiver",
             "support/terms/apple-developer-program-license-agreement",
+            "support/bimi",
+            "support/install-beta",
+            "support/technical",
+            "support/kernel-extensions",
+            "support/forums",
+            "support/expiration",
+            "support/ipv6",
+            "support/sca",
+            "support/xcode",
+            "support/app-store",
+            "support/volume-purchase-and-custom-apps",
+            "support/protecting-users-from-suspicious-software",
+            "support/required-device-capabilities",
+            "support/unlisted-app-distribution",
+            "support/dma-and-apps-in-the-eu",
+            "support/third-party-SDK-requirements",
+            "support/interoperability-requests",
+            "support/reader-apps",
+            "support/age-assurance",
+            "support/app-distribution-in-brazil",
+            "support/app-distribution-in-japan",
+            "support/apps-in-the-eu",
+            "support/storekit-external-entitlement-kr",
+            "support/hce-transactions-in-apps",
+            "support/nfc-se-platform",
         ])
     func liveDocument(path: String) throws {
         // -- Arrange --
@@ -60,6 +85,26 @@ struct SupportCommandIntegrationTests {
             let notices = try #require(value["notices"] as? [[String: Any]])
             #expect(!notices.isEmpty)
         }
+    }
+
+    @Test("returns a download notice for a live PDF without failing")
+    func livePDF() throws {
+        // -- Arrange --
+        let path = "support/macos-server/macOS-Server-Service-Migration-Guide.pdf"
+
+        // -- Act --
+        let output = try runAppleDocs(["support", "view", "--path", path])
+        let json = try runAppleDocs(["support", "view", "--path", path, "--agent", "--json"])
+        let value = try #require(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+
+        // -- Assert --
+        #expect(output.contains("Page is PDF which cannot be displayed. You can download from:"))
+        #expect(
+            output.contains("https://developer.apple.com/support/downloads/macOS-Server-Service-Migration-Guide.pdf"))
+        #expect(value["kind"] as? String == "pdf")
+        #expect(
+            value["url"] as? String
+                == "https://developer.apple.com/support/downloads/macOS-Server-Service-Migration-Guide.pdf")
     }
 
     @Test("renders live agent text with follow-up navigation")

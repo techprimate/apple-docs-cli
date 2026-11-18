@@ -118,7 +118,7 @@ extension SupportHTMLParser {
     }
 
     private func isInline(_ element: Element) -> Bool {
-        if !element.isBlock() { return true }
+        if !element.isBlock() { return element.children().allSatisfy(isInline) }
         return ["ins", "del", "s"].contains(element.tagName()) && element.children().allSatisfy(isInline)
     }
 

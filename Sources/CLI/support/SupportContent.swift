@@ -39,6 +39,16 @@ struct SupportBreadcrumb: Encodable, Equatable, Sendable {
     let url: URL?
 }
 
+enum SupportDocument: Equatable, Sendable {
+    case article(SupportArticle)
+    case pdf(SupportPDF)
+}
+
+struct SupportPDF: Encodable, Equatable, Sendable {
+    let url: URL
+    let message = "Page is PDF which cannot be displayed. You can download from:"
+}
+
 struct SupportArticle: Encodable, Equatable, Sendable {
     let url: URL
     let title: String

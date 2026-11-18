@@ -10,7 +10,7 @@ enum AppleSupportClientError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidPath:
-            return "Expected a developer-site-relative path under help/ or support/ without a query or fragment."
+            return "Expected a supported developer-site-relative path without a query or fragment."
         case .invalidResponse:
             return "Apple support returned an invalid response or redirected outside supported developer pages."
         case .httpStatus(let status):

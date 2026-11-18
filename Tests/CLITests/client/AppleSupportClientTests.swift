@@ -69,6 +69,32 @@ struct AppleSupportClientTests {
         await #expect(throws: AppleSupportClientError.unsupportedContentType(contentType)) { try await fetch() }
     }
 
+    @Test("reports a linked PDF as non-HTML after its file redirect")
+    func rejectsLinkedPDF() async throws {
+        // -- Arrange --
+        let url = try #require(
+            URL(string: "https://developer.apple.com/support/macos-server/macOS-Server-Service-Migration-Guide.pdf"))
+        let finalURL = try #require(
+            URL(string: "https://developer.apple.com/support/downloads/macOS-Server-Service-Migration-Guide.pdf"))
+        let response = try #require(
+            HTTPURLResponse(
+                url: finalURL, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/pdf"]))
+        let client = DefaultAppleSupportClient(
+            logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
+            dependencies: HTTPTestTransport(responses: [
+                url: .response(data: Data("%PDF-1.3".utf8), response: response)
+            ]))
+        let destination = try SupportDestination(path: "support/macos-server/macOS-Server-Service-Migration-Guide.pdf")
+
+        // -- Act --
+        let fetch = { try await client.fetchHTML(at: destination) }
+
+        // -- Assert --
+        await #expect(throws: AppleSupportClientError.unsupportedContentType("application/pdf")) {
+            try await fetch()
+        }
+    }
+
     @Test("keeps a validated redirect destination")
     func followsDeveloperRedirect() async throws {
         // -- Arrange --
@@ -95,6 +121,8 @@ struct AppleSupportClientTests {
         arguments: [
             "https://example.com/help/glossary/", "http://developer.apple.com/help/glossary/",
             "https://developer.apple.com/account/", "https://developer.apple.com:444/help/glossary/",
+            "https://example.com/xcode/system-requirements/", "https://developer.apple.com/xcode/download/",
+            "https://developer.apple.com/xcode/system-requirements?query=secret",
         ])
     func rejectsRedirect(raw: String) async throws {
         // -- Arrange --

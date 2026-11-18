@@ -28,6 +28,52 @@ struct SupportCommandExecutionTests {
         #expect(deps.telemetry.commands.count == 1)
     }
 
+    @Test("PDF views print a download notice without failing", arguments: [false, true])
+    func pdfNotice(agent: Bool) async throws {
+        // -- Arrange --
+        let arguments =
+            ["support", "view", "--path", "support/macos-server/macOS-Server-Service-Migration-Guide.pdf"]
+            + (agent ? ["--agent"] : [])
+        let command = try #require(CLI.parseAsRoot(arguments) as? SupportViewCommand)
+        let deps = try ExecutionDependencies()
+
+        // -- Act --
+        try await command.run(deps: deps)
+        let output = try #require(deps.output.lines.first)
+
+        // -- Assert --
+        #expect(deps.output.lines.count == 1)
+        #expect(output.contains("Page is PDF which cannot be displayed. You can download from:"))
+        #expect(
+            output.contains("https://developer.apple.com/support/downloads/macOS-Server-Service-Migration-Guide.pdf"))
+        #expect(!output.contains(".pdf/"))
+    }
+
+    @Test("PDF JSON exposes the download destination", arguments: [false, true])
+    func pdfJSON(agent: Bool) async throws {
+        // -- Arrange --
+        let arguments =
+            [
+                "support", "view", "--path", "support/macos-server/macOS-Server-Service-Migration-Guide.pdf", "--json",
+            ] + (agent ? ["--agent"] : [])
+        let command = try #require(CLI.parseAsRoot(arguments) as? SupportViewCommand)
+        let deps = try ExecutionDependencies()
+
+        // -- Act --
+        try await command.run(deps: deps)
+        let output = try #require(deps.output.lines.first)
+        let value = try #require(JSONSerialization.jsonObject(with: Data(output.utf8)) as? [String: Any])
+
+        // -- Assert --
+        #expect(value["kind"] as? String == "pdf")
+        #expect(
+            value["url"] as? String
+                == "https://developer.apple.com/support/downloads/macOS-Server-Service-Migration-Guide.pdf")
+        #expect(value["message"] as? String == "Page is PDF which cannot be displayed. You can download from:")
+        #expect(value["content"] == nil)
+        #expect((value["navigation"] != nil) == agent)
+    }
+
     @Test("propagates a missing selection without writing successful output")
     func selectionFailure() async throws {
         // -- Arrange --
@@ -75,6 +121,14 @@ private struct ExecutionDependencies: ExecutionProviders {
                     url: url, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "text/html"]))
             responses[url] = .response(data: Data(html.utf8), response: response)
         }
+        let pdfURL = try #require(
+            URL(string: "https://developer.apple.com/support/macos-server/macOS-Server-Service-Migration-Guide.pdf"))
+        let downloadURL = try #require(
+            URL(string: "https://developer.apple.com/support/downloads/macOS-Server-Service-Migration-Guide.pdf"))
+        let pdfResponse = try #require(
+            HTTPURLResponse(
+                url: downloadURL, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/pdf"]))
+        responses[pdfURL] = .response(data: Data("%PDF-1.3".utf8), response: pdfResponse)
         supportService = DefaultAppleSupportService(
             dependencies: DefaultAppleSupportClient(
                 logger: Logger(label: "test") { _ in SwiftLogNoOpLogHandler() },
