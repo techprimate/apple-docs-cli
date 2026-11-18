@@ -29,11 +29,22 @@ struct SupportHTMLParser {
 
     var layoutError: SupportParsingError { .unsupportedLayout(source.destination.path) }
 
+    func canonicalURL() throws -> URL {
+        guard let canonical = try document.select("link[rel=canonical][href]").first() else {
+            return source.destination.url
+        }
+        let url = try resolve(canonical.attr("href"))
+        guard let destination = try? SupportDestination(responseURL: url) else {
+            throw SupportParsingError.invalidLink
+        }
+        return destination.url
+    }
+
     func header(in root: Element? = nil) throws -> SupportPageHeader {
         let root = try root ?? required("main")
         let heading = try required("h1", in: root)
         return SupportPageHeader(
-            url: source.destination.url, title: try nonemptyText(heading),
+            url: try canonicalURL(), title: try nonemptyText(heading),
             introduction: try heading.nextElementSibling()?.tagName() == "p"
                 ? heading.nextElementSibling()?.text() ?? "" : "")
     }
@@ -102,11 +113,23 @@ struct SupportHTMLParser {
         let content = try blocks(in: article)
         guard !content.isEmpty else { throw layoutError }
         return SupportArticle(
-            url: source.destination.url, title: try nonemptyText(heading),
+            url: try canonicalURL(), title: try nonemptyText(heading),
             context: try document.select("main .chapter-name").first()?.text(),
+            breadcrumbs: try breadcrumbs(),
             content: content,
             related: try article.select(".LinkUniversal a[href]").array().map(link),
             notices: try document.select("footer .footer-sosumi").array().flatMap { try blocks(in: $0) })
+    }
+
+    private func breadcrumbs() throws -> [SupportBreadcrumb] {
+        guard let container = try document.select("main .header2 p.custom-text").first() else { return [] }
+        return try container.children().array().filter {
+            !$0.hasClass("breadcrumb-spacer")
+        }.map { element in
+            SupportBreadcrumb(
+                title: try nonemptyText(element),
+                url: element.hasAttr("href") ? try resolve(element.attr("href")) : nil)
+        }
     }
 
     func contents() throws -> SupportGuideContents {

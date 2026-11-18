@@ -1,7 +1,7 @@
 import Foundation
 
 extension SupportInline {
-    private enum CodingKeys: CodingKey { case type, text, content, label, url, alt }
+    private enum CodingKeys: CodingKey { case type, text, content, label, url, alt, name }
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -29,6 +29,10 @@ extension SupportInline {
             try container.encode("link", forKey: .type)
             try container.encode(label, forKey: .label)
             try container.encode(url, forKey: .url)
+        case .anchor(let name, let content):
+            try container.encode("anchor", forKey: .type)
+            try container.encode(name, forKey: .name)
+            try container.encode(content, forKey: .content)
         case .lineBreak:
             try container.encode("lineBreak", forKey: .type)
         }

@@ -10,7 +10,12 @@ extension SupportHTMLParser {
             guard let child = node as? Element, !ignored(child) else { return [] }
             let content = try inline(in: child)
             switch child.tagName() {
-            case "a": return [.link(label: content, url: try resolve(child.attr("href")))]
+            case "a":
+                if child.hasAttr("href") {
+                    return [.link(label: content, url: try resolve(child.attr("href")))]
+                }
+                let name = try child.hasAttr("id") ? child.attr("id") : child.attr("name")
+                return name.isEmpty ? content : [.anchor(name: name, content: content)]
             case "em", "i": return [.emphasis(content)]
             case "strong", "b": return [.strong(content)]
             case "sup": return [.superscript(content)]

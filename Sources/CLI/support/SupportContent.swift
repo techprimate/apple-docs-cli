@@ -8,6 +8,7 @@ indirect enum SupportInline: Encodable, Equatable, Sendable {
     case superscript([SupportInline])
     case link(label: [SupportInline], url: URL)
     case image(url: URL, alt: String)
+    case anchor(name: String, content: [SupportInline])
     case lineBreak
 }
 
@@ -33,10 +34,16 @@ struct SupportTableCell: Encodable, Equatable, Sendable {
     let rowSpan: Int
 }
 
+struct SupportBreadcrumb: Encodable, Equatable, Sendable {
+    let title: String
+    let url: URL?
+}
+
 struct SupportArticle: Encodable, Equatable, Sendable {
     let url: URL
     let title: String
     let context: String?
+    var breadcrumbs: [SupportBreadcrumb] = []
     let content: [SupportContentBlock]
     let related: [SupportPageLink]
     let notices: [SupportContentBlock]

@@ -48,6 +48,80 @@ struct SupportContentParserTests {
         #expect(article.content.count == 4)
     }
 
+    @Test("preserves ordered breadcrumbs including unlinked category labels")
+    func preservesBreadcrumbs() throws {
+        // -- Arrange --
+        let html = """
+            <main><div class='header2'><p class='custom-text'>
+            <a href='/help/app-store-connect/'>App Store Connect</a><span class='breadcrumb-spacer'>/</span>
+            <span class='lighter'>Reference</span><span class='breadcrumb-spacer'>/</span>
+            <a href='/help/app-store-connect/reference/app-information/'>App information</a>
+            <span class='breadcrumb-spacer'>/</span><span class='lighter'>Specifications</span></p></div>
+            <div class='main-content'><article><h1>Specifications</h1><p>Details.</p></article></div></main>
+            """
+        let parser = try SupportHTMLParser(
+            document: SupportHTMLDocument(
+                destination: SupportDestination(
+                    path: "help/app-store-connect/reference/app-information/specifications"),
+                html: html, responseByteCount: html.utf8.count))
+
+        // -- Act --
+        let article = try parser.article()
+
+        // -- Assert --
+        #expect(
+            article.breadcrumbs.map(\.title) == [
+                "App Store Connect", "Reference", "App information", "Specifications",
+            ])
+        #expect(article.breadcrumbs[0].url?.absoluteString == "https://developer.apple.com/help/app-store-connect/")
+        #expect(article.breadcrumbs[1].url == nil)
+    }
+
+    @Test("uses validated canonical metadata for articles served through a support alias")
+    func canonicalArticleURL() throws {
+        // -- Arrange --
+        let html = """
+            <head><link rel='canonical' href='https://developer.apple.com/help/account/membership/fee-waivers/'></head>
+            <main><div class='main-content'><article><h1>Fee waiver</h1><p>Details.</p></article></div></main>
+            """
+        let parser = try SupportHTMLParser(
+            document: SupportHTMLDocument(
+                destination: SupportDestination(path: "support/fee-waiver"), html: html,
+                responseByteCount: html.utf8.count))
+
+        // -- Act --
+        let article = try parser.article()
+
+        // -- Assert --
+        #expect(article.url.absoluteString == "https://developer.apple.com/help/account/membership/fee-waivers/")
+    }
+
+    @Test("named anchors without href preserve their content and navigation target")
+    func retainsNamedAnchors() throws {
+        // -- Arrange --
+        let html = """
+            <main><div class='main-content'><article><h1>Agreement</h1>
+            <p>Terms <a name='OLE_LINK24'></a><a name='OLE_LINK25'>survive</a>.</p>
+            </article></div></main>
+            """
+        let parser = try SupportHTMLParser(
+            document: SupportHTMLDocument(
+                destination: SupportDestination(path: "support/terms/example"), html: html,
+                responseByteCount: html.utf8.count))
+
+        // -- Act --
+        let article = try parser.article()
+
+        // -- Assert --
+        #expect(
+            article.content == [
+                .paragraph([
+                    .text("Terms "), .anchor(name: "OLE_LINK24", content: []),
+                    .anchor(name: "OLE_LINK25", content: [.text("survive")]), .text("."),
+                ])
+            ])
+    }
+
     @Test("retains legal section anchors and substantive footer notices")
     func retainsLegalNotices() throws {
         // -- Arrange --
