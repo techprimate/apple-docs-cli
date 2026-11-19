@@ -13,6 +13,29 @@ var cliDependencies: [Target.Dependency] = [
     .product(name: "SwiftSoup", package: "SwiftSoup"),
 ]
 
+var nativeTargets: [Target] = []
+
+#if os(Linux)
+    packageDependencies.append(
+        .package(
+            url: "https://github.com/getsentry/sentry-native.git",
+            branch: "philprime/build/swiftpm-linux-support"
+        )
+    )
+    cliDependencies += [
+        .product(name: "SentryNative", package: "sentry-native"),
+        .target(name: "NativeTelemetryPrivacy"),
+    ]
+    nativeTargets = [
+        .target(
+            name: "NativeTelemetryPrivacy",
+            dependencies: [.product(name: "SentryNative", package: "sentry-native")],
+            path: "Sources/CLI/telemetry/native",
+            publicHeadersPath: "include"
+        )
+    ]
+#endif
+
 #if os(macOS)
     packageDependencies += [
         .package(
@@ -42,10 +65,11 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "CLI",
-            dependencies: cliDependencies
+            dependencies: cliDependencies,
+            exclude: ["telemetry/native"]
         ),
         .testTarget(name: "CLITests", dependencies: ["CLI"]),
         .testTarget(name: "CLIIntegrationTests"),
-    ],
+    ] + nativeTargets,
     swiftLanguageModes: [.v6]
 )

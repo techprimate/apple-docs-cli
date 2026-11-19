@@ -1,5 +1,5 @@
 {
-  "originHash" : "6a98a760c3e325bdd763ce4b5f632d0b8385e56073648c11f31516a303aa0d5a",
+  "originHash" : "75aa598b5a93d279eb30680bcfed00cddcc855e864b781767dc2fff60ae19322",
   "pins" : [
     {
       "identity" : "sentry-apple-swift-log",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "61e8cb02434b26fb34c58126d883e5663cfde238",
         "version" : "9.28.0"
+      }
+    },
+    {
+      "identity" : "sentry-native",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-native.git",
+      "state" : {
+        "branch" : "philprime/build/swiftpm-linux-support",
+        "revision" : "930198741a63333e9fccfc261269c75984f82722"
       }
     },
     {
