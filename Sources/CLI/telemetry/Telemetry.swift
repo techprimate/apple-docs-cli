@@ -13,6 +13,9 @@ import Logging
     #if canImport(SentrySwift)
         extension SentryTelemetry: Telemetry {}
     #endif
+    #if os(Linux)
+        extension NativeSentryTelemetry: Telemetry {}
+    #endif
 
     protocol TelemetryProvider {
         associatedtype TelemetryType: Telemetry
@@ -26,6 +29,8 @@ import Logging
 
 #if canImport(SentrySwift)
     typealias DefaultTelemetry = SentryTelemetry
+#elseif os(Linux)
+    typealias DefaultTelemetry = NativeSentryTelemetry
 #else
     typealias DefaultTelemetry = NoOpTelemetry
 #endif
