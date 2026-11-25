@@ -86,6 +86,23 @@ struct AppleDocsCommandIntegrationTests {
         #expect(diagnostics.contains("debug"))
     }
 
+    @Test("returns the SwiftUI article from APPLE-DOCS-CLI-2", arguments: [["--json"], ["--agent", "--json"]])
+    func returnsSwiftUIArticle(flags: [String]) throws {
+        // -- Arrange --
+        let arguments =
+            [
+                "types", "view", "creating-performant-scrollable-stacks", "--technology", "SwiftUI",
+            ] + flags
+
+        // -- Act --
+        let output = try runAppleDocs(arguments)
+        let document = try JSONDecoder().decode(TypeDocument.self, from: Data(output.utf8))
+
+        // -- Assert --
+        #expect(document.title == "Creating performant scrollable stacks")
+        #expect(document.kind == "article")
+    }
+
     @Test("returns Foundation URL documentation as JSON")
     func returnsFoundationURLJSON() throws {
         // -- Arrange --

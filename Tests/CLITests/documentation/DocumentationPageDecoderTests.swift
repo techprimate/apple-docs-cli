@@ -31,6 +31,32 @@ struct DocumentationPageDecoderTests {
         #expect(page.url.absoluteString == "https://developer.apple.com/documentation/metrickit")
     }
 
+    @Test("decodes articles without symbol metadata", arguments: [true, false])
+    func decodesArticle(hasRole: Bool) throws {
+        // -- Arrange --
+        let role = hasRole ? #", "role":"article""# : ""
+        let data = Data(
+            """
+            {"kind":"article","metadata":{"title":"Creating performant scrollable stacks"\(role)},
+             "primaryContentSections":[{"kind":"content","content":[
+               {"type":"paragraph","inlineContent":[{"type":"text","text":"Build responsive stacks."}]}]}]}
+            """.utf8)
+        let destination = DocumentationDestination(
+            technology: "swiftui", path: "/documentation/swiftui/creating-performant-scrollable-stacks")
+
+        // -- Act --
+        let page = try DocumentationPageDecoder().decode(data, destination: destination)
+
+        // -- Assert --
+        #expect(page.title == "Creating performant scrollable stacks")
+        #expect(page.kind == "article")
+        #expect(page.symbolKind == nil)
+        #expect(page.modules.isEmpty)
+        #expect(page.availability.isEmpty)
+        #expect(page.declarations.isEmpty)
+        #expect(page.content == [.paragraph([.text("Build responsive stacks.")])])
+    }
+
     @Test("retains declarations, availability, deprecation, and labeled inline links")
     func retainsMemberMetadata() throws {
         // -- Arrange --
