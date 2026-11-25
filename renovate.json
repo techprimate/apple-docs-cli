@@ -3,11 +3,26 @@
   "extends": [
     "config:recommended"
   ],
+  "swift": {
+    "enabled": false
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Extract Swift packages declared in composed dependency arrays",
+      "managerFilePatterns": ["/(^|/)Package\\.swift$/"],
+      "matchStrings": [
+        "\\.package\\(\\s*url:\\s*\"https://github\\.com/(?<depName>[^\"\\s]+?)\\.git\",\\s*(?:from|exact):\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "swift"
+    }
+  ],
   "packageRules": [
     {
       "description": "Keep Sentry packages on the same version",
       "groupName": "Sentry packages",
-      "matchManagers": ["swift"],
+      "matchManagers": ["custom.regex"],
       "matchPackageNames": [
         "getsentry/sentry-apple-*",
         "getsentry/sentry-cocoa"
