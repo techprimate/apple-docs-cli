@@ -14,6 +14,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  renovate:
+    name: Validate Renovate configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate Renovate configuration
+        uses: philprime/renovate-validator-action@d3f73f8f7bc7df0e9380239c30c2c55e44136cea # main
+
   analyze:
     name: Analyze
     runs-on: macos-latest
