@@ -140,7 +140,11 @@ protocol ExpectedCommandError: Error {
                     $0.category == breadcrumbCategory
                 }
                 for exception in event.exceptions ?? [] {
-                    exception.value = "CLI command failed"
+                    if exception.mechanism?.type != swiftErrorMechanism {
+                        exception.value = "CLI command failed"
+                    }
+                    exception.mechanism?.data = nil
+                    exception.mechanism?.desc = nil
                 }
                 sanitizePaths(in: event)
                 return event

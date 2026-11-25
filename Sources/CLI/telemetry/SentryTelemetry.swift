@@ -84,7 +84,7 @@
                         logger.info("CLI command rejected")
                     } else {
                         logger.error("CLI command failed")
-                        SentrySDK.capture(error: error)
+                        SentrySDK.capture(event: SentryConfiguration.errorEvent(for: error))
                     }
                     span.finish()
                 }
