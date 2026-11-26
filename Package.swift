@@ -17,12 +17,12 @@ var cliDependencies: [Target.Dependency] = [
     packageDependencies += [
         .package(
             url: "https://github.com/getsentry/sentry-apple-swift-log.git",
-            exact: "9.28.0",
+            exact: "9.36.0",
             traits: ["SentryFromSource"]
         ),
         .package(
             url: "https://github.com/getsentry/sentry-cocoa.git",
-            exact: "9.28.0",
+            exact: "9.36.0",
             traits: ["NoUIFramework"]
         ),
     ]
